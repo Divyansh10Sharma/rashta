@@ -12,11 +12,11 @@ pedestrians, obstacles, pickups — stores its position as two numbers:
 Nothing in `src/core/` ever stores a world-space position. World space is
 derived, at render time only, by sampling the track spline:
 
-```
-const frame = track.sample(entity.s);          // position, tangent, normal, up
-const world = frame.position
-  .clone()
-  .addScaledVector(frame.right, entity.t);
+```ts
+// Both `frame` and `out` are preallocated and reused. Nothing here allocates —
+// this runs once per visible entity per frame. See §5.
+track.sample(entity.s, frame);
+out.copy(frame.position).addScaledVector(frame.right, entity.t);
 ```
 
 This is the single most important decision in the project and everything else
@@ -27,7 +27,7 @@ follows from it.
 | Problem | In world space | In track space |
 |---|---|---|
 | Who is ahead? | project onto racing line, handle curves | `a.s > b.s` |
-| Am I in punching range? | sphere overlap query | `abs(ds) < 2 && abs(dt) < 1.5` |
+| Am I in punching range? | sphere overlap query | `trackDistance(a, b) < 2` (§1.4) |
 | Did I leave the road? | raycast or collider | `abs(t) > track.widthAt(s)` |
 | Spawn traffic ahead | frustum maths, culling | insert at `player.s + 300` |
 | Race positions | sort by projected progress | sort by `s` |
@@ -64,8 +64,16 @@ curvature, the integration is closed-form, not numerical — the frame at any
 start state of each segment on load so `sample()` is a binary search plus
 arithmetic, not a walk from zero.
 
-`sample(s)` returns a `TrackFrame`: `{ position, forward, right, up, halfWidth,
-lanes }`.
+`sample(s, out)` fills a caller-owned `TrackFrame` — `{ position, forward,
+right, up, halfWidth, lanes }` — and returns it. It never allocates: it is
+called once per visible entity per frame, and a fresh object plus four vectors
+per call is the single easiest way to blow the frame budget (§5).
+
+The closed-form integration uses trigonometry, so it runs **at load time
+only**, filling a per-segment table of accumulated start frames. `sample()`
+itself is a binary search plus linear interpolation between table entries —
+no `sin` or `cos` at runtime. This is what lets the simulation keep the
+bit-exactness guarantee in `CLAUDE.md` rule 4.
 
 ### 1.2 Forks
 
@@ -75,11 +83,60 @@ into, and a `lengthDelta` so the two routes can differ in distance. An entity
 carries a `branchId` alongside `s` and `t`. Two entities on different branches
 cannot collide or fight, which is exactly right.
 
+**`s` is an odometer, not a race position.** The moment a fork exists these
+stop being the same number: two riders on different branches have `s` values
+measured along different curves, so `a.s > b.s` is meaningless between them.
+Core therefore exports `progress(entity)`, mapping `(branchId, s)` to a single
+monotone scalar that is comparable across branches and normalised so both
+branches of a fork rejoin at equal progress. Sort race position by `progress`,
+never by raw `s`. Keep the two distinct in the code — a `progress` that quietly
+becomes an alias for `s` is a bug that shows up mid-fork, in one race, at one
+moment, which is the worst possible time to find it.
+
 ### 1.3 Track authoring
 
 Tracks are JSON in `src/data/tracks/`. Tiers extend rather than replace: tier 2
 of a track is tier 1's segment list plus more segments appended. Do not
 duplicate the segments across files — the JSON references the previous tier.
+
+### 1.4 Distance in track space
+
+Track space is not metric. A rectangle in `(s, t)` is a curved wedge in the
+world, because arc length at lateral offset `t` is stretched or compressed by
+curvature. On a right turn of curvature `k`, an arc of length `ds` at offset
+`t` covers a real distance of `ds * (1 - t * k)` — the inside of the bend is
+shorter than the centreline, the outside is longer.
+
+Ignoring this is fine on a motorway and wrong in Old City. On a 20 m-radius
+corner, two riders separated by `ds = 2, dt = 1` are 1.84 m apart at
+`t ~ +4.5` and 2.64 m apart at `t ~ -4.5` — the same two numbers, a 43%
+difference in real separation, decided entirely by where on the road they sit.
+At `t ~ +/-1.5` the same swing is 12.8%. Derivation and figures are in
+`docs/devlog/phase-01.md`.
+
+So core exports:
+
+```ts
+/** Approximate metric separation between two entities, in metres. */
+function trackDistance(a: TrackPos, b: TrackPos, track: Track): number;
+```
+
+implemented by scaling `ds` by `(1 - tMean * k)` and taking the hypotenuse
+with `dt`. That approximation tracks the exact chord to within 0.08% across
+the full width of the road, and — importantly — it uses no trigonometry, so it
+is legal inside `step()` under rule 4.
+
+Use `trackDistance` for every question that is really about metres: combat
+range, the police arrest radius, and traffic occupancy. Keep using raw `s` and
+`t` comparisons for the questions that are really about the road: who is
+ahead, which lane, on the tarmac or off it.
+
+The factor `(1 - t * k)` collapses to zero when `|t| >= 1/|k|` — a corner
+tighter than the road is wide, where the inside edge has folded through the
+centre of curvature. This is not a runtime guard but a data error, so track
+validation rejects it at load: any segment with `curvature != 0` and
+`halfWidth + shoulder >= 1 / abs(curvature)` throws, naming the file and
+segment index.
 
 ## 2. The loop
 
@@ -106,7 +163,9 @@ The bike is **not** rigid-body simulated. It is an arcade model driven by a
 small number of scalars:
 
 - `speed` — m/s along the track. Integrated from throttle, brake, drag, the
-  bike's power curve, and a grip penalty when cornering hard.
+  bike's `accelCurve` scaled to its `timeToTopSpeed`, and a grip penalty when
+  cornering hard. Not from `power` — see the authority table under "Bikes" in
+  `GAME_DESIGN.md` for which bike fields the sim is allowed to read.
 - `lateral` — velocity in `t`. Lean input sets a target lateral velocity,
   scaled down as speed rises so the bike feels heavier fast.
 - `lean` — cosmetic angle for rendering, derived from `lateral` and curvature.
@@ -162,6 +221,28 @@ banned everywhere else and the lint config enforces it.
 
 This matters for more than tidiness: it makes race outcomes reproducible from
 a seed, which makes AI and balance bugs debuggable instead of anecdotal.
+
+The seeded RNG is necessary but not sufficient. Bit-exactness across machines
+also requires that `step()` contains no transcendental function — no `sin`,
+`cos`, `tan`, `atan2`, `pow`, `exp`, or `log`. IEEE-754 pins `+ - * /` and
+`sqrt` to a single correctly-rounded result on every conforming engine, but
+deliberately leaves the transcendentals to the implementation, so their last
+bits differ between V8, JavaScriptCore, and SpiderMonkey, and sometimes
+between CPU targets of the same engine. One `Math.cos` in the sim silently
+reduces "the same on every machine" to "the same on this one".
+
+Everything that genuinely needs trigonometry is therefore pushed to one of two
+places where determinism does not matter: track precompute at load, and
+rendering. Inside the sim, curvature and heading come from precomputed
+per-segment tables read by linear interpolation. `trackDistance` (§1.4) is
+built to respect this, which is why it approximates the chord instead of
+computing it.
+
+Two things guard this, since lint cannot: a replay test that runs a recorded
+input sequence twice and asserts bit-identical final state, and a second run
+of the same sequence under a deliberately jittered wall clock, asserting the
+same result — which also catches `Date.now()` or `performance.now()` leaking
+into the simulation.
 
 ## 7. Save format
 

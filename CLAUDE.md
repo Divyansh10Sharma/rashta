@@ -9,11 +9,18 @@ assets. All bikes, racers, tracks, and branding in this project are original.
 If you catch yourself typing a name you recognise from Road Rash, stop and
 invent one.
 
+The same rule applies to the real world. Real Delhi place names are geography
+and are fine — Ring Road, the Yamuna, Chandni Chowk. Real *brands* are not.
+No real motorcycle manufacturer or model name appears anywhere, in data files
+or in prose. Vehicles are generic silhouettes in plausible livery colours,
+with no wordmarks, logos, or reproduced liveries on any mesh or texture.
+
 ## Setting
 
 Delhi, at night. Ring Road, Yamuna bank, DND flyway, the Ridge, Chandni Chowk
-back lanes. Sodium-vapour streetlights, DTC buses, autos, stray dogs, police
-Bullets. This is the visual identity — do not default to California.
+back lanes. Sodium-vapour streetlights, city buses, autos, stray dogs,
+police motorcycles. This is the visual identity — do not default to
+California.
 
 ## Stack (do not change without being asked)
 
@@ -46,10 +53,22 @@ These are not suggestions. Violating one is a bug, even if the game runs.
 3. **Fixed timestep.** The simulation ticks at exactly 60 Hz with a constant
    `dt`. Rendering runs at display rate and interpolates between the last two
    sim states. Never advance the sim by a variable frame delta.
-4. **The simulation is deterministic.** Same seed plus same input sequence
-   must produce the same result, every time, on every machine. All randomness
-   goes through the seeded RNG in `src/core/rng.ts`. Never call `Math.random()`
-   outside that file.
+4. **The simulation is bit-exactly deterministic.** Same seed plus same input
+   sequence produces the same result, every time, on every machine. All
+   randomness goes through the seeded RNG in `src/core/rng.ts`. Never call
+   `Math.random()` outside that file.
+
+   This guarantee is achievable only because of a second, less obvious rule:
+   **`step()` and everything it calls use no transcendental functions.** No
+   `Math.sin`, `cos`, `tan`, `atan2`, `pow`, `exp`, or `log` inside the
+   simulation. IEEE-754 makes `+ - * /` and `Math.sqrt` bit-identical on every
+   conforming engine; the transcendentals are explicitly *not* specified to
+   agree across engines or platforms, so a single `cos` in the sim downgrades
+   the guarantee from "every machine" to "this machine, this browser build".
+   Trigonometry belongs in two places only: track precompute at load time, and
+   rendering. The sim reads precomputed tables and interpolates linearly.
+   Nothing else in this file is enforceable by lint, so this rule is enforced
+   by a replay test in `npm run check`.
 5. **Data lives in JSON, not in code.** Tracks, bikes, racers, and tuning
    constants are data files in `src/data/`, validated on load. Do not hardcode
    a bike's top speed in a class.
@@ -62,6 +81,7 @@ These are not suggestions. Violating one is a bug, even if the game runs.
 rashta/
   CLAUDE.md              <- this file
   README.md              <- how to run and share it
+  LICENSE                <- MIT
   Explanation.html       <- the explainer. See docs/EXPLANATION_SPEC.md
   index.html
   package.json
@@ -90,6 +110,7 @@ rashta/
     GAME_DESIGN.md
     EXPLANATION_SPEC.md
     PROMPTS.md
+    DEVLOG_GUIDE.md
     devlog/
       phase-00.md ... phase-10.md
   src-tauri/             added in Phase 10

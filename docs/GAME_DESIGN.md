@@ -26,8 +26,17 @@ Ordered easiest to hardest. All original.
 | Old City | Narrow, tight, pedestrians, no shoulder | Zero room to recover |
 | DND Flyway | Elevated expressway, fastest route in the game | No barrier on one side — leaving the road ends your race |
 
-Each route has at least two forks. One branch is shorter but tighter or
-busier; the other is longer but open. Neither should be strictly correct.
+Each route has at least two forks. One branch is tighter or busier; the other
+is more open. Neither should be strictly correct.
+
+**Forks are never balanced with raw distance.** If one branch is meaningfully
+shorter in metres, it is simply the right answer and the choice stops being a
+choice. So: both branches of a fork rejoin at equal `progress` (see
+`ARCHITECTURE.md` §1.2), and their lengths in metres differ by no more than
+about 5% — enough that the routes feel different to ride, not enough to decide
+the race on its own. The real levers are corner tightness, traffic density,
+hazard placement, and how much room there is to fight. A fork should be a bet
+about the kind of rider you are, not an arithmetic problem with one answer.
 
 ## Riders
 
@@ -70,16 +79,36 @@ interface Bike {
   model: string;
   class: 'street' | 'sport' | 'super';
   price: number;
-  power: number;          // kW
-  mass: number;           // kg — affects combat shove and cornering
-  topSpeed: number;       // km/h
-  accelCurve: number[];   // normalised power at 0/25/50/75/100% of top speed
-  handling: number;       // 0..1 — lateral responsiveness
-  stability: number;      // 0..1 — resistance to being knocked off line
-  nitro: number;          // charges; 0 for street and sport
+  power: number;           // kW. DISPLAY ONLY — the sim never reads this.
+  mass: number;            // kg — combat shove and cornering grip only.
+  topSpeed: number;        // km/h. Authoritative: the ceiling.
+  timeToTopSpeed: number;  // seconds, 0 to topSpeed. Authoritative: the magnitude.
+  accelCurve: number[];    // SHAPE ONLY, normalised, at 0/25/50/75/100% of
+                           // topSpeed. The sim rescales it so the integral
+                           // matches timeToTopSpeed exactly.
+  handling: number;        // 0..1 — lateral responsiveness
+  stability: number;       // 0..1 — resistance to being knocked off line
+  nitro: number;           // charges; 0 for street and sport
   blurb: string;
 }
 ```
+
+**Which field is authoritative for what.** Speed, acceleration, power, and
+mass over-determine a vehicle: given any three you can derive the fourth, and
+two sources of truth that disagree is a bug waiting for a tuning session. So
+the split is fixed, and the sim is only allowed to read the right-hand column:
+
+| Quantity | Authority | Read by the sim? |
+|---|---|---|
+| Top speed | `topSpeed` | yes |
+| How long to reach it | `timeToTopSpeed` | yes |
+| How the acceleration is distributed on the way | `accelCurve`, rescaled | yes |
+| Combat shove, cornering grip | `mass` | yes |
+| Engine power | `power` | **no** — shop and garage display only |
+
+`accelCurve` carries no magnitude. Doubling every entry in it changes the
+character of the acceleration and not the time to top speed, which is what
+makes it safe to tune by feel.
 
 Design rules:
 - No bike is strictly best. The fastest Super must be genuinely hard to keep
