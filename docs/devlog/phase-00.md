@@ -207,4 +207,27 @@ Small, and flagged rather than smuggled:
   take.
 - **CI is unverified.** The workflow is written and targets `main`, but there
   is no remote yet, so it has never run. To be confirmed once the GitHub repo
-  exists.
+  exists. *(Resolved — see below.)*
+
+## CI — now verified
+
+Resolved the deferral above. Remote is
+`https://github.com/Divyansh10Sharma/rashta.git`, pushed at commit `65417bb`.
+
+I could not push it myself: the credential manager on this machine is
+authenticated as GitHub user `DivyanshTR`, and the repository belongs to
+`Divyansh10Sharma`, so `git push` returned
+`403 — Permission to Divyansh10Sharma/rashta.git denied to DivyanshTR`.
+Divyansh pushed it. Noting it because the same mismatch will recur every
+phase unless the credential is changed.
+
+Run #1 of the `check` workflow on `65417bb`: **success**. Every step passed —
+checkout, `setup-node` at 20, `npm ci`, `npm run check`, artifact upload.
+
+Worth more than it looks. The local check runs against an incrementally-built
+`node_modules` on Windows; CI ran a clean `npm ci` on Ubuntu with no cached
+state. So the phase is now known to build from nothing on a second operating
+system, which is the actual claim "it builds" is supposed to mean.
+
+Still outstanding from Phase 0, and only this: the 60 fps reading under 4x CPU
+throttling, which needs a human with DevTools.
