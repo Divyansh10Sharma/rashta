@@ -1,0 +1,29 @@
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  build: {
+    // Fail loudly rather than silently shipping a bundle over the standing
+    // 500 KB gzipped budget — scripts/check-bundle-size.mjs is the real gate,
+    // this is just the earlier warning.
+    chunkSizeWarningLimit: 600,
+    sourcemap: true,
+  },
+  test: {
+    globals: true,
+    environment: 'node',
+    include: ['tests/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      // Only core is held to a coverage bar; render, input, and ui are
+      // exercised by hand and by eye, not by unit tests.
+      include: ['src/core/**/*.ts'],
+      thresholds: {
+        // CLAUDE.md rule 6. See docs/devlog/phase-00.md on the empty-glob
+        // behaviour while src/core/ is still empty in Phase 0.
+        'src/core/**/*.ts': { lines: 80 },
+        'src/core/track/**/*.ts': { lines: 100 },
+      },
+    },
+  },
+});

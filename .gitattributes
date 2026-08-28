@@ -1,0 +1,8 @@
+# Normalise to LF in the repository. Without this, Prettier writes LF, git
+# checks out CRLF on Windows, and every file looks permanently modified.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.glb binary
+*.mp3 binary
+*.ogg binary

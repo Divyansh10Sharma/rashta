@@ -1,0 +1,1490 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RASHTA — how it was built</title>
+    <style>
+      /* ---------------------------------------------------------------
+         Palette, per docs/EXPLANATION_SPEC.md. Six colours, no others.
+         Concrete ground, ink, lane paint, centre-line yellow (current
+         position and live emphasis only), signage blue (links and
+         structural rules), milestone red-oxide (dead ends only).
+         --------------------------------------------------------------- */
+      :root {
+        --concrete: #e6e4de;
+        --ink: #1a1a18;
+        --lane: #fafaf7;
+        --yellow: #f2b705;
+        --blue: #1b4d89;
+        --oxide: #8c2f1b;
+
+        --ink-soft: color-mix(in srgb, var(--ink) 62%, var(--concrete));
+        --ink-faint: color-mix(in srgb, var(--ink) 28%, var(--concrete));
+        --rule: color-mix(in srgb, var(--ink) 16%, var(--concrete));
+
+        --sans:
+          ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+          'Helvetica Neue', Arial, sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        --gutter: 92px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          /* Inverted by role, not by arithmetic: the ground goes to wet
+             night asphalt, the paint stays paint, and blue and oxide are
+             lifted in luminance so they still read as signage and rust. */
+          --concrete: #16161a;
+          --ink: #e8e6e0;
+          --lane: #f7f7f2;
+          --yellow: #f5c033;
+          --blue: #7aa9e0;
+          --oxide: #d46a4a;
+          --ink-soft: color-mix(in srgb, var(--ink) 66%, var(--concrete));
+          --ink-faint: color-mix(in srgb, var(--ink) 32%, var(--concrete));
+          --rule: color-mix(in srgb, var(--ink) 20%, var(--concrete));
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--concrete);
+      }
+
+      body {
+        margin: 0;
+        background: var(--concrete);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 17.5px;
+        line-height: 1.66;
+        -webkit-text-size-adjust: 100%;
+      }
+
+      /* ---------------------------------------------------------------
+         The road. A thin vertical carriageway down the left gutter with a
+         dashed centre line, carrying the milestone stones. This is the
+         pagination indicator and it is where the design budget went.
+         --------------------------------------------------------------- */
+      .road {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: var(--gutter);
+        background: color-mix(in srgb, var(--ink) 88%, var(--concrete));
+        border-right: 1px solid var(--rule);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 26px;
+        z-index: 5;
+      }
+
+      .road::before,
+      .road::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: color-mix(in srgb, var(--lane) 55%, transparent);
+      }
+      .road::before {
+        left: 11px;
+      }
+      .road::after {
+        right: 11px;
+      }
+
+      /* The dashed centre line, drawn as a repeating gradient so it needs
+         no image and no network request. */
+      .centreline {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 3px;
+        transform: translateX(-50%);
+        background-image: linear-gradient(
+          to bottom,
+          var(--lane) 0 26px,
+          transparent 26px 52px
+        );
+        background-size: 3px 52px;
+        opacity: 0.5;
+      }
+
+      /* An Indian highway milestone: square body, rounded top, painted band
+         across the crown. Current phase is yellow-banded; neighbours are
+         faint. */
+      .stone {
+        position: relative;
+        width: 52px;
+        padding: 0;
+        border: 0;
+        background: none;
+        font-family: var(--mono);
+        cursor: pointer;
+        display: block;
+        opacity: 0.3;
+        transition: opacity 140ms ease;
+      }
+      .stone:hover,
+      .stone:focus-visible {
+        opacity: 0.72;
+      }
+      .stone[aria-current='page'] {
+        opacity: 1;
+      }
+
+      .stone-body {
+        display: block;
+        background: var(--lane);
+        border-radius: 26px 26px 3px 3px;
+        padding: 20px 0 8px;
+        text-align: center;
+        box-shadow: 0 2px 0 color-mix(in srgb, var(--ink) 40%, transparent);
+      }
+
+      .stone-band {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 20px;
+        border-radius: 26px 26px 0 0;
+        background: color-mix(in srgb, var(--ink) 55%, var(--concrete));
+      }
+      .stone[aria-current='page'] .stone-band {
+        background: var(--yellow);
+      }
+
+      .stone-num {
+        display: block;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: #1a1a18;
+        line-height: 1.1;
+      }
+      .stone-label {
+        display: block;
+        font-size: 8px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #1a1a18;
+        opacity: 0.6;
+      }
+
+      /* --------------------------------------------------------------- */
+
+      .skip {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        background: var(--yellow);
+        color: #1a1a18;
+        padding: 10px 16px;
+        font-family: var(--mono);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        z-index: 20;
+      }
+      .skip:focus {
+        left: calc(var(--gutter) + 12px);
+      }
+
+      .shell {
+        margin-left: var(--gutter);
+        padding: 0 clamp(20px, 5vw, 64px);
+        max-width: 860px;
+      }
+
+      .masthead {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 34px 0 18px;
+        border-bottom: 2px solid var(--ink);
+      }
+
+      .wordmark {
+        font-size: 21px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        margin: 0;
+        font-stretch: condensed;
+      }
+      .wordmark span {
+        color: var(--ink-faint);
+        font-weight: 400;
+        letter-spacing: 0.06em;
+        text-transform: none;
+        font-size: 15px;
+      }
+
+      .counter {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+      .counter b {
+        color: var(--ink);
+      }
+
+      .jump {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 14px 0 30px;
+        border-bottom: 1px solid var(--rule);
+        margin-bottom: 38px;
+      }
+      .jump a {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: var(--blue);
+        border: 1px solid var(--rule);
+        padding: 5px 11px;
+      }
+      .jump a:hover {
+        border-color: var(--blue);
+      }
+      .jump a[aria-current='page'] {
+        background: var(--yellow);
+        border-color: var(--yellow);
+        color: #1a1a18;
+        font-weight: 700;
+      }
+
+      /* Pages: exactly one visible at a time. */
+      .page[hidden] {
+        display: none;
+      }
+      .page {
+        animation: fade 180ms ease-out;
+        padding-bottom: 72px;
+      }
+      @keyframes fade {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .page {
+          animation: none;
+        }
+        .stone {
+          transition: none;
+        }
+      }
+
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        margin: 0 0 10px;
+      }
+
+      .page-head {
+        margin-bottom: 44px;
+      }
+      .page-head h2 {
+        font-size: clamp(34px, 6vw, 50px);
+        line-height: 1.04;
+        letter-spacing: -0.02em;
+        font-stretch: condensed;
+        font-weight: 800;
+        margin: 0 0 14px;
+      }
+      .standfirst {
+        font-size: 20px;
+        line-height: 1.5;
+        color: var(--ink-soft);
+        margin: 0;
+        max-width: 46ch;
+      }
+
+      .page section {
+        margin-bottom: 42px;
+      }
+      .page h3 {
+        font-size: 13px;
+        margin: 0;
+      }
+      h4 {
+        font-size: 17px;
+        margin: 0 0 8px;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0 0 15px;
+        max-width: 68ch;
+      }
+
+      dfn.term {
+        font-style: normal;
+        font-weight: 700;
+        border-bottom: 2px solid var(--yellow);
+      }
+
+      a {
+        color: var(--blue);
+      }
+
+      code {
+        font-family: var(--mono);
+        font-size: 0.88em;
+        background: color-mix(in srgb, var(--ink) 7%, var(--concrete));
+        padding: 1px 5px;
+      }
+
+      /* The dead ends. The one section with a distinct treatment: red-oxide
+         left rule, hard corners, visibly the interesting part. */
+      .s-deadends {
+        border-left: 4px solid var(--oxide);
+        border-radius: 0;
+        padding: 4px 0 4px 22px;
+      }
+      .s-deadends .eyebrow {
+        color: var(--oxide);
+      }
+      .deadend {
+        border-top: 1px solid var(--rule);
+        padding-top: 18px;
+        margin-top: 18px;
+      }
+      .deadend:first-of-type {
+        border-top: 0;
+        padding-top: 0;
+      }
+      .deadend h4 {
+        color: var(--oxide);
+      }
+      .deadend .why {
+        color: var(--ink-soft);
+      }
+
+      .tradeoff,
+      .rejected {
+        border-left: 3px solid var(--blue);
+        padding-left: 14px;
+        color: var(--ink-soft);
+      }
+
+      dl {
+        margin: 0;
+        column-count: 1;
+      }
+      dt {
+        font-weight: 700;
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        margin-top: 18px;
+        padding-top: 10px;
+        border-top: 1px solid var(--rule);
+      }
+      dd {
+        margin: 5px 0 0;
+        max-width: 66ch;
+      }
+      dd.plain::before {
+        content: 'Plainly — ';
+        color: var(--ink-faint);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      dd.precise {
+        color: var(--ink-soft);
+      }
+      dd.precise::before {
+        content: 'Precisely — ';
+        color: var(--ink-faint);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .file-ref {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--ink-soft);
+        letter-spacing: 0.02em;
+      }
+      pre {
+        background: color-mix(in srgb, var(--ink) 92%, var(--concrete));
+        color: var(--lane);
+        padding: 18px 20px;
+        overflow-x: auto;
+        font-size: 13px;
+        line-height: 1.6;
+        margin: 0 0 14px;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+        font-size: inherit;
+        color: inherit;
+      }
+      .annotations {
+        font-size: 15.5px;
+        color: var(--ink-soft);
+        padding-left: 20px;
+        margin: 0;
+      }
+      .annotations li {
+        margin-bottom: 7px;
+      }
+      .annotations code {
+        font-size: 0.85em;
+      }
+
+      blockquote {
+        margin: 0;
+        padding-left: 20px;
+        border-left: 3px solid var(--yellow);
+        font-size: 19px;
+        line-height: 1.6;
+      }
+
+      pre.arch {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.5;
+        background: color-mix(in srgb, var(--ink) 7%, var(--concrete));
+        color: var(--ink);
+        padding: 16px 18px;
+        overflow-x: auto;
+        margin: 0 0 16px;
+        white-space: pre;
+      }
+      .arch b {
+        color: var(--blue);
+      }
+      .arch i {
+        font-style: normal;
+        color: var(--ink-faint);
+      }
+
+      .decisions {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        counter-reset: d;
+      }
+      .decisions li {
+        counter-increment: d;
+        border-top: 1px solid var(--rule);
+        padding: 16px 0 4px 44px;
+        position: relative;
+      }
+      .decisions li::before {
+        content: counter(d);
+        position: absolute;
+        left: 0;
+        top: 16px;
+        font-family: var(--mono);
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--yellow);
+        line-height: 1;
+      }
+      .decisions p {
+        margin-bottom: 8px;
+      }
+      .cost {
+        color: var(--ink-soft);
+      }
+      .cost b {
+        color: var(--oxide);
+      }
+
+      .pager {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        border-top: 2px solid var(--ink);
+        padding: 18px 0 60px;
+      }
+      .pager button {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        background: none;
+        border: 1px solid var(--ink);
+        color: var(--ink);
+        padding: 10px 18px;
+        cursor: pointer;
+      }
+      .pager button:hover:not(:disabled) {
+        background: var(--yellow);
+        border-color: var(--yellow);
+        color: #1a1a18;
+      }
+      .pager button:disabled {
+        opacity: 0.28;
+        cursor: default;
+      }
+
+      :focus-visible {
+        outline: 3px solid var(--yellow);
+        outline-offset: 2px;
+      }
+
+      @media (max-width: 720px) {
+        :root {
+          --gutter: 60px;
+        }
+        .stone {
+          width: 40px;
+        }
+        .stone-body {
+          padding: 16px 0 6px;
+          border-radius: 20px 20px 3px 3px;
+        }
+        .stone-band {
+          height: 15px;
+          border-radius: 20px 20px 0 0;
+        }
+        .stone-num {
+          font-size: 12px;
+        }
+        .stone-label {
+          font-size: 7px;
+        }
+        body {
+          font-size: 16.5px;
+        }
+      }
+
+      /* Printing shows everything, each page on its own sheet. */
+      @media print {
+        .road,
+        .jump,
+        .pager,
+        .skip {
+          display: none !important;
+        }
+        .shell {
+          margin-left: 0;
+          max-width: none;
+          padding: 0;
+        }
+        .page[hidden] {
+          display: block !important;
+        }
+        .page {
+          animation: none;
+          break-after: page;
+          page-break-after: always;
+        }
+        .page:last-of-type {
+          break-after: auto;
+          page-break-after: auto;
+        }
+        pre {
+          background: none;
+          color: #000;
+          border: 1px solid #999;
+          white-space: pre-wrap;
+        }
+        body {
+          background: #fff;
+          color: #000;
+          font-size: 11pt;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <nav class="road" aria-label="Phase">
+      <span class="centreline" aria-hidden="true"></span>
+      <button class="stone" data-goto="phase-00" type="button">
+        <span class="stone-band" aria-hidden="true"></span>
+        <span class="stone-body">
+          <span class="stone-num">00</span>
+          <span class="stone-label">Phase</span>
+        </span>
+      </button>
+      <button class="stone" data-goto="ninety-seconds" type="button">
+        <span class="stone-band" aria-hidden="true"></span>
+        <span class="stone-body">
+          <span class="stone-num">90s</span>
+          <span class="stone-label">All</span>
+        </span>
+      </button>
+    </nav>
+
+    <div class="shell">
+      <header class="masthead">
+        <h1 class="wordmark">Rashta <span>— how it was built</span></h1>
+        <p class="counter">
+          Page <b id="page-now">1</b> of <b id="page-total">2</b>
+        </p>
+      </header>
+
+      <nav class="jump" aria-label="Jump to page">
+        <a href="#phase-00">00 · Skeleton</a>
+        <a href="#ninety-seconds">90 seconds</a>
+      </nav>
+
+      <main id="content">
+        <!-- ================= PHASE 00 ================= -->
+        <section class="page" id="phase-00" aria-labelledby="h-00">
+          <header class="page-head">
+            <p class="eyebrow">Phase 00</p>
+            <h2 id="h-00">Skeleton</h2>
+            <p class="standfirst">
+              No game yet — a workshop, built and checked, with the tools laid
+              out and the rules already enforced.
+            </p>
+          </header>
+
+          <section class="s-goal" aria-labelledby="g-00">
+            <p class="eyebrow" id="g-00">What we were trying to do</p>
+            <p>
+              Before building anything you want a bench, good light, and a way
+              of telling whether what you have made is any good. That is all
+              this piece of work was. We set up the workshop: the machine that
+              turns what we write into something a browser can show, a way of
+              running tests, and a single command that checks everything at once
+              and refuses if anything is wrong.
+            </p>
+            <p>
+              The only thing on screen at the end of it is a flat grey plane lit
+              orange, like an empty road under a streetlight, with a small
+              readout in the corner counting how fast the picture is being
+              redrawn. That is deliberate. There is no motorbike, no track and
+              no race. What there is, is a room where the next ten pieces of
+              work can happen without anyone tripping over anything.
+            </p>
+          </section>
+
+          <section class="s-hard" aria-labelledby="hd-00">
+            <p class="eyebrow" id="hd-00">Why this was hard</p>
+            <p>
+              Honestly, it wasn't very. Setting up tools is a solved problem and
+              most of a day's difficulty is looking things up. Saying otherwise
+              would be manufacturing drama.
+            </p>
+            <p>
+              There is one thing that was genuinely awkward, though, and it is a
+              strange one: we had to build the alarms before there was anything
+              to protect. This project has six rules it must never break — one
+              of them is that the part of the code that decides what happens in
+              a race must never be allowed to touch the part that draws
+              pictures. We wanted a machine that refuses to accept work that
+              breaks that rule. But the part that decides what happens in a race
+              does not exist yet. So we were writing a burglar alarm for an
+              empty house, with no way to know whether it would go off.
+            </p>
+            <p>
+              The same problem hit the test that measures how much of the code
+              is checked by other tests. We told it to demand that 80% of the
+              simulation is covered. There is no simulation. It looked at
+              nothing, found nothing wrong with nothing, and passed. That is
+              worse than failing, because a rule that has never once said no is
+              indistinguishable from a rule that does not work. So the real work
+              here was proving the alarms ring: deliberately writing bad code,
+              watching each check reject it, and then deleting it again.
+            </p>
+          </section>
+
+          <section class="s-deadends" aria-labelledby="de-00">
+            <p class="eyebrow" id="de-00">What we tried that didn't work</p>
+
+            <article class="deadend">
+              <h4>A test that could never have caught anything</h4>
+              <p class="plain">
+                The corner readout keeps the last 120 frame times and reports
+                the worst ones, so a stutter shows up even when the average
+                looks healthy. To find the worst, it sorts the numbers. There is
+                a famous trap here: in JavaScript, sorting a plain list of
+                numbers sorts them as if they were words, so 100 lands before 9.
+                We wrote a test to guard against exactly that, fed it 95 fast
+                frames and 5 slow ones, and asserted the slow number came out.
+                It failed.
+              </p>
+              <p class="why">
+                Two wrong beliefs in one test, and the code was right both
+                times. First, the numbers are not kept in a plain list but in a
+                fixed-size numeric one, and that kind sorts numerically already
+                — the trap we were guarding against cannot happen here, so the
+                test was incapable of catching anything. Second, the answer we
+                demanded was wrong anyway: with exactly 95 out of 100 frames
+                fast, the "95% mark" genuinely is a fast frame. We had
+                confidently written a test that was wrong twice and would have
+                felt reassuring if it had passed.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>Starting on a toolchain with known holes in it</h4>
+              <p class="plain">
+                We first pinned the versions of the build tools that were
+                current when the project was sketched out. Installing them
+                reported six security problems, two of them rated critical. All
+                six came from one small program buried underneath everything
+                else, which had a flaw letting any website you visited talk to
+                the private server running on your own machine and read what
+                came back.
+              </p>
+              <p class="why">
+                Not a coding mistake — a starting-point mistake. The flaw only
+                affects the development machine and could never reach a player.
+                It is tempting to leave it. But this project has ten more phases
+                to run, and there was nothing built yet that depended on those
+                old versions, so the cost of moving was zero and the cost of
+                staying was ten phases of running a server we knew was leaky.
+                Upgraded; the report is now clean.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>A rule that silently switched off fifty others</h4>
+              <p class="plain">
+                One small script does not go into the game and does not need the
+                strictest checks, so we told the checker to relax them for that
+                file, then added one preference of our own on the next line. The
+                whole thing crashed, complaining it had been asked to apply a
+                deep check to a file it knew nothing about.
+              </p>
+              <p class="why">
+                Adding our one preference did not add it to the list of
+                relaxations — it replaced the entire list. Fifty rules we had
+                just switched off came straight back on. The fix was one line,
+                but it is a good example of the kind of mistake that produces a
+                completely misleading error message: nothing in the words "you
+                have used a rule which requires type information" points at the
+                thing that actually went wrong.
+              </p>
+            </article>
+          </section>
+
+          <section class="s-decision" aria-labelledby="dc-00">
+            <p class="eyebrow" id="dc-00">What we went with, and why</p>
+            <p>
+              One command, <code>npm run check</code>, that runs four different
+              kinds of check in sequence and fails the moment any of them
+              complains: does the code make sense on its own terms, does it
+              follow the house style and the project's rules, do the tests pass
+              with enough of the important code actually exercised, and is the
+              finished download still small enough. The same command runs on our
+              machine and on the server after every change, so there is no such
+              thing as "works for me".
+            </p>
+            <p>
+              We also chose to make the checks harsh now rather than later.
+              Every optional strictness setting is on, the size limit is
+              measured rather than estimated, and the coverage rules stop the
+              build rather than printing a warning nobody reads.
+            </p>
+            <p class="tradeoff">
+              What this costs: friction, every single day, starting immediately.
+              Turning these on later would be far more pleasant than living with
+              them from the first commit — but turning them on later is a job
+              that never gets done, because by then there are two hundred
+              violations and no appetite. We are paying a small tax constantly
+              to avoid a large bill we would never actually pay.
+            </p>
+            <p class="rejected">
+              We didn't use a game engine — Unity, Godot, Unreal — because this
+              game needs almost nothing they provide. It is a road, some riders,
+              and arithmetic. The engine would bring a physics system we have
+              deliberately decided not to use, a scene editor for a world we
+              generate from data, and a download tens of times larger than the
+              entire budget for this one. We didn't use a physics library for
+              the same reason: the riding model here is tuned by feel, not
+              simulated, which is the right choice for an arcade racer and is
+              covered on the Phase 2 page.
+            </p>
+          </section>
+
+          <section class="s-words" aria-labelledby="w-00">
+            <p class="eyebrow" id="w-00">Words to know</p>
+            <dl>
+              <dt>Bundle</dt>
+              <dd class="plain">
+                The single packed-up file of code that gets sent to whoever
+                opens the game.
+              </dd>
+              <dd class="precise">
+                The output of the build step: application and library code
+                combined, minified, and emitted as a small number of assets for
+                the browser to fetch.
+              </dd>
+
+              <dt>Bundler</dt>
+              <dd class="plain">
+                The machine that packs hundreds of files we wrote into the few
+                files a browser downloads.
+              </dd>
+              <dd class="precise">
+                A tool that resolves a module graph, transforms each module, and
+                emits optimised output. Here it is Vite.
+              </dd>
+
+              <dt>Continuous integration (CI)</dt>
+              <dd class="plain">
+                A robot that rebuilds and rechecks the whole project every time
+                anyone changes anything.
+              </dd>
+              <dd class="precise">
+                Automated build-and-test runs triggered by pushes and pull
+                requests. Ours is a GitHub Actions workflow running the same
+                <code>npm run check</code> a developer runs locally.
+              </dd>
+
+              <dt>Coverage</dt>
+              <dd class="plain">
+                How much of the code the tests actually run. Untested code is
+                where bugs live.
+              </dd>
+              <dd class="precise">
+                The proportion of lines, branches, or functions executed during
+                a test run, measured here by the V8 engine's built-in
+                instrumentation.
+              </dd>
+
+              <dt>DOM</dt>
+              <dd class="plain">
+                The browser's live picture of the page, which code can read and
+                change.
+              </dd>
+              <dd class="precise">
+                The Document Object Model: the tree of nodes representing an
+                HTML document, exposed to JavaScript for querying and mutation.
+              </dd>
+
+              <dt>Dependency</dt>
+              <dd class="plain">
+                Someone else's code that ours needs in order to work.
+              </dd>
+              <dd class="precise">
+                A package this project imports at runtime. A
+                <em>dev dependency</em> is needed only to build or test, and
+                never reaches the player. Three.js is our only runtime
+                dependency.
+              </dd>
+
+              <dt>Dev server</dt>
+              <dd class="plain">
+                A little web server on your own machine that shows the game as
+                you edit it, updating instantly.
+              </dd>
+              <dd class="precise">
+                A local HTTP server providing on-demand transformation and hot
+                module replacement during development. Never deployed.
+              </dd>
+
+              <dt>ESLint</dt>
+              <dd class="plain">
+                A proofreader for code. It flags things that are legal but
+                unwise, and here it also enforces this project's own rules.
+              </dd>
+              <dd class="precise">
+                A pluggable JavaScript and TypeScript linter. Configured here in
+                flat-config form, including custom restrictions banning
+                <code>Math.random</code> outside the seeded generator and
+                banning imports of Three.js from the simulation.
+              </dd>
+
+              <dt>esbuild</dt>
+              <dd class="plain">
+                A very fast code-packing program that other tools use inside
+                themselves.
+              </dd>
+              <dd class="precise">
+                A Go-based JavaScript bundler and transformer used internally by
+                Vite. The version originally pinned carried the advisory that
+                prompted the toolchain upgrade.
+              </dd>
+
+              <dt>Frame budget</dt>
+              <dd class="plain">
+                The sliver of time available to draw one picture before the next
+                one is due — about 17 thousandths of a second.
+              </dd>
+              <dd class="precise">
+                16.6 ms, the period of a 60 Hz refresh. Exceeding it drops a
+                frame and is visible as stutter.
+              </dd>
+
+              <dt>gzip</dt>
+              <dd class="plain">
+                Standard squashing, applied automatically when files travel over
+                the internet.
+              </dd>
+              <dd class="precise">
+                A DEFLATE-based compression format applied by web servers in
+                transit. Our 500 KB budget is measured after gzip because that
+                is what a player's connection actually carries.
+              </dd>
+
+              <dt>Linter</dt>
+              <dd class="plain">
+                Any tool that reads code looking for suspicious patterns rather
+                than outright errors.
+              </dd>
+              <dd class="precise">
+                A static analyser that reports rule violations without executing
+                the program.
+              </dd>
+
+              <dt>MIT licence</dt>
+              <dd class="plain">
+                A short, permissive licence: anyone may use this, as long as
+                they keep the notice and expect no guarantees.
+              </dd>
+              <dd class="precise">
+                A permissive open-source licence granting unrestricted use,
+                modification, and redistribution, subject only to inclusion of
+                the copyright notice and disclaimer of warranty.
+              </dd>
+
+              <dt>Nearest-rank percentile</dt>
+              <dd class="plain">
+                One way of answering "what does the 95% mark actually equal":
+                line the numbers up and point at the one standing in that
+                position.
+              </dd>
+              <dd class="precise">
+                The smallest value in the sorted sample at or above the required
+                rank, computed as
+                <code>ceil(p × n)</code>, with no interpolation between
+                neighbouring values.
+              </dd>
+
+              <dt>Node.js</dt>
+              <dd class="plain">
+                A way of running JavaScript on your own computer instead of
+                inside a web page.
+              </dd>
+              <dd class="precise">
+                A server-side JavaScript runtime built on V8. Version 20 or
+                newer is required here; it runs the build, the tests, and the
+                tooling.
+              </dd>
+
+              <dt>npm</dt>
+              <dd class="plain">
+                The program that fetches and keeps track of everyone else's code
+                that we use.
+              </dd>
+              <dd class="precise">
+                Node's package manager and script runner.
+                <code>package.json</code> declares dependencies and the named
+                commands; <code>package-lock.json</code> pins exact resolved
+                versions.
+              </dd>
+
+              <dt>p95</dt>
+              <dd class="plain">
+                The number that 95 frames out of every 100 come in under. It
+                catches the occasional bad frame that an average hides.
+              </dd>
+              <dd class="precise">
+                The 95th-percentile frame time. Reported alongside the mean
+                because the mean is insensitive to precisely the infrequent
+                spikes a player perceives as stutter.
+              </dd>
+
+              <dt>Prettier</dt>
+              <dd class="plain">
+                A tool that reformats code to one consistent shape so nobody
+                argues about layout.
+              </dd>
+              <dd class="precise">
+                An opinionated code formatter. Applied to source, styles, and
+                configuration here, and deliberately not to the Markdown
+                documents.
+              </dd>
+
+              <dt>Ring buffer</dt>
+              <dd class="plain">
+                A row of fixed slots that you write into over and over, looping
+                back to the start, so you always hold the most recent few and
+                never grow.
+              </dd>
+              <dd class="precise">
+                A circular fixed-capacity buffer with a wrapping write index.
+                Used for the frame-time window so measurement allocates no
+                memory inside the render loop.
+              </dd>
+
+              <dt>Source map</dt>
+              <dd class="plain">
+                A translation table that lets the browser show you the code you
+                wrote rather than the packed-up version.
+              </dd>
+              <dd class="precise">
+                A file mapping positions in generated output back to original
+                sources, consumed by browser developer tools.
+              </dd>
+
+              <dt>Lexicographic order</dt>
+              <dd class="plain">
+                Sorting things the way a dictionary does, letter by letter, so
+                &ldquo;100&rdquo; comes before &ldquo;9&rdquo; because 1 comes
+                before 9.
+              </dd>
+              <dd class="precise">
+                String comparison by code unit.
+                <code>Array.prototype.sort()</code> converts elements to strings
+                and sorts lexicographically unless given a comparator &mdash;
+                the classic JavaScript numeric-sorting bug, and the one a typed
+                array does not have.
+              </dd>
+
+              <dt>subarray</dt>
+              <dd class="plain">
+                A window onto part of an existing list, rather than a copy of
+                it. Change the window and you change the original.
+              </dd>
+              <dd class="precise">
+                A typed-array method returning a new view over the same
+                underlying buffer for a given range. Used here so sorting the
+                frame window allocates nothing.
+              </dd>
+
+              <dt>Threshold</dt>
+              <dd class="plain">
+                A minimum the project refuses to go below &mdash; here, how much
+                of the code the tests must reach.
+              </dd>
+              <dd class="precise">
+                A configured coverage floor that fails the test run when unmet.
+                Set to 80% of lines for the simulation and 100% for the track
+                module.
+              </dd>
+
+              <dt>Three.js</dt>
+              <dd class="plain">
+                The library that does the actual drawing of 3D things on screen.
+              </dd>
+              <dd class="precise">
+                A JavaScript 3D library wrapping WebGL, providing scenes,
+                cameras, lights, geometries, and materials. This project's only
+                runtime dependency.
+              </dd>
+
+              <dt>Type checking</dt>
+              <dd class="plain">
+                Having the computer confirm, before running anything, that you
+                have not passed a word where a number was expected.
+              </dd>
+              <dd class="precise">
+                Static verification that every expression's type is consistent
+                with its use. Run here via <code>tsc --noEmit</code> with all
+                strictness options enabled.
+              </dd>
+
+              <dt>TypeScript</dt>
+              <dd class="plain">
+                JavaScript with labels saying what kind of thing each value is,
+                checked before the program ever runs.
+              </dd>
+              <dd class="precise">
+                A statically typed superset of JavaScript that compiles to plain
+                JavaScript. Used in <code>strict</code> mode with
+                <code>noUncheckedIndexedAccess</code>, which forces every array
+                lookup to be treated as possibly absent.
+              </dd>
+
+              <dt>Typed array</dt>
+              <dd class="plain">
+                A list that can hold only numbers of one exact kind, which makes
+                it faster and better behaved than an ordinary list.
+              </dd>
+              <dd class="precise">
+                A fixed-length, fixed-element-type view over a binary buffer.
+                <code>Float64Array</code> is used here; note its
+                <code>sort()</code> is numeric by default, unlike
+                <code>Array.prototype.sort()</code>, which is lexicographic.
+              </dd>
+
+              <dt>Vite</dt>
+              <dd class="plain">
+                The tool that both runs the game while we work on it and packs
+                it up when we are done.
+              </dd>
+              <dd class="precise">
+                A build tool pairing a native-ESM dev server with a Rollup
+                production build. Chosen for near-instant startup and
+                zero-configuration TypeScript handling.
+              </dd>
+
+              <dt>Vitest</dt>
+              <dd class="plain">
+                The program that runs our tests and tells us which ones failed.
+              </dd>
+              <dd class="precise">
+                A Vite-native test runner with a Jest-compatible API, sharing
+                the project's existing transform pipeline so tests need no
+                separate build configuration.
+              </dd>
+
+              <dt>WebGL</dt>
+              <dd class="plain">
+                The browser feature that lets a web page use the graphics chip
+                directly.
+              </dd>
+              <dd class="precise">
+                A browser API exposing GPU-accelerated rasterisation to
+                JavaScript. Three.js is a layer over it.
+              </dd>
+            </dl>
+          </section>
+
+          <section class="s-code" aria-labelledby="cd-00">
+            <p class="eyebrow" id="cd-00">Show me in the code</p>
+            <p class="file-ref">src/ui/FrameMeter.ts → <code>stats()</code></p>
+            <p>
+              This is the corner readout's arithmetic, and the place the worst
+              mistake of the phase was hiding. Line numbers below refer to the
+              block as printed here.
+            </p>
+            <pre><code>  stats(): FrameStats {
+    if (this.count === 0) {
+      return { fps: 0, meanMs: 0, worstMs: 0, p95Ms: 0, overBudget: 0 };
+    }
+
+    let total = 0;
+    let worst = 0;
+    let overBudget = 0;
+    for (let i = 0; i &lt; this.count; i += 1) {
+      const ms = this.samples[i] ?? 0;
+      total += ms;
+      if (ms &gt; worst) worst = ms;
+      if (ms &gt; BUDGET_MS) overBudget += 1;
+      this.sorted[i] = ms;
+    }
+
+    const window = this.sorted.subarray(0, this.count);
+    window.sort();
+
+    const meanMs = total / this.count;
+    const p95Index = Math.min(this.count - 1, Math.ceil(this.count * 0.95) - 1);
+
+    return {
+      fps: meanMs &gt; 0 ? 1000 / meanMs : 0,
+      meanMs,
+      worstMs: worst,
+      p95Ms: window[p95Index] ?? worst,
+      overBudget,
+    };
+  }</code></pre>
+            <ol class="annotations">
+              <li>
+                <b>Line 10.</b> <code>?? 0</code> looks like superstition and
+                isn't. <code>noUncheckedIndexedAccess</code> makes TypeScript
+                treat every array lookup as possibly missing, so this is the
+                compiler forcing an answer for a case that cannot occur here.
+                That is the deal we signed when we turned it on.
+              </li>
+              <li>
+                <b>Lines 6–15.</b> One pass computes the total, the worst, and
+                the count over budget, and copies into the scratch buffer at the
+                same time. Four passes would read better; this runs on every
+                readout and the buffer is reused rather than allocated.
+              </li>
+              <li>
+                <b>Lines 17–18.</b> <code>subarray</code> is a view over the
+                existing buffer, not a copy — so this sorts in place and
+                allocates nothing. And because it is a
+                <code>Float64Array</code>, <code>sort()</code> is numeric. On an
+                ordinary array it would sort as text and 100 would come before
+                9.
+              </li>
+              <li>
+                <b>Line 21.</b> The line that produced the failing test.
+                <code>ceil(n × 0.95) − 1</code> is nearest-rank: with 100
+                samples it points at the 95th, which with 95 fast frames is
+                still a fast frame. That is correct, and there is now a test
+                asserting it deliberately so nobody "fixes" it later.
+              </li>
+              <li>
+                <b>Line 27.</b> <code>worst</code> as the fallback rather than
+                zero: if the index were ever wrong, the readout would report
+                something alarming rather than something reassuring. Failures
+                should be loud.
+              </li>
+            </ol>
+          </section>
+
+          <section class="s-spoken" aria-labelledby="sp-00">
+            <p class="eyebrow" id="sp-00">Say it out loud</p>
+            <blockquote>
+              Phase zero is scaffolding, so the interesting part isn't the stack
+              — it's Vite, TypeScript, Vitest, ESLint, and Three.js, which is
+              the boring correct answer. The interesting part is that the gates
+              had to be built before the code they guard, so I proved each one
+              fires instead of assuming it: I dropped a deliberately undertested
+              file into the simulation folder, watched both coverage thresholds
+              reject it independently, and deleted it. That also caught the one
+              real mistake of the phase — a percentile test I'd written to guard
+              against lexicographic sorting in a Float64Array, which sorts
+              numerically, so the test couldn't have caught anything, and I'd
+              got the nearest-rank boundary wrong on top. The bundle is 117 KB
+              gzipped against a 500 KB budget that's measured on every run and
+              doesn't grow.
+            </blockquote>
+          </section>
+        </section>
+
+        <!-- ================= 90 SECONDS ================= -->
+        <section class="page" id="ninety-seconds" aria-labelledby="h-90" hidden>
+          <header class="page-head">
+            <p class="eyebrow">The whole thing</p>
+            <h2 id="h-90">In 90 seconds</h2>
+            <p class="standfirst">
+              Where the project stands after Phase 0, and the decisions carrying
+              the most weight.
+            </p>
+          </header>
+
+          <section aria-labelledby="ev-90">
+            <p class="eyebrow" id="ev-90">The elevator version</p>
+            <p>
+              Rashta is an arcade motorcycle combat racer set on Delhi's ring
+              roads at night — fourteen riders, point-to-point, no rules. The
+              interesting idea is that nothing in the simulation knows where it
+              is in the world. Every rider stores two numbers: how far along the
+              road they are, and how far sideways. Who's winning becomes a
+              comparison of two numbers instead of a geometry problem, and the
+              whole race can be replayed exactly from a seed. Positions in
+              actual space are worked out only when something has to be drawn.
+              Right now the workshop is built and proven — the build, the tests,
+              the rules that stop the architecture eroding — and the road itself
+              arrives next.
+            </p>
+          </section>
+
+          <section aria-labelledby="ar-90">
+            <p class="eyebrow" id="ar-90">The architecture on one screen</p>
+            <pre class="arch">
+<b>src/core/</b>      the simulation. Pure TypeScript.
+              <i>No Three.js. No DOM. No clock. No Math.random.</i>
+              <i>Enforced by lint, not by good intentions.</i>
+  rng.ts        seeded randomness — the only source
+  track/        the road: sample(s), trackDistance, progress
+  sim/ ai/ combat/ economy/ reputation/
+
+<b>src/render/</b>    all Three.js. Reads core, never writes to it.
+<b>src/input/</b>     keyboard and gamepad
+<b>src/audio/</b> <b>src/ui/</b> <b>src/app/</b>
+<b>src/data/</b>      tracks, bikes, riders, tuning — JSON, validated
+
+<i>position</i>   = (s, t) + branchId       <i>s along, t sideways</i>
+<i>world</i>      = track.sample(s) + right × t   <i>render time only</i>
+<i>the loop</i>   = fixed 60 Hz sim · render interpolates between states
+
+<b>npm run check</b>  typecheck · lint · test+coverage · size
+              <i>the gate. same command locally and in CI.</i></pre>
+            <p class="cost">
+              Built so far: everything on the bottom line, plus an empty lit
+              scene and the frame meter. Everything above it is Phases 1–10.
+            </p>
+          </section>
+
+          <section aria-labelledby="de-90">
+            <p class="eyebrow" id="de-90">
+              The three decisions that most shaped the project
+            </p>
+            <ol class="decisions">
+              <li>
+                <p>
+                  <b>Everything positional lives in track space.</b> A rider is
+                  two numbers — metres along the centreline, metres sideways
+                  from it — never an x, y, z. World position is derived at
+                  render time and stored nowhere.
+                </p>
+                <p>
+                  Why: it turns the hard questions into arithmetic. Who's ahead,
+                  am I on the road, spawn a bus 300 m up — each is a comparison
+                  rather than a geometry query. It is also what makes the
+                  simulation pure, testable, and cheap to replay.
+                </p>
+                <p class="cost">
+                  <b>Cost:</b> the road can never cross itself, fold back, or
+                  branch freely, and free-roam is impossible. Forks are explicit
+                  machinery rather than something the geometry gives us. For a
+                  point-to-point racer, an easy trade.
+                </p>
+              </li>
+              <li>
+                <p>
+                  <b
+                    >The simulation is bit-exactly deterministic, and that
+                    constrains the arithmetic it may use.</b
+                  >
+                  Same seed plus same inputs gives the same race on any machine.
+                  All randomness goes through one seeded generator — and, less
+                  obviously, no sine, cosine, or power function is allowed
+                  anywhere in the simulation.
+                </p>
+                <p>
+                  Why: the floating-point standard pins add, subtract, multiply,
+                  divide, and square root to identical results on every engine,
+                  but deliberately leaves the trigonometric functions to the
+                  implementation. A single cosine in the simulation quietly
+                  downgrades "the same everywhere" to "the same here".
+                  Trigonometry is confined to loading the track and to drawing.
+                </p>
+                <p class="cost">
+                  <b>Cost:</b> real work, permanently. Anything needing angles
+                  has to be precomputed into tables and interpolated, and the
+                  distance function had to be built as an approximation rather
+                  than the exact formula. It bought reproducible races, which is
+                  the difference between debugging balance and guessing at it.
+                </p>
+              </li>
+              <li>
+                <p>
+                  <b>No engine, no framework, no physics library.</b> The
+                  runtime dependency list is one item long: Three.js, for
+                  drawing.
+                </p>
+                <p>
+                  Why: this game is a road, some riders, and arithmetic. An
+                  engine would supply a physics system we have deliberately
+                  rejected in favour of a hand-tuned arcade model, an editor for
+                  a world we generate from data, and a download many times our
+                  entire budget.
+                </p>
+                <p class="cost">
+                  <b>Cost:</b> we write things engines give away — the road
+                  mesh, the camera, the object pooling, the save system. Every
+                  one of those is a phase that could have been free. The return
+                  is a 117 KB download and a codebase where nothing happens that
+                  we did not write.
+                </p>
+              </li>
+            </ol>
+          </section>
+        </section>
+      </main>
+
+      <nav class="pager" aria-label="Pagination">
+        <button id="prev" type="button">← Previous</button>
+        <button id="next" type="button">Next →</button>
+      </nav>
+    </div>
+
+    <script>
+      (function () {
+        'use strict';
+
+        var pages = Array.prototype.slice.call(
+          document.querySelectorAll('.page'),
+        );
+        var ids = pages.map(function (p) {
+          return p.id;
+        });
+        var prevBtn = document.getElementById('prev');
+        var nextBtn = document.getElementById('next');
+        var nowEl = document.getElementById('page-now');
+        var totalEl = document.getElementById('page-total');
+        var jumpLinks = Array.prototype.slice.call(
+          document.querySelectorAll('.jump a'),
+        );
+        var stones = Array.prototype.slice.call(
+          document.querySelectorAll('.stone'),
+        );
+
+        totalEl.textContent = String(pages.length);
+        var current = 0;
+
+        function indexFromHash() {
+          var id = (location.hash || '').replace(/^#/, '');
+          var i = ids.indexOf(id);
+          return i === -1 ? 0 : i;
+        }
+
+        function show(i, updateHash) {
+          current = Math.max(0, Math.min(pages.length - 1, i));
+
+          pages.forEach(function (page, n) {
+            if (n === current) page.removeAttribute('hidden');
+            else page.setAttribute('hidden', '');
+          });
+
+          nowEl.textContent = String(current + 1);
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === pages.length - 1;
+
+          jumpLinks.forEach(function (a, n) {
+            if (n === current) a.setAttribute('aria-current', 'page');
+            else a.removeAttribute('aria-current');
+          });
+          stones.forEach(function (s, n) {
+            if (n === current) s.setAttribute('aria-current', 'page');
+            else s.removeAttribute('aria-current');
+          });
+
+          if (updateHash && location.hash !== '#' + ids[current]) {
+            history.replaceState(null, '', '#' + ids[current]);
+          }
+        }
+
+        prevBtn.addEventListener('click', function () {
+          show(current - 1, true);
+        });
+        nextBtn.addEventListener('click', function () {
+          show(current + 1, true);
+        });
+
+        jumpLinks.forEach(function (a, n) {
+          a.addEventListener('click', function (e) {
+            e.preventDefault();
+            show(n, true);
+          });
+        });
+        stones.forEach(function (s, n) {
+          s.addEventListener('click', function () {
+            show(n, true);
+          });
+        });
+
+        document.addEventListener('keydown', function (e) {
+          var tag = (e.target && e.target.tagName) || '';
+          if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+          if (e.metaKey || e.ctrlKey || e.altKey) return;
+          if (e.key === 'ArrowLeft') show(current - 1, true);
+          else if (e.key === 'ArrowRight') show(current + 1, true);
+        });
+
+        window.addEventListener('hashchange', function () {
+          show(indexFromHash(), false);
+        });
+
+        show(indexFromHash(), false);
+      })();
+    </script>
+  </body>
+</html>

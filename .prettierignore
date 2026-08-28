@@ -1,0 +1,9 @@
+dist/
+coverage/
+node_modules/
+package-lock.json
+
+# The docs are hand-wrapped prose deliverables, not code. Prettier pads every
+# table and re-aligns the comments inside their fenced code blocks, which
+# fights the deliberate formatting in GAME_DESIGN.md and buys nothing.
+*.md
