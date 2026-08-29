@@ -64,16 +64,27 @@ describe('simulation cost', () => {
     expect(msPerCopy).toBeLessThan(0.01);
   });
 
-  it('allocates nothing per tick', () => {
+  it('leaves the world object graph untouched while stepping it', () => {
+    // Not a heap measurement. An earlier version compared `heapUsed` across
+    // 400,000 ticks, and its result depended on which other tests had run
+    // first in the same process — it passed alone and failed in a full run.
+    // The deterministic claim is that `step()` mutates in place: the same
+    // rider, the same position object, the same bike, no new fields.
     const world = createWorld(bike);
     const input = { throttle: 1, brake: 0, lean: -0.4 };
-    for (let i = 0; i < 10_000; i += 1) step(world, input, track, tuning);
 
-    const before = process.memoryUsage().heapUsed;
-    for (let i = 0; i < 400_000; i += 1) step(world, input, track, tuning);
-    const grown = process.memoryUsage().heapUsed - before;
+    const player = world.player;
+    const pos = world.player.pos;
+    const bikeRef = world.player.bike;
+    const shape = Object.keys(world.player).sort().join(',');
 
-    expect(grown).toBeLessThan(4_000_000);
+    for (let i = 0; i < 100_000; i += 1) step(world, input, track, tuning);
+
+    expect(world.player).toBe(player);
+    expect(world.player.pos).toBe(pos);
+    expect(world.player.bike).toBe(bikeRef);
+    expect(Object.keys(world.player).sort().join(',')).toBe(shape);
+    expect(world.tick).toBe(100_000);
   });
 
   it('keeps a rider on the road for a long ride', () => {

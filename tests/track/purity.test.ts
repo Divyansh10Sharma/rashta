@@ -107,6 +107,34 @@ describe('rule 1: core is pure TypeScript', () => {
   });
 });
 
+describe('the simulation allocates nothing per tick', () => {
+  // CLAUDE.md: no allocation inside the per-frame loop. Checked at the source
+  // rather than by measuring the heap, because a heap delta in a shared test
+  // process depends on what else has run and fails on ordering alone.
+  const ALLOCATING = [
+    'new ',
+    '.map(',
+    '.filter(',
+    '.slice(',
+    '.concat(',
+    '.split(',
+    'Object.assign',
+    'Array.from',
+    'JSON.',
+  ];
+
+  const HOT = ['src/core/sim/step.ts', 'src/core/sim/bike.ts'];
+
+  for (const path of HOT) {
+    it(`${path} constructs nothing`, () => {
+      const file = files.find((f) => f.path === path);
+      expect(file).toBeDefined();
+      const found = ALLOCATING.filter((token) => file?.text.includes(token));
+      expect(`${path}: ${found.join(', ')}`).toBe(`${path}: `);
+    });
+  }
+});
+
 describe('rule 4: no transcendental is reachable from the simulation', () => {
   const pattern = new RegExp(`\\bMath\\.(${FORBIDDEN.join('|')})\\s*\\(`, 'g');
 

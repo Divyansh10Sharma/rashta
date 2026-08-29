@@ -357,3 +357,28 @@ frame, so a future handedness inversion announces itself on screen instead of
 being argued about. Along with the end-to-end steering test, the class of bug
 is now covered from both sides — one guard that fails in CI, one that is
 visible while riding.
+
+### A second flaky heap test, and the pattern behind both
+
+`allocates nothing per tick` in `perf.test.ts` failed at 6.6 MB against a 4 MB
+bound during the very next full run — and passed on its own. Identical failure
+mode to the scenery pool test earlier in the phase: `process.memoryUsage()`
+measures the whole process, so the result depends on which tests ran first and
+when the collector happened to run.
+
+Two of these in one phase is a pattern rather than bad luck. **Measuring the
+heap to prove "this allocates nothing" is the wrong instrument.** It measures a
+consequence, through a noisy shared channel, and its threshold is a guess.
+
+Replaced with two deterministic checks that test the actual claim:
+
+- *Runtime*: `step()` mutates in place, so after 100,000 ticks the world holds
+  the same rider object, the same position object, the same bike reference,
+  and the same set of fields. Anything that allocated a replacement would fail.
+- *Source*: the hot files are scanned for `new`, `.map(`, `.filter(`,
+  `.slice(`, `Array.from`, `JSON.` and friends, next to the existing rules that
+  lint cannot see. Crude, but it fails on the commit that introduces the
+  problem rather than on whichever unlucky run notices it later.
+
+Ran the full suite three times to confirm the flakiness is gone: 220 passing
+each time.
