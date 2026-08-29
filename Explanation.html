@@ -659,6 +659,13 @@
           <span class="stone-label">Phase</span>
         </span>
       </button>
+      <button class="stone" data-goto="phase-05" type="button">
+        <span class="stone-band" aria-hidden="true"></span>
+        <span class="stone-body">
+          <span class="stone-num">05</span>
+          <span class="stone-label">Phase</span>
+        </span>
+      </button>
       <button class="stone" data-goto="ninety-seconds" type="button">
         <span class="stone-band" aria-hidden="true"></span>
         <span class="stone-body">
@@ -682,6 +689,7 @@
         <a href="#phase-02">02 · The feel gate</a>
         <a href="#phase-03">03 · Real tracks</a>
         <a href="#phase-04">04 · Traffic and hazards</a>
+        <a href="#phase-05">05 · Racers</a>
         <a href="#ninety-seconds">90 seconds</a>
       </nav>
 
@@ -3331,6 +3339,489 @@
           </section>
         </section>
 
+        <!-- ================= PHASE 05 ================= -->
+        <section class="page" id="phase-05" aria-labelledby="h-05" hidden>
+          <header class="page-head">
+            <p class="eyebrow">Phase 05</p>
+            <h2 id="h-05">Racers and the race loop</h2>
+            <p class="standfirst">
+              Thirteen rivals who ride the same physics you do, a countdown, a
+              running order that stays right when the road forks — and four bugs
+              that were quietly deciding who won.
+            </p>
+          </header>
+
+          <section class="s-goal">
+            <p class="eyebrow">What we were trying to do</p>
+            <p>
+              Until this point there was one motorbike on the road. This phase
+              adds the other thirteen and turns riding into a race.
+            </p>
+            <p>
+              Each rival is a person rather than a difficulty setting: they have
+              a name, a history, and four numbers describing how well they ride,
+              how readily they start a fight, how long they hold a grudge, and
+              how much risk they will take in traffic. Those numbers have to
+              produce riders who behave differently from each other in a way you
+              can see from behind.
+            </p>
+            <p>
+              Around that goes the machinery of a race — a countdown nobody can
+              jump, a live running order, a finish, and a result. You start last
+              every time, and finishing in the top three is what moves you on.
+            </p>
+            <p>
+              The bar was not "there are other bikes". It was that thirteen
+              computer riders get from the start to the finish of all
+              twenty-five routes without a single one getting stuck, that the
+              same starting number always produces exactly the same race, and
+              that the running order stays correct when half the field takes one
+              side of a fork and half takes the other.
+            </p>
+          </section>
+
+          <section class="s-hard">
+            <p class="eyebrow">Why this was hard</p>
+            <p>
+              Almost none of the difficulty was in writing riders that go fast.
+              It was that adding thirteen more of them turned out to be a test
+              of everything built in the previous four phases, and several of
+              those things had been quietly correct only for one bike.
+            </p>
+            <p>
+              A hazard that behaved perfectly for a rider passing over it at
+              speed did something else entirely to a rider who arrived slowly. A
+              traffic system that filled the road around the player left
+              everyone in front of them on an empty one. A rule for how fast to
+              take a corner, which looked obviously right, made the better
+              riders slower than the worse ones. None of these were visible with
+              one bike on the road. All of them decided the result with
+              fourteen.
+            </p>
+            <p>
+              The second difficulty was self-inflicted and worth naming: the
+              computer riders are not allowed to cheat. They may set a throttle,
+              a brake and a lean, exactly as a controller does, and nothing
+              else. Every problem below could have been made to go away by
+              letting an AI rider place itself on the road directly, and every
+              physics guarantee built in the last two phases would have stopped
+              applying to thirteen of the fourteen riders in the race.
+            </p>
+          </section>
+
+          <section class="s-deadends">
+            <p class="eyebrow">What we tried that didn't work</p>
+
+            <article class="deadend">
+              <h4>A stray dog that could hold a rider forever</h4>
+              <p class="plain">
+                Seven of the twenty-five routes failed the first time the test
+                ran, with riders frozen at exact spots — 3431 metres on one
+                route, 15326 on another. Whoever arrived there stopped. The
+                first theory was that they were stuck behind traffic, so we
+                dumped everything within twenty metres in front of a frozen
+                rider. The answer came back: nothing at all.
+              </p>
+              <p class="why">
+                The rider was at full throttle and moving about half a metre
+                every eight seconds, which meant something was taking the speed
+                back off sixty times a second. There was a stray dog at both
+                marks. Hitting a dog below a certain speed costs you six metres
+                per second — and the code applied that for every tick you were
+                <em>near</em> one, rather than once for driving over it. A rider
+                who arrived slowly lost six a tick and gained a fortieth of one,
+                and was pinned a metre and a half short of clear road
+                permanently. Hazards now trigger on being crossed, once, which
+                means a rider standing still crosses nothing.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>The traffic system was deciding who won</h4>
+              <p class="plain">
+                With everyone finishing, the results still made no sense: the
+                most skilful rider on the grid came twelfth and one of the least
+                skilful came third. Plotting each rider's crashes against how
+                much of the race they spent more than 420 metres ahead of the
+                player produced almost a straight line. The winner spent 87% of
+                the race out there and crashed three times; the last four spent
+                none of it and crashed thirteen times each.
+              </p>
+              <p class="why">
+                Traffic is created in a moving window around the player, because
+                when it was written there was only the player. Anyone who got
+                420 metres clear was on a completely empty road for the rest of
+                the race. The result was not being decided by riding, it was
+                being decided by who escaped the traffic first. The window now
+                stretches from behind the last rider to ahead of the leader, so
+                everybody meets the same road.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>Which made the game four times too slow</h4>
+              <p class="plain">
+                Traffic is created at a fixed number of vehicles per kilometre,
+                so a window covering the whole field holds several times as many
+                of them. One step of the simulation on the busiest route went to
+                3.86 milliseconds, against a budget of one, and the
+                twenty-five-route test went from under a minute to over ten.
+              </p>
+              <p class="why">
+                Both of the searches that run for every vehicle, every tick,
+                were asking the expensive question first: they worked out how
+                wide two vehicles were before asking whether they were anywhere
+                near each other. Asking about distance first — one subtraction,
+                and it rejects almost everything — took it to 1.57 ms with
+                identical results. Narrowing the window from two kilometres to
+                1.2 took it to 0.83, inside the budget. The searches are still
+                fundamentally the slow kind and that is written down as work
+                owed.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>Making riders read further ahead made them worse</h4>
+              <p class="plain">
+                Even with the traffic fixed, skill barely showed up in the
+                results. A better rider was supposed to read further down the
+                road, and did, and it was making them slower.
+              </p>
+              <p class="why">
+                The rule was "cap your speed at what the sharpest corner you can
+                see will take". Reading further ahead means seeing sharper
+                corners sooner, so the rider who looked further slowed down
+                earlier, and looking further ahead was a handicap. The correct
+                rule accounts for the braking distance: a corner some way ahead
+                permits a higher speed <em>now</em> than it does when you arrive
+                at it. With that, reading further ahead finds constraints
+                earlier and allows more speed on the approach, which is what
+                reading ahead is for.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>Handing the rivals bikes the player could never catch</h4>
+              <p class="plain">
+                The first version of the roster gave five of thirteen rivals
+                sport or super bikes for the very first race of the game. A
+                rider using the best available brain on the player's starter
+                bike finished eleventh, and could not have done better.
+              </p>
+              <p class="why">
+                The starter bike does 162 km/h and the fastest bike does 268. No
+                amount of skill closes that, so "finish in the top three" was
+                arithmetically impossible in the first race — which contradicts
+                both the design document and the point of the game. Twelve of
+                fourteen now start on the same street bike. Two rivals keep
+                faster machinery, which makes third place the target rather than
+                first, and that is what the difficulty is supposed to feel like.
+              </p>
+            </article>
+          </section>
+
+          <section class="s-decision">
+            <p class="eyebrow">What we went with, and why</p>
+            <p>
+              A rival rider is a <code>Rider</code> — the same structure the
+              player is — plus a function that returns a throttle, a brake and a
+              lean. That function may write to its own small scratchpad of
+              intentions and to nothing else in the world. Both the player's
+              input and the rival's output then go through exactly the same
+              physics.
+            </p>
+            <p>
+              The decisions it makes are held for a fraction of a second rather
+              than retaken every tick, because a rider that reconsiders sixty
+              times a second oscillates between two equally good gaps and takes
+              neither. How long it holds, how far ahead it reads, and how close
+              to the limit it corners are all scaled by the rider's own numbers.
+            </p>
+            <p class="tradeoff">
+              What this costs: some behaviours are much harder to express. "Move
+              into the left lane" is not an instruction that can be given — it
+              is a lean held for as long as it takes, which may be interrupted,
+              and which has to be re-decided if the road narrows underneath it.
+              And rivals are slightly timid, because a rider that cannot find a
+              way through waits rather than forcing one.
+            </p>
+            <p class="rejected">
+              We didn't use rubber-banding — quietly slowing the leaders when
+              the player falls behind — which is what most arcade racers do and
+              which would have made the difficulty trivially tunable. The code
+              for it exists and the data file sets it to zero, because if the
+              game is only winnable with the field waiting for you, the honest
+              fix is the field, not the waiting.
+            </p>
+          </section>
+
+          <section class="s-words">
+            <p class="eyebrow">Words to know</p>
+            <dl>
+              <dt>Acceptance criteria</dt>
+              <dd class="plain">
+                The list of things that must be true before a piece of work
+                counts as finished.
+              </dd>
+              <dd class="precise">
+                Pre-agreed, testable conditions written before implementation,
+                each of which must be demonstrated rather than assumed.
+              </dd>
+
+              <dt>Branch</dt>
+              <dd class="plain">
+                A place where the road splits in two and joins up again later.
+              </dd>
+              <dd class="precise">
+                An alternate path with its own distance measurement, identified
+                by an id carried alongside every position, so two points on
+                different paths are never compared as though on one.
+              </dd>
+
+              <dt>Centreline</dt>
+              <dd class="plain">
+                The imaginary line down the middle of the road.
+              </dd>
+              <dd class="precise">
+                The reference curve all track-space positions are measured from;
+                distance along it is <em>s</em>, offset across it is <em>t</em>.
+              </dd>
+
+              <dt>Code coverage</dt>
+              <dd class="plain">
+                How much of the code the tests actually run.
+              </dd>
+              <dd class="precise">
+                The proportion of lines or branches executed during a test run;
+                it proves code was exercised, not that it was exercised
+                correctly.
+              </dd>
+
+              <dt>Curvature</dt>
+              <dd class="plain">How tightly the road is bending at a point.</dd>
+              <dd class="precise">
+                One divided by the radius of the circle that best fits the road
+                there; zero on a straight, and large in a hairpin.
+              </dd>
+
+              <dt>Determinism</dt>
+              <dd class="plain">
+                Same start, same actions, same result — every time, on every
+                computer.
+              </dd>
+              <dd class="precise">
+                The property that the entire state of a simulation is a pure
+                function of its seed and its input sequence, which requires
+                avoiding operations whose results may differ between platforms.
+              </dd>
+
+              <dt>Fixed timestep</dt>
+              <dd class="plain">
+                The game's clock ticks in identical steps regardless of how fast
+                the picture is drawn.
+              </dd>
+              <dd class="precise">
+                Advancing the simulation by a constant delta — here exactly 1/60
+                s — independently of frame duration, so results do not depend on
+                the machine's speed.
+              </dd>
+
+              <dt>Grid</dt>
+              <dd class="plain">Where everybody lines up at the start.</dd>
+              <dd class="precise">
+                Starting positions assigned before the countdown; here two
+                riders per row, with the player always in the last one.
+              </dd>
+
+              <dt>Object pool</dt>
+              <dd class="plain">
+                Keeping a box of spare parts instead of buying a new one every
+                time you need one.
+              </dd>
+              <dd class="precise">
+                A fixed set of pre-allocated instances handed out and returned
+                rather than constructed and garbage-collected, used to avoid
+                allocation inside a per-frame loop.
+              </dd>
+
+              <dt>Rubber-banding</dt>
+              <dd class="plain">
+                The game quietly slowing the leaders down so you can catch up.
+              </dd>
+              <dd class="precise">
+                Scaling AI pace by the gap to the player to compress the field;
+                implemented here, exposed as a tuning value, and shipped at
+                zero.
+              </dd>
+
+              <dt>Seed</dt>
+              <dd class="plain">
+                The number that decides everything the game rolls a dice for.
+              </dd>
+              <dd class="precise">
+                The initial state of the deterministic pseudorandom generator;
+                the same seed and the same inputs reproduce a race exactly.
+              </dd>
+
+              <dt>Spawn ring</dt>
+              <dd class="plain">
+                Traffic appears ahead of you and is quietly reused once it is
+                far enough behind.
+              </dd>
+              <dd class="precise">
+                A recycling window along the road: pool slots outside it are
+                deactivated and reissued ahead, keeping the vehicle count
+                constant. It now spans the whole field rather than one rider.
+              </dd>
+
+              <dt>State machine</dt>
+              <dd class="plain">
+                A thing that is always in exactly one of a few named situations.
+              </dd>
+              <dd class="precise">
+                Here a race is in exactly one of <em>countdown</em>,
+                <em>racing</em>, <em>finished</em> or <em>failed</em>, with the
+                legal transitions between them defined in one place.
+              </dd>
+
+              <dt>Three.js</dt>
+              <dd class="plain">The library that does the actual drawing.</dd>
+              <dd class="precise">
+                A JavaScript 3D library over WebGL, used only in the render
+                layer, which the simulation is forbidden from importing.
+              </dd>
+
+              <dt>Tick</dt>
+              <dd class="plain">One step of the game's clock.</dd>
+              <dd class="precise">
+                A single fixed-duration simulation step; this game runs exactly
+                sixty per second regardless of frame rate.
+              </dd>
+
+              <dt>Track space</dt>
+              <dd class="plain">
+                Describing a position as "how far along the road, and how far
+                left or right".
+              </dd>
+              <dd class="precise">
+                The curvilinear coordinate system <em>(s, t, branch)</em> the
+                whole simulation works in; world coordinates are derived only at
+                render time.
+              </dd>
+
+              <dt>TypeScript</dt>
+              <dd class="plain">
+                JavaScript with the types written down and checked.
+              </dd>
+              <dd class="precise">
+                A typed superset of JavaScript compiled away before shipping;
+                this project runs it in strict mode with no escape hatches.
+              </dd>
+
+              <dt>Vitest</dt>
+              <dd class="plain">The tool that runs the tests.</dd>
+              <dd class="precise">
+                A Vite-native test runner used for the project's suite,
+                including the coverage measurement quoted above.
+              </dd>
+            </dl>
+          </section>
+
+          <section class="s-code">
+            <p class="eyebrow">Show me in the code</p>
+            <p class="file-ref">
+              src/core/ai/racer.ts → <code>cornerLimit()</code>
+            </p>
+            <p>
+              How fast a rival is willing to be, right now, given the road it
+              can see. This is the function that made better riders slower until
+              it accounted for braking distance.
+            </p>
+            <pre><code>function cornerLimit(
+  rider: Rider,
+  profile: RacerProfile,
+  track: Track,
+  tuning: Tuning,
+  reach: number,
+): number {
+  const grip = tuning.gripLateralLimit * (0.7 + 0.3 * profile.skill);
+  // Braking margin, not braking maximum: a rider who plans on the absolute
+  // limit arrives at every corner already too fast.
+  const decel = tuning.brakeDecel * 0.8;
+
+  let limit = rider.bike.topSpeedMs;
+  for (let i = 0; i &lt;= CORNER_SAMPLES; i += 1) {
+    const d = (reach * i) / CORNER_SAMPLES;
+    const k = Math.abs(track.curvatureAt(rider.pos.s + d, rider.pos.branchId));
+    if (k &lt; STRAIGHT) continue;
+    const corner = grip / k;
+    limit = Math.min(limit, Math.sqrt(corner + 2 * decel * d));
+  }
+  return limit;
+}</code></pre>
+            <ol class="annotations">
+              <li data-line="8">
+                Skill buys grip, but only 30% of it. A rider with no skill at
+                all still gets 70% — they are a racer, not a learner, and the
+                difference between the best and worst on the grid should be
+                seconds over a route, not minutes.
+              </li>
+              <li data-line="11">
+                Planning on the maximum braking the bike has means arriving at
+                every corner already too fast, because the plan has no room for
+                anything unexpected happening on the way. Eighty per cent is the
+                margin.
+              </li>
+              <li data-line="15">
+                Samples are spread evenly over the distance this rider reads
+                ahead, which is itself scaled by skill. The rider's own position
+                is included, so a rider already in a corner is limited by it.
+              </li>
+              <li data-line="17">
+                A straight has no meaningful limit, and dividing by a curvature
+                of nearly zero would produce one anyway. Skipping is both faster
+                and correct.
+              </li>
+              <li data-line="19">
+                The whole fix, in one line. <code>grip / k</code> is the square
+                of the speed that corner will take;
+                <code>2 * decel * d</code> is the extra square of speed that can
+                be shed in the distance before reaching it. The square root of
+                the sum is what may be carried now. Because the allowance grows
+                with distance, looking further ahead can only ever help — which
+                is the opposite of what the first version did.
+              </li>
+              <li data-line="19">
+                It is also a square root and nothing else. Addition,
+                multiplication and square root are the only arithmetic the
+                standard requires every machine to agree on exactly, and the
+                simulation is not allowed to use anything else.
+              </li>
+            </ol>
+          </section>
+
+          <section class="s-spoken">
+            <p class="eyebrow">Say it out loud</p>
+            <blockquote>
+              The AI itself was the easy part — a rival is the same rider struct
+              as the player plus a function returning throttle, brake and lean,
+              so everything goes through identical physics and nothing can
+              cheat. What took the time was that adding thirteen riders was a
+              test of the previous four phases. A hazard that was correct at
+              speed pinned a rider who arrived slowly, because it applied every
+              tick instead of once on crossing. Traffic spawned in a window
+              around the player, so anyone 420 metres clear had an empty road —
+              I plotted finishing place against time spent outside that window
+              and it was almost a straight line, which meant the spawn ring was
+              deciding the race. And my corner-speed rule capped at the sharpest
+              bend in sight, so reading further ahead made you slower and skill
+              cancelled itself out. Fixing the window cost four times the frame
+              budget, and I got that back by testing distance before width in
+              the two hot loops.
+            </blockquote>
+          </section>
+        </section>
+
         <!-- ================= 90 SECONDS ================= -->
         <section class="page" id="ninety-seconds" aria-labelledby="h-90" hidden>
           <header class="page-head">
@@ -3348,16 +3839,16 @@
               Rashta is an arcade motorcycle combat racer set in Delhi at night,
               written from scratch in TypeScript with no game engine, no physics
               engine and no UI framework. It ships as a web page of about a
-              hundred and forty kilobytes. The interesting part is a constraint
-              I set at the start: the simulation is bit-exactly deterministic,
-              so the same seed and the same inputs produce the same race on
-              every machine. That rules out a physics engine, and it rules out
-              sine and cosine anywhere the simulation can reach, because the
-              standard does not require two browsers to agree on them. So the
-              game holds every position as distance along the road rather than a
-              point in space, does all its trigonometry once when a track loads,
-              and the simulation reads tables. Five routes, five tiers, city
-              traffic, hazards, and a crash you have to get up from.
+              hundred and fifty kilobytes. The interesting constraint is one I
+              set at the start: the simulation is bit-exactly deterministic, so
+              the same seed and the same inputs produce the same race on every
+              machine. That rules out a physics engine, and it rules out sine
+              and cosine anywhere the simulation can reach, because the standard
+              does not require two browsers to agree on them. So the game holds
+              every position as a distance along the road, does its trigonometry
+              once when a track loads, and reads tables thereafter. Five routes,
+              five tiers, city traffic, hazards, and fourteen riders who all go
+              through identical physics.
             </p>
           </section>
 
@@ -3379,9 +3870,12 @@
   sim/          <b>·done</b>
     bike        solves K = vmax·I/T per bike at load
     step        speed · lateral · grip · forks · lean
-    traffic     pooled cars/autos/buses/trucks, spawn ring
-    collide     rider vs traffic · hazard · cliff → crash, remount
-  ai/ combat/ economy/ reputation/         <i>Phases 5–9</i>
+    traffic     pooled vehicles; window spans the field
+    collide     traffic · hazard · cliff → crash, remount
+    race        countdown → racing → finished/failed
+  ai/           <b>·done</b>
+    racer       line · corner limit · following → InputFrame
+  combat/ economy/ reputation/            <i>Phases 6–9</i>
 
 <b>src/app/</b>       FixedStepDriver — the accumulator. Never sees a clock.
 <b>src/input/</b>     keyboard + gamepad, rebindable; resolve() is pure
@@ -3391,23 +3885,25 @@
   Scenery          pooled, instanced, LOD past 220 m
   TrafficView      instanced per kind; head/tail lamps separate
   HazardView       static — every matrix written once at build
+  FieldView        13 rivals, one livery each
   ChaseCamera      FOV · drop · pull-back · lateral lag
-<b>src/data/</b>      25 tracks · 204 hazards · bikes · tuning — JSON, validated
+<b>src/data/</b>      25 tracks · 204 hazards · 14 racers · bikes · tuning
 
 <i>position</i> = (s, t, branchId)          <i>s along, t sideways</i>
 <i>world</i>    = sample(s).position + right × t     <i>render time only</i>
 <i>ranking</i>  = progress(pos)              <i>never raw s — forks differ</i>
 <i>range</i>    = trackDistance(a, b)        <i>metres, curvature-corrected</i>
+<i>rival</i>    = Rider + think() → {throttle, brake, lean}   <i>no cheating</i>
 <i>loop</i>     = 60 Hz sim · render interpolates by alpha
 
 <b>npm run check</b>  typecheck · lint · test+coverage · size
-              <i>297 tests · core/track 100% lines, core/sim 96% · 141 KB of 500</i>
-              <i>sim step 0.006 ms in-browser against a 1 ms budget</i></pre>
+              <i>371 tests · core 99.8% lines · 149 KB of 500</i>
+              <i>race tick 0.83 ms worst case, 1 ms budget</i></pre>
             <p class="cost">
               Built so far: the road, the bike, the loop, twenty-five routes,
-              city traffic, hazards, crashes, and enough renderer to ride
-              through all of it. Rivals, combat, police, career and reputation
-              are Phases 5–9; the desktop build is Phase 10.
+              city traffic, hazards, crashes, thirteen rivals and a race that
+              runs start to finish. Combat, police, career and reputation are
+              Phases 6–9; the desktop build is Phase 10.
             </p>
           </section>
 
@@ -3429,15 +3925,15 @@
                   right of it. World coordinates are computed at render time and
                   never stored. This is why "who is winning" is a comparison of
                   two numbers, why the road can bend without anything in the
-                  simulation knowing, and why a track that forks in two can be
+                  simulation knowing, and why a route that forks in two can be
                   ranked at all.
                 </p>
                 <p class="cost">
                   What it costs: distance between two points is no longer
-                  subtraction. Two vehicles a metre apart on the inside of a
-                  bend are not a metre apart, so there is a dedicated function
-                  that corrects for curvature, and every piece of code that
-                  wants a real distance has to remember to call it.
+                  subtraction. Two riders a metre apart on the inside of a bend
+                  are not a metre apart, so there is a dedicated function that
+                  corrects for curvature, and everything that wants a real
+                  distance has to remember to call it.
                 </p>
               </li>
               <li>
@@ -3453,40 +3949,40 @@
                   The trigonometric functions are explicitly not. One cosine
                   inside the simulation downgrades "the same on every machine"
                   to "the same on this browser build", so all trigonometry
-                  happens once when a track loads, and the simulation reads
-                  precomputed tables and interpolates between them.
+                  happens once when a track loads and the simulation reads
+                  precomputed tables.
                 </p>
                 <p class="cost">
                   What it costs: real work. Measuring distance along a curve
-                  needs a sine, so it uses a four-term series expansion instead,
-                  with a defined fallback past the range where the series is
-                  trustworthy. A physics engine was never an option, which means
-                  vehicle-versus-vehicle separation had to be built by hand and
-                  took five attempts to get right.
+                  needs a sine, so it uses a four-term series instead, with a
+                  defined fallback past the range where that is trustworthy. A
+                  physics engine was never an option, so vehicle separation was
+                  built by hand and took five attempts to get right.
                 </p>
               </li>
               <li>
                 <p>
                   <b
-                    >The simulation is forbidden from importing the renderer.</b
+                    >Nothing in the game is allowed to cheat at the
+                    simulation.</b
                   >
                 </p>
                 <p>
-                  <code>src/core/</code> cannot import Three.js, the DOM, the
-                  input layer or the audio layer — not by convention but as a
-                  rule the build enforces. The consequence is that the entire
-                  game is testable without a graphics card: two hundred and
-                  ninety-seven tests run in under a minute, including ten
-                  simulated minutes of tier-five traffic checked pair by pair
-                  for overlap.
+                  <code>src/core/</code> cannot import Three.js, the DOM, input
+                  or audio — a rule the build enforces. The same principle
+                  extends to the riders: a rival returns a throttle, a brake and
+                  a lean, exactly as a controller does, and goes through
+                  identical physics. So the entire game is testable without a
+                  graphics card, and every guarantee the simulation makes holds
+                  for all fourteen riders rather than one.
                 </p>
                 <p class="cost">
-                  What it costs: duplication and discipline. There is a small
-                  hand-written vector type in core because importing Three.js's
-                  would break the rule, and every value the renderer needs has
-                  to be read out of core rather than reached for. Anything that
-                  wants to be in both places has to be designed to be in
-                  neither.
+                  What it costs: duplication, discipline, and harder AI. There
+                  is a hand-written vector type in core because importing
+                  Three.js's would break the rule. And an AI that cannot place
+                  itself on the road has to be steered there — every problem in
+                  Phase 5 could have been made to disappear by relaxing this,
+                  and the game would have been worth less for it.
                 </p>
               </li>
             </ol>

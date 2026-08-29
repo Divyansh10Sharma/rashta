@@ -1,0 +1,172 @@
+{
+  "racers": [
+    {
+      "id": "player",
+      "name": "Nau",
+      "skill": 0.5,
+      "aggression": 0.5,
+      "vengefulness": 0.5,
+      "caution": 0.5,
+      "startingBike": "marwar-gully",
+      "startingCash": 3000,
+      "startingWeapon": null,
+      "bio": "Nobody knows where you ride out of and nobody has asked twice.\nYou get the last slot on the grid because you have not earned another."
+    },
+    {
+      "id": "farida-qasim",
+      "name": "Farida Qasim",
+      "skill": 0.93,
+      "aggression": 0.34,
+      "vengefulness": 0.71,
+      "caution": 0.66,
+      "startingBike": "marwar-gully",
+      "startingCash": 41000,
+      "startingWeapon": "chain",
+      "bio": "Six years a night courier before anyone put money on her.\nShe does not race the road, she races the map, and the map does not change."
+    },
+    {
+      "id": "ishaan-marwah",
+      "name": "Ishaan Marwah",
+      "skill": 0.47,
+      "aggression": 0.88,
+      "vengefulness": 0.42,
+      "caution": 0.12,
+      "startingBike": "ambar-shaitan",
+      "startingCash": 96000,
+      "startingWeapon": "bat",
+      "bio": "His father buys the bike, the fuel, and the silence afterwards.\nToo much machine and not enough road under him, and everyone can see it but him."
+    },
+    {
+      "id": "pritam-sodhi",
+      "name": "Pritam Sodhi",
+      "skill": 0.81,
+      "aggression": 0.21,
+      "vengefulness": 0.94,
+      "caution": 0.77,
+      "startingBike": "marwar-gully",
+      "startingCash": 18000,
+      "startingWeapon": null,
+      "bio": "Keeps a workshop off the bypass and half the grid owes him for it.\nHe has never swung first at anybody. He has also never forgotten anybody."
+    },
+    {
+      "id": "meher-jaggi",
+      "name": "Meher Jaggi",
+      "skill": 0.74,
+      "aggression": 0.79,
+      "vengefulness": 0.58,
+      "caution": 0.29,
+      "startingBike": "marwar-gully",
+      "startingCash": 22000,
+      "startingWeapon": "chain",
+      "bio": "Came up through the flyover crowd, where the only line is the fastest one.\nWill take a gap that is not there and dare the other rider to close it."
+    },
+    {
+      "id": "rustam-bedi",
+      "name": "Rustam Bedi",
+      "skill": 0.68,
+      "aggression": 0.55,
+      "vengefulness": 0.33,
+      "caution": 0.61,
+      "startingBike": "marwar-gully",
+      "startingCash": 15000,
+      "startingWeapon": null,
+      "bio": "Drives a tempo by day, which is why nothing in traffic surprises him.\nHe is not the quickest out here and he finishes more races than most who are."
+    },
+    {
+      "id": "asma-vohra",
+      "name": "Asma Vohra",
+      "skill": 0.86,
+      "aggression": 0.63,
+      "vengefulness": 0.49,
+      "caution": 0.44,
+      "startingBike": "marwar-gully",
+      "startingCash": 16650,
+      "startingWeapon": "bat",
+      "bio": "Rode her brother's bike for two years before he found out.\nShe races like someone who expects to have to explain herself later and would rather win first."
+    },
+    {
+      "id": "dev-tandon",
+      "name": "Dev Tandon",
+      "skill": 0.59,
+      "aggression": 0.46,
+      "vengefulness": 0.27,
+      "caution": 0.83,
+      "startingBike": "marwar-gully",
+      "startingCash": 9000,
+      "startingWeapon": null,
+      "bio": "Sits third for eleven kilometres and takes second in the last two.\nPatience is the whole of his game and it works more often than it should."
+    },
+    {
+      "id": "kabir-anand",
+      "name": "Kabir Anand",
+      "skill": 0.71,
+      "aggression": 0.92,
+      "vengefulness": 0.65,
+      "caution": 0.18,
+      "startingBike": "marwar-gully",
+      "startingCash": 26000,
+      "startingWeapon": "chain",
+      "bio": "Starts the fight, wins the fight, loses the race, comes back next week.\nHe has been asked to stop and it has never once landed."
+    },
+    {
+      "id": "noor-siddiqui",
+      "name": "Noor Siddiqui",
+      "skill": 0.78,
+      "aggression": 0.38,
+      "vengefulness": 0.52,
+      "caution": 0.7,
+      "startingBike": "marwar-gully",
+      "startingCash": 20000,
+      "startingWeapon": null,
+      "bio": "Reads a road the way she reads a room, which is to say completely and without comment.\nThe only rider on the grid who has never been caught by the police."
+    },
+    {
+      "id": "hemant-rele",
+      "name": "Hemant Rele",
+      "skill": 0.55,
+      "aggression": 0.71,
+      "vengefulness": 0.8,
+      "caution": 0.35,
+      "startingBike": "marwar-gully",
+      "startingCash": 11000,
+      "startingWeapon": "bat",
+      "bio": "Lost a bike to a barricade on the flyway and has raced angry ever since.\nQuick enough to be a problem, sore enough to be a reliable one."
+    },
+    {
+      "id": "sabina-thapa",
+      "name": "Sabina Thapa",
+      "skill": 0.89,
+      "aggression": 0.5,
+      "vengefulness": 0.4,
+      "caution": 0.55,
+      "startingBike": "marwar-gully",
+      "startingCash": 19800,
+      "startingWeapon": "chain",
+      "bio": "Two seasons unbeaten on the Ridge before anyone learned her name.\nShe rides like the road is a thing she has already been told the answer to."
+    },
+    {
+      "id": "vikram-lall",
+      "name": "Vikram Lall",
+      "skill": 0.64,
+      "aggression": 0.6,
+      "vengefulness": 0.45,
+      "caution": 0.5,
+      "startingBike": "marwar-gully",
+      "startingCash": 13000,
+      "startingWeapon": null,
+      "bio": "Middling at everything, which on this grid is a kind of achievement.\nHe will be behind you all race and in front of you at the line if you make one mistake."
+    },
+    {
+      "id": "zoya-mirchandani",
+      "name": "Zoya Mirchandani",
+      "skill": 0.83,
+      "aggression": 0.74,
+      "vengefulness": 0.87,
+      "caution": 0.25,
+      "startingBike": "sethi-nagin",
+      "startingCash": 52000,
+      "startingWeapon": "bat",
+      "bio": "Runs the book on half these races and rides in them anyway.\nBeing owed money by everyone on the grid has not made her gentle with any of them."
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import type { RacerBrain, RacerProfile } from '../ai/types.ts';
 import type { TrackPos } from '../types.ts';
 import type { Rng } from '../rng.ts';
 
@@ -99,6 +100,20 @@ export interface Tuning {
   slipGrip: number;
   potholeSpeedLoss: number;
   dogCrashSpeed: number;
+  /** Seconds of road a rival reads ahead, before skill scales it. */
+  aiLookahead: number;
+  /** Metres a rival reads ahead regardless of speed, so a stopped one still sees. */
+  aiLookaheadFloor: number;
+  /** Seconds between a rival reconsidering its line, before skill scales it. */
+  aiThinkSeconds: number;
+  /** Lean input per metre of lateral error, for rivals. */
+  aiSteerGain: number;
+  /** Seconds on the line before the lights go out. */
+  countdownSeconds: number;
+  /** 0 disables rubber-banding entirely. See GAME_DESIGN and devlog phase-05 §2. */
+  rubberBanding: number;
+  /** Metres of gap over which rubber-banding reaches full strength. */
+  rubberBandRange: number;
 }
 
 /**
@@ -120,6 +135,14 @@ export interface InputFrame {
 /** A rider's full simulation state. Positional data is track space only. */
 export interface Rider {
   pos: TrackPos;
+  /**
+   * `pos.s` as it was at the start of this tick.
+   *
+   * Collisions resolve after everything has moved, so a check that needs to
+   * know what the rider drove *over* — rather than what it is merely near —
+   * has to be told where it started. See devlog phase-05, the stray dog.
+   */
+  lastS: number;
   /** m/s along the track. */
   speed: number;
   /** m/s in `t`. */
@@ -139,6 +162,41 @@ export interface Rider {
   /** Seconds of immunity after remounting, so you cannot re-hit what got you. */
   graceTimer: number;
   bike: TunedBike;
+}
+
+/** Where a race is in its life. */
+export type RacePhase = 'countdown' | 'racing' | 'finished' | 'failed';
+
+/** One rider in a race: who they are, what they are riding, how they are doing. */
+export interface RaceEntry {
+  profile: RacerProfile;
+  isPlayer: boolean;
+  rider: Rider;
+  /** This tick's input. Reused, never reallocated. */
+  input: InputFrame;
+  /** Rival decision state. Inert for the player. */
+  brain: RacerBrain;
+  /** The tick this rider crossed the line, or null if still riding. */
+  finishTick: number | null;
+  /** 1-based standing, refreshed every tick. */
+  place: number;
+}
+
+/** A whole race. Supersedes WorldState once a race is running. */
+export interface RaceState {
+  phase: RacePhase;
+  entries: RaceEntry[];
+  /** Every entry's rider, in entry order. Built once so the AI can scan it. */
+  riders: Rider[];
+  /** Indices into `entries`, best first. Sorted on progress, never raw s. */
+  order: number[];
+  traffic: TrafficVehicle[];
+  rng: Rng;
+  tick: number;
+  /** Seconds of racing elapsed. Does not include the countdown. */
+  clock: number;
+  /** Seconds of countdown elapsed. */
+  countdown: number;
 }
 
 /** Everything the simulation owns. */

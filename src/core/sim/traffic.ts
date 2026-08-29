@@ -116,9 +116,21 @@ function targetT(
   return vehicle.oncoming ? Math.min(want, -clear) : Math.max(want, clear);
 }
 
-/** Creates the pool. Size is fixed from the track's density and the window. */
-export function createTraffic(track: Track, rng: Rng): TrafficVehicle[] {
-  const windowKm = (TRAFFIC_AHEAD + TRAFFIC_BEHIND) / 1000;
+/**
+ * Creates the pool. Size is fixed from the track's density and the window.
+ *
+ * `fieldSpan` is how far apart the front and back of the field may be and
+ * still have traffic between them. It is zero for a lone rider and a couple of
+ * kilometres for a race: a window anchored on one rider leaves everybody ahead
+ * of them on an empty road, which in a fourteen-rider race decides the result.
+ * See devlog phase-05.
+ */
+export function createTraffic(
+  track: Track,
+  rng: Rng,
+  fieldSpan = 0,
+): TrafficVehicle[] {
+  const windowKm = (TRAFFIC_AHEAD + TRAFFIC_BEHIND + fieldSpan) / 1000;
   const count = Math.max(0, Math.round(track.data.trafficDensity * windowKm));
 
   const pool: TrafficVehicle[] = [];
@@ -137,6 +149,12 @@ export function createTraffic(track: Track, rng: Rng): TrafficVehicle[] {
   }
   return pool;
 }
+
+/** Length of the longest vehicle in the game, for conservative early-outs. */
+const LONGEST_VEHICLE = 11.5;
+
+/** Beyond this a leader cannot affect a follower's speed, so stop looking. */
+const FOLLOW_RANGE = 90;
 
 /** The gap a vehicle needs behind and ahead to occupy a spot, in metres. */
 function gapFor(kind: TrafficKind): number {
@@ -170,19 +188,22 @@ function hasRoom(
   s: number,
   extra = 0,
 ): boolean {
-  for (const other of pool) {
-    if (other === candidate || !other.active) continue;
+  const halfSelf = TRAFFIC_SIZES[candidate.kind].width / 2;
+  const reach = LONGEST_VEHICLE + BUMPER_MARGIN + extra;
+  for (let i = 0; i < pool.length; i += 1) {
+    const other = pool[i];
+    if (!other || other === candidate || !other.active) continue;
+
+    // Cheapest, most selective test first: nothing further away than the
+    // longest gap this call could ever demand can possibly block the spot.
+    const along = Math.abs(other.pos.s - s);
+    if (along >= reach) continue;
     if (other.pos.branchId !== candidate.pos.branchId) continue;
 
     const abreast =
-      (TRAFFIC_SIZES[candidate.kind].width + TRAFFIC_SIZES[other.kind].width) /
-        2 +
-      ABREAST_MARGIN;
+      halfSelf + TRAFFIC_SIZES[other.kind].width / 2 + ABREAST_MARGIN;
     if (Math.abs(other.pos.t - t) >= abreast) continue;
-    if (
-      Math.abs(other.pos.s - s) <
-      minGap(candidate.kind, other.kind) + extra
-    ) {
+    if (along < minGap(candidate.kind, other.kind) + extra) {
       return false;
     }
   }
@@ -271,24 +292,26 @@ function leaderFor(
   let best: TrafficVehicle | null = null;
   let bestGap = Infinity;
 
-  for (const other of pool) {
-    if (other === vehicle || !other.active) continue;
+  const halfSelf = TRAFFIC_SIZES[vehicle.kind].width / 2;
+  for (let i = 0; i < pool.length; i += 1) {
+    const other = pool[i];
+    if (!other || other === vehicle || !other.active) continue;
+
+    // Distance first. It rejects almost everything on a crowded road, and it
+    // is two reads and a subtraction — the width test below is neither.
+    const gap = vehicle.oncoming
+      ? vehicle.pos.s - other.pos.s
+      : other.pos.s - vehicle.pos.s;
+    if (gap <= 0 || gap >= bestGap || gap > FOLLOW_RANGE) continue;
     if (other.pos.branchId !== vehicle.pos.branchId) continue;
     if (other.oncoming !== vehicle.oncoming) continue;
 
     const abreast =
-      (TRAFFIC_SIZES[vehicle.kind].width + TRAFFIC_SIZES[other.kind].width) /
-        2 +
-      ABREAST_MARGIN;
+      halfSelf + TRAFFIC_SIZES[other.kind].width / 2 + ABREAST_MARGIN;
     const shares =
       other.lane === vehicle.lane ||
       Math.abs(other.pos.t - vehicle.pos.t) < abreast;
-    if (!shares) continue;
-
-    const gap = vehicle.oncoming
-      ? vehicle.pos.s - other.pos.s
-      : other.pos.s - vehicle.pos.s;
-    if (gap > 0 && gap < bestGap) {
+    if (shares) {
       bestGap = gap;
       best = other;
     }
@@ -300,23 +323,26 @@ function leaderFor(
 export function stepTraffic(
   pool: TrafficVehicle[],
   track: Track,
-  riderS: number,
+  backS: number,
+  leadS: number,
   rng: Rng,
   tuning: Tuning,
   dt: number,
 ): void {
   for (const vehicle of pool) {
     if (!vehicle.active) {
-      respawn(vehicle, pool, track, riderS, rng);
+      respawn(vehicle, pool, track, leadS, rng);
       continue;
     }
 
+    // The window runs from behind the last rider to ahead of the leader, so
+    // every rider meets the same road.
     const behind = vehicle.oncoming
-      ? vehicle.pos.s < riderS - TRAFFIC_BEHIND
-      : vehicle.pos.s < riderS - TRAFFIC_BEHIND ||
-        vehicle.pos.s > riderS + TRAFFIC_AHEAD * 1.6;
+      ? vehicle.pos.s < backS - TRAFFIC_BEHIND
+      : vehicle.pos.s < backS - TRAFFIC_BEHIND ||
+        vehicle.pos.s > leadS + TRAFFIC_AHEAD * 1.6;
     if (behind) {
-      respawn(vehicle, pool, track, riderS, rng);
+      respawn(vehicle, pool, track, leadS, rng);
       continue;
     }
 
@@ -368,7 +394,7 @@ export function stepTraffic(
     // deliberately ignores. Recycling it is invisible; a head-on between two
     // NPCs is not.
     if (!laneStillValid(track, vehicle, lanes)) {
-      respawn(vehicle, pool, track, riderS, rng);
+      respawn(vehicle, pool, track, leadS, rng);
       continue;
     }
     const want = targetT(track, vehicle, vehicle.lane, lanes, halfWidth);
@@ -390,7 +416,7 @@ export function stepTraffic(
     ) {
       // Held out of its lane and now hanging off the road: recycle rather than
       // leave it there. A vehicle vanishing ahead of you is invisible.
-      respawn(vehicle, pool, track, riderS, rng);
+      respawn(vehicle, pool, track, leadS, rng);
       continue;
     }
 

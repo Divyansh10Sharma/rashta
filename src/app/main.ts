@@ -1,11 +1,17 @@
 import './style.css';
 import bikesJson from '../data/bikes.json';
 import tuningJson from '../data/tuning.json';
+import racersJson from '../data/racers.json';
 import { loadTrackLibrary } from '../core/track/library.ts';
 
 import { loadBikes, loadTuning } from '../core/sim/load.ts';
-import { step } from '../core/sim/step.ts';
-import { copyWorld, createWorld } from '../core/sim/world.ts';
+import { loadRacers, PLAYER_ID } from '../core/ai/load.ts';
+import {
+  copyRace,
+  createRace,
+  playerEntry,
+  stepRace,
+} from '../core/sim/race.ts';
 import { Input } from '../input/Input.ts';
 import { createStage } from '../render/Stage.ts';
 import { createHud } from '../ui/Hud.ts';
@@ -45,19 +51,33 @@ function run(canvas: HTMLCanvasElement): void {
   if (!track)
     throw new Error(`no track "${wanted}" and no ring-road-t1 either`);
 
-  const bike = bikes[1] ?? bikes[0];
-  if (!bike) throw new Error('bikes.json contained no bikes');
+  const racers = loadRacers('racers.json', racersJson);
+  const byId = new Map(bikes.map((b) => [b.spec.id, b]));
+  const bikeFor = (profile: { startingBike: string }) => {
+    const found = byId.get(profile.startingBike);
+    if (!found)
+      throw new Error(`racers.json: no bike "${profile.startingBike}"`);
+    return found;
+  };
 
   // Two states so the renderer can interpolate between them.
   // Seeded from the URL so a race can be handed to someone else exactly.
-  const seed = Number(new URLSearchParams(location.search).get('seed') ?? 1);
-  const current = createWorld(bike, track, Number.isFinite(seed) ? seed : 1);
-  const previous = createWorld(bike, track, Number.isFinite(seed) ? seed : 1);
+  const asked = Number(new URLSearchParams(location.search).get('seed') ?? 1);
+  const seed = Number.isFinite(asked) ? asked : 1;
+  const current = createRace(racers, PLAYER_ID, bikeFor, track, seed);
+  const previous = createRace(racers, PLAYER_ID, bikeFor, track, seed);
+  const me = playerEntry(current);
+  const bike = me.rider.bike;
 
   const input = new Input();
   input.attach();
 
-  const stage = createStage(canvas, track, current.traffic.length);
+  const stage = createStage(
+    canvas,
+    track,
+    current.traffic.length,
+    current.entries.length - 1,
+  );
   stage.chase.reset(0);
 
   const hud = createHud(document.body);
@@ -82,15 +102,15 @@ function run(canvas: HTMLCanvasElement): void {
       const frameInput = input.sample();
       const before = performance.now();
       for (let i = 0; i < ticks; i += 1) {
-        copyWorld(current, previous);
-        step(current, frameInput, track, tuning);
+        copyRace(current, previous);
+        stepRace(current, frameInput, track, tuning);
       }
       stepTimer.record((performance.now() - before) / ticks);
     }
 
     const alpha = driver.alpha;
-    const a = previous.player;
-    const b = current.player;
+    const a = playerEntry(previous).rider;
+    const b = me.rider;
     const s = a.pos.s + (b.pos.s - a.pos.s) * alpha;
     const t = a.pos.t + (b.pos.t - a.pos.t) * alpha;
     const lean = a.lean + (b.lean - a.lean) * alpha;
@@ -100,6 +120,9 @@ function run(canvas: HTMLCanvasElement): void {
     // Traffic is interpolated from the same pair of states the rider is, so a
     // bus and the bike it is about to hit move in the same time.
     stage.traffic.update(previous.traffic, current.traffic, alpha);
+    // Rivals interpolate off the same pair of states, so the bike you are
+    // about to be pushed into is where the simulation says it is.
+    stage.field.update(previous.entries, current.entries, alpha, track);
 
     visibleChunks = stage.sync(
       s,

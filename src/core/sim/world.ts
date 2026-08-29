@@ -2,7 +2,7 @@ import { createRng } from '../rng.ts';
 import { MAIN_BRANCH } from '../types.ts';
 import { createTraffic } from './traffic.ts';
 import type { Track } from '../track/Track.ts';
-import type { Rider, TunedBike, WorldState } from './types.ts';
+import type { Rider, TrafficVehicle, TunedBike, WorldState } from './types.ts';
 
 /** Constructing and copying simulation state. */
 
@@ -10,6 +10,7 @@ import type { Rider, TunedBike, WorldState } from './types.ts';
 export function createRider(bike: TunedBike, s = 0, t = 0): Rider {
   return {
     pos: { s, t, branchId: MAIN_BRANCH },
+    lastS: s,
     speed: 0,
     lateral: 0,
     lean: 0,
@@ -44,39 +45,39 @@ export function createWorld(
   };
 }
 
-/**
- * Copies `from` into `to` without allocating.
- *
- * The render loop keeps the two most recent states so it can interpolate
- * between them, which means a copy every tick — so it must not produce
- * garbage. `bike` is shared by reference deliberately: it is immutable
- * tuning data, not state.
- */
-export function copyWorld(from: WorldState, to: WorldState): void {
-  to.tick = from.tick;
-  const a = from.player;
-  const b = to.player;
-  b.pos.s = a.pos.s;
-  b.pos.t = a.pos.t;
-  b.pos.branchId = a.pos.branchId;
-  b.speed = a.speed;
-  b.lateral = a.lateral;
-  b.lean = a.lean;
-  b.wheelAngle = a.wheelAngle;
-  b.stamina = a.stamina;
-  b.state = a.state;
-  b.stateTimer = a.stateTimer;
-  b.crashCause = a.crashCause;
-  b.slipTimer = a.slipTimer;
-  b.graceTimer = a.graceTimer;
-  b.bike = a.bike;
+/** Copies one rider's state. Shared by the world copy and the race copy. */
+export function copyRider(from: Rider, to: Rider): void {
+  to.pos.s = from.pos.s;
+  to.pos.t = from.pos.t;
+  to.pos.branchId = from.pos.branchId;
+  to.lastS = from.lastS;
+  to.speed = from.speed;
+  to.lateral = from.lateral;
+  to.lean = from.lean;
+  to.wheelAngle = from.wheelAngle;
+  to.stamina = from.stamina;
+  to.state = from.state;
+  to.stateTimer = from.stateTimer;
+  to.crashCause = from.crashCause;
+  to.slipTimer = from.slipTimer;
+  to.graceTimer = from.graceTimer;
+  // Shared by reference deliberately: immutable tuning data, not state.
+  to.bike = from.bike;
+}
 
-  // Traffic is copied for the same reason the rider is: the renderer draws
-  // between two states, and a bus that teleports between ticks is as visible
-  // as a rider that does.
-  for (let i = 0; i < from.traffic.length; i += 1) {
-    const source = from.traffic[i];
-    const target = to.traffic[i];
+/**
+ * Copies the traffic pool.
+ *
+ * Index `i` is the same slot in both, which is what lets the renderer notice a
+ * slot that was recycled between two ticks instead of interpolating across it.
+ */
+export function copyTraffic(
+  from: readonly TrafficVehicle[],
+  to: TrafficVehicle[],
+): void {
+  for (let i = 0; i < from.length; i += 1) {
+    const source = from[i];
+    const target = to[i];
     if (!source || !target) continue;
     target.kind = source.kind;
     target.pos.s = source.pos.s;
@@ -89,4 +90,17 @@ export function copyWorld(from: WorldState, to: WorldState): void {
     target.laneChangeTimer = source.laneChangeTimer;
     target.active = source.active;
   }
+}
+
+/**
+ * Copies `from` into `to` without allocating.
+ *
+ * The render loop keeps the two most recent states so it can interpolate
+ * between them, which means a copy every tick — so it must not produce
+ * garbage.
+ */
+export function copyWorld(from: WorldState, to: WorldState): void {
+  to.tick = from.tick;
+  copyRider(from.player, to.player);
+  copyTraffic(from.traffic, to.traffic);
 }

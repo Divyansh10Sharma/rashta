@@ -206,6 +206,9 @@ export function stepRider(
   tuning: Tuning,
   dt: number,
 ): void {
+  // Recorded before anything moves, including the crash slide, so a hazard
+  // check that runs after the tick can tell what was driven over.
+  rider.lastS = rider.pos.s;
   if (rider.slipTimer > 0) rider.slipTimer -= dt;
   if (rider.graceTimer > 0) rider.graceTimer -= dt;
   // A rider on the tarmac is not steering, braking, or leaning. Everything
@@ -245,7 +248,15 @@ export function step(
   dt: number = FIXED_DT,
 ): void {
   stepRider(world.player, input, track, tuning, dt);
-  stepTraffic(world.traffic, track, world.player.pos.s, world.rng, tuning, dt);
+  stepTraffic(
+    world.traffic,
+    track,
+    world.player.pos.s,
+    world.player.pos.s,
+    world.rng,
+    tuning,
+    dt,
+  );
 
   // Collisions resolve once, at the end, after everything has moved — so the
   // answer does not depend on the order things were stepped in.

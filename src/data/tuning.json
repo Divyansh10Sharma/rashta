@@ -31,5 +31,13 @@
 
   "wheelRadius": 0.31,
   "revsIdle": 0.08,
-  "gearCount": 6
+  "gearCount": 6,
+
+  "aiLookahead": 1.8,
+  "aiLookaheadFloor": 14.0,
+  "aiThinkSeconds": 0.35,
+  "aiSteerGain": 0.55,
+  "countdownSeconds": 3.0,
+  "rubberBanding": 0.0,
+  "rubberBandRange": 300.0
 }

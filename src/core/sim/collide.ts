@@ -16,7 +16,7 @@ import type { CrashCause, Rider, TrafficVehicle, Tuning } from './types.ts';
 
 /** Half the rider's footprint, in metres. */
 const RIDER_HALF_LENGTH = 1.0;
-const RIDER_HALF_WIDTH = 0.45;
+export const RIDER_HALF_WIDTH = 0.45;
 
 /**
  * Districts where leaving the road ends your race.
@@ -139,9 +139,15 @@ export function checkTraffic(
  */
 export function checkHazards(rider: Rider, track: Track, tuning: Tuning): void {
   const hazards = track.hazards;
+  // You hit a hazard by driving over it, once — not by being near it, every
+  // tick. A rider who arrives slowly at a stray dog used to lose six metres a
+  // second sixty times a second and could never crawl the metre and a half
+  // clear of it. See devlog phase-05.
+  const from = Math.min(rider.lastS, rider.pos.s);
+  const to = Math.max(rider.lastS, rider.pos.s);
   for (const hazard of hazards) {
-    if (hazard.s < rider.pos.s - HAZARD_REACH) continue;
-    if (hazard.s > rider.pos.s + HAZARD_REACH) break;
+    if (hazard.s <= from) continue;
+    if (hazard.s > to) break;
     if (hazard.branchId !== rider.pos.branchId) continue;
     if (trackDistance(rider.pos, hazard, track) > HAZARD_REACH) continue;
 

@@ -6,6 +6,7 @@ import { createScenery, type SceneryField } from './Scenery.ts';
 import { buildRoadMesh, cullChunks, type RoadMesh } from './RoadMeshBuilder.ts';
 import { createHazardField, type HazardField } from './HazardView.ts';
 import { createTrafficView, type TrafficView } from './TrafficView.ts';
+import { createField, type FieldView } from './FieldView.ts';
 import { ENVIRONMENTS, applyEnvironment } from './environments.ts';
 
 /** Everything Three.js, assembled. Reads core state and never writes to it. */
@@ -19,6 +20,7 @@ export interface Stage {
   scenery: SceneryField;
   traffic: TrafficView;
   hazards: HazardField;
+  field: FieldView;
   /**
    * Where the rider currently is on screen, as -1 (hard left) to +1 (hard
    * right). Diagnostic: it answers whether the simulation and the picture
@@ -51,6 +53,7 @@ export function createStage(
   canvas: HTMLCanvasElement,
   track: Track,
   trafficPoolSize = 0,
+  rivals = 0,
 ): Stage {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -88,6 +91,9 @@ export function createStage(
 
   const traffic = createTrafficView(track, trafficPoolSize);
   scene.add(traffic.group);
+
+  const field = createField(rivals);
+  scene.add(field.group);
 
   const rider = createRiderView();
   scene.add(rider.group);
@@ -135,6 +141,7 @@ export function createStage(
     scenery,
     traffic,
     hazards,
+    field,
     riderScreenX,
     sync,
     dispose: () => {
@@ -143,6 +150,7 @@ export function createStage(
       scenery.dispose();
       traffic.dispose();
       hazards.dispose();
+      field.dispose();
       rider.dispose();
       renderer.dispose();
     },
