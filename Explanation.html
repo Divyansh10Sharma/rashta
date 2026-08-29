@@ -638,6 +638,13 @@
           <span class="stone-label">Phase</span>
         </span>
       </button>
+      <button class="stone" data-goto="phase-02" type="button">
+        <span class="stone-band" aria-hidden="true"></span>
+        <span class="stone-body">
+          <span class="stone-num">02</span>
+          <span class="stone-label">Phase</span>
+        </span>
+      </button>
       <button class="stone" data-goto="ninety-seconds" type="button">
         <span class="stone-band" aria-hidden="true"></span>
         <span class="stone-body">
@@ -658,6 +665,7 @@
       <nav class="jump" aria-label="Jump to page">
         <a href="#phase-00">00 · Skeleton</a>
         <a href="#phase-01">01 · Track space</a>
+        <a href="#phase-02">02 · The feel gate</a>
         <a href="#ninety-seconds">90 seconds</a>
       </nav>
 
@@ -1842,13 +1850,574 @@
           </section>
         </section>
 
+        <!-- ================= PHASE 02 ================= -->
+        <section class="page" id="phase-02" aria-labelledby="h-02" hidden>
+          <header class="page-head">
+            <p class="eyebrow">Phase 02</p>
+            <h2 id="h-02">The feel gate</h2>
+            <p class="standfirst">
+              One bike, one straight road, and a camera behind it. The only
+              question that matters is whether riding is enjoyable before
+              anything is at stake.
+            </p>
+          </header>
+
+          <section class="s-goal" aria-labelledby="g-02">
+            <p class="eyebrow" id="g-02">What we were trying to do</p>
+            <p>
+              Up to now there was a road but nothing on it. This piece of work
+              put a motorbike on that road and made it possible to ride.
+            </p>
+            <p>
+              That means three separate things. Something has to decide how fast
+              the bike goes when you hold the accelerator, and how it moves
+              across the road when you steer. Something has to read the keyboard
+              or the controller and turn presses into those instructions. And
+              something has to draw it — the road surface, the streetlights, the
+              kerb, the bike, and a camera sitting behind your shoulder.
+            </p>
+            <p>
+              The road is deliberately a straight line, with nothing on it and
+              nowhere to go. That sounds like a strange thing to spend a whole
+              stage of work on, and it is the entire point: if riding in a
+              straight line with nothing happening is not already enjoyable, no
+              amount of rivals or fighting or scenery added later will rescue
+              it. So this is a gate, not a feature. Either it feels good and the
+              project continues, or it does not and we stop and fix it.
+            </p>
+          </section>
+
+          <section class="s-hard" aria-labelledby="hd-02">
+            <p class="eyebrow" id="hd-02">Why this was hard</p>
+            <p>
+              The difficulty is that "how fast is this bike" has four different
+              honest answers and they contradict each other.
+            </p>
+            <p>
+              A bike in the data file has an engine power, a weight, a top
+              speed, and a description of how its acceleration is spread out
+              across its speed range. In the real world any three of those
+              determine the fourth. So if someone writes all four down by hand,
+              sooner or later two of them disagree — and the disagreement does
+              not announce itself. It shows up as a bike that says 200 km/h on
+              the stat sheet and does not do 200 km/h, and a tuning session
+              spent adjusting the wrong number.
+            </p>
+            <p>
+              Divyansh settled this before any code was written by fixing which
+              number is allowed to be the truth for which quality: top speed
+              owns the ceiling, a separate stated time owns how long the bike
+              takes to get there, the acceleration shape describes only the
+              distribution along the way, weight affects only cornering and
+              shoving, and engine power is display text the simulation is
+              forbidden from reading.
+            </p>
+            <p>
+              That is a clean rule and it creates a real problem. If the shape
+              carries no magnitude of its own, then doubling every number in it
+              must change the character of the acceleration and leave the time
+              to top speed exactly unchanged. The shape cannot be used as
+              acceleration directly. Something has to work out the right scale
+              for it, from the other two numbers, for every bike.
+            </p>
+          </section>
+
+          <section class="s-deadends" aria-labelledby="de-02">
+            <p class="eyebrow" id="de-02">What we tried that didn't work</p>
+
+            <article class="deadend">
+              <h4>
+                A test that reported nonsense because it looked in the wrong
+                place
+              </h4>
+              <p class="plain">
+                The test that checks each bike reaches its stated top speed in
+                its stated time reported "not a number" for all three bikes.
+                Both sides of the comparison were meaningless, so the failure
+                said nothing about where the fault was.
+              </p>
+              <p class="why">
+                Printing the bike's state every few hundred steps showed the
+                speed climbing perfectly smoothly and settling exactly on the
+                right figure. The simulation was correct; the measurement was
+                wrong. The test was asking the <em>rider</em> how many steps had
+                elapsed, and the step count is kept on the world, not on the
+                rider. Asking for something that isn't there gives "undefined",
+                and arithmetic on that gives "not a number". The type checker
+                would have caught this instantly, but the quick way of running a
+                single test file skips the type check — so the fast loop is
+                genuinely weaker than the full one, which is worth knowing.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>
+                Demanding exactness from a system built out of inexactness
+              </h4>
+              <p class="plain">
+                A test fed the clock ten seconds' worth of frames from a fast
+                144-frames-a-second monitor and checked that exactly 600
+                simulation steps came out. It got 599.
+              </p>
+              <p class="why">
+                Not a bug — the test was wrong. A computer cannot store "one
+                144th" precisely, in the same way you cannot write out a third
+                as a decimal without stopping somewhere. Add up 1440 of those
+                slightly-short pieces and you land a whisker under ten seconds,
+                and the last step genuinely has not fallen due. The leftover is
+                kept rather than thrown away, so this never accumulates. We
+                replaced it with the property actually worth guaranteeing: run
+                ten minutes and land within one step of correct.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>
+                The recycling streetlights, wrong twice for different reasons
+              </h4>
+              <p class="plain">
+                Roadside objects are not created and destroyed as you ride past
+                — a fixed set is reused, with whatever falls behind you moved
+                round to the front. Both times we got the arithmetic of "moved
+                round" wrong. First the kerb developed gaps; then, after fixing
+                that, a single streetlight kept flickering out of existence.
+              </p>
+              <p class="why">
+                The first was straightforward: objects sit on both sides of the
+                road, so there are two of them per position, and the code moved
+                things by the count of objects instead of the count of positions
+                — twice as far as it should. The second was subtler. Each set
+                deliberately holds one spare beyond what you can see, so nothing
+                pops into view at the horizon. That makes the loop of positions
+                <em>longer</em> than the visible stretch, so one of them has
+                nowhere legal to sit and got bounced back and forth every frame.
+                The fix was to stop thinking of it as "keep it in view" and
+                treat it as what it actually is — a remainder, wrapped into a
+                window of exactly the right size.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>
+                Three pieces of litter a frame, in the worst possible place
+              </h4>
+              <p class="plain">
+                No test caught this one; it was spotted rereading the code. The
+                camera created three small throwaway objects every single frame
+                to convert between the simulation's own maths and the graphics
+                library's. That is 180 pieces of litter a second.
+              </p>
+              <p class="why">
+                Worth recording precisely because nothing failed. The game would
+                have run, and the automatic cleanup would have absorbed it, and
+                it would have surfaced at the very end of the project as an
+                unexplained periodic stutter during the long soak test — by
+                which point the cause is a needle in a haystack. It is in the
+                one function guaranteed to run every frame, in the file whose
+                whole purpose is the thing the no-litter rule exists to protect.
+              </p>
+            </article>
+          </section>
+
+          <section class="s-decision" aria-labelledby="dc-02">
+            <p class="eyebrow" id="dc-02">What we went with, and why</p>
+            <p>
+              The scale for each bike's acceleration is <em>solved</em>, not
+              tuned. Write down that the time taken is the whole speed range
+              divided by the acceleration at each point, and the answer falls
+              out: the scale equals the top speed, multiplied by a single number
+              summarising the shape, divided by the stated time. That summary
+              number is worked out once when the bike is loaded.
+            </p>
+            <p>
+              That's a <dfn class="term">definite integral</dfn> evaluated with
+              <dfn class="term">Simpson's rule</dfn>, and it gives the property
+              the design demanded for free: doubling every entry in the shape
+              halves the summary number and doubles the scale, leaving the time
+              to top speed identical. Every bike arrives at its advertised speed
+              in its advertised time by construction, not by adjustment.
+            </p>
+            <p>
+              The riding itself is an <dfn class="term">arcade model</dfn>, not
+              a physics simulation. A rider is five numbers, and only two of
+              them — speed along the road and speed sideways — actually move
+              anything. Steering asks for a sideways speed rather than setting
+              one, and the amount it can ask for shrinks as you go faster, which
+              is what makes the bike feel heavy at speed without simulating any
+              actual weight.
+            </p>
+            <p class="tradeoff">
+              What this costs: everything that would emerge from real physics
+              has to be faked or forgone. No weight shifting under braking, no
+              wheelies, no front wheel washing out on a bad line — and a gearbox
+              that exists only in the dial, because the simulation has one
+              continuous speed with no gears in it at all.
+            </p>
+            <p class="rejected">
+              We didn't use a physics engine, which is the obvious alternative
+              and would have given all of that away free, because an arcade
+              racer wants a bike that responds the way the player expects rather
+              than the way a rigid body would. Tuning a physics engine to feel
+              arcadey is harder than writing an arcade model, and it would cost
+              more download than the entire game currently weighs.
+            </p>
+            <p>
+              One more decision worth naming: the simulation cannot see a clock.
+              It advances in identical steps of one sixtieth of a second, and
+              the piece that decides how many steps to run is handed elapsed
+              time by whoever calls it. That is what lets a test replay the same
+              recorded button presses against a deliberately erratic clock —
+              anywhere from 240 frames a second down to 12 — and get a
+              bit-for-bit identical result.
+            </p>
+          </section>
+
+          <section class="s-words" aria-labelledby="wd-02">
+            <p class="eyebrow" id="wd-02">Words to know</p>
+            <dl>
+              <dt>Allocation</dt>
+              <dd class="plain">
+                Asking the computer for a fresh piece of memory to keep
+                something in.
+              </dd>
+              <dd class="precise">
+                Reserving heap memory for a new object. Cheap individually,
+                ruinous inside a per-frame loop, because the cleanup it creates
+                arrives at a time of its own choosing.
+              </dd>
+
+              <dt>Arcade model</dt>
+              <dd class="plain">
+                Faking how a vehicle moves so it feels good, instead of
+                calculating how it would really move.
+              </dd>
+              <dd class="precise">
+                A hand-tuned motion model driven by a few scalars, chosen over
+                rigid-body simulation for responsiveness and predictability.
+              </dd>
+
+              <dt>Deadzone</dt>
+              <dd class="plain">
+                Ignoring tiny movements of a controller stick, because a worn
+                one never sits perfectly still.
+              </dd>
+              <dd class="precise">
+                A threshold below which an analog axis reads as zero, rescaled
+                above it so full deflection still reaches full input.
+              </dd>
+
+              <dt>Definite integral</dt>
+              <dd class="plain">
+                Adding up a continuously changing quantity across a range.
+              </dd>
+              <dd class="precise">
+                The accumulated value of a function over an interval. Here, the
+                total of one divided by the acceleration shape, which is exactly
+                the time a bike takes to reach top speed.
+              </dd>
+
+              <dt>Determinism</dt>
+              <dd class="plain">
+                Same inputs, same result, every time, everywhere.
+              </dd>
+              <dd class="precise">
+                A guarantee that state is a pure function of seed and input
+                sequence, independent of timing, hardware, or frame rate.
+              </dd>
+
+              <dt>Draw call</dt>
+              <dd class="plain">
+                One instruction handed to the graphics chip: "draw this".
+              </dd>
+              <dd class="precise">
+                A command submitted to the GPU. They carry fixed overhead, so
+                drawing 262 kerb stones in one instanced call rather than 262
+                calls is the difference that matters.
+              </dd>
+
+              <dt>Field of view</dt>
+              <dd class="plain">
+                How wide an angle the camera takes in — how much you can see at
+                once.
+              </dd>
+              <dd class="precise">
+                The angular extent of the projected scene. Widening it with
+                speed exaggerates how fast things pass, which is most of the
+                sensation of going quickly.
+              </dd>
+
+              <dt>Fixed timestep</dt>
+              <dd class="plain">
+                The world always moves forward in identical little nudges, no
+                matter how fast the screen is drawing.
+              </dd>
+              <dd class="precise">
+                Advancing the simulation by a constant interval decoupled from
+                the render rate. The prerequisite for reproducible physics.
+              </dd>
+
+              <dt>Frame budget</dt>
+              <dd class="plain">
+                The sliver of time available to get everything done before the
+                next picture has to appear.
+              </dd>
+              <dd class="precise">
+                16.6 ms at 60 fps, covering simulation, scene updates, and
+                drawing. A simulation step here costs 0.21 microseconds of it.
+              </dd>
+
+              <dt>Garbage collection</dt>
+              <dd class="plain">
+                Automatic tidying-up of things a program has finished with.
+              </dd>
+              <dd class="precise">
+                Automatic memory reclamation. It runs when it chooses, so
+                allocating inside a frame loop trades a steady frame rate for
+                occasional pauses.
+              </dd>
+
+              <dt>Gearbox</dt>
+              <dd class="plain">
+                The set of gears a real bike changes up and down through.
+              </dd>
+              <dd class="precise">
+                Absent from this simulation entirely — the arcade model has one
+                continuous speed. The tachometer derives a plausible gear from
+                speed alone, because a needle that climbs and resets is most of
+                what makes acceleration legible.
+              </dd>
+
+              <dt>GPU</dt>
+              <dd class="plain">
+                The specialised chip that draws things on screen.
+              </dd>
+              <dd class="precise">
+                Graphics processing unit. Extremely fast at doing the same
+                operation to many things at once, which is why instancing
+                matters and why the number of separate commands sent to it
+                matters more than the number of shapes.
+              </dd>
+
+              <dt>Instancing</dt>
+              <dd class="plain">
+                Telling the graphics chip "draw this same shape 262 times, here
+                are the positions", instead of asking 262 separate times.
+              </dd>
+              <dd class="precise">
+                Rendering many copies of one geometry in a single draw call with
+                per-instance transforms.
+              </dd>
+
+              <dt>Interpolation</dt>
+              <dd class="plain">
+                Drawing the in-between moment, so motion looks smooth rather
+                than steppy.
+              </dd>
+              <dd class="precise">
+                Blending the two most recent simulation states by the fraction
+                of a step elapsed. Without it, a 144 Hz display shows 60 Hz
+                stutter.
+              </dd>
+
+              <dt>Maclaurin series</dt>
+              <dd class="plain">
+                Rewriting an awkward curved function as a short sum of simple
+                multiplications.
+              </dd>
+              <dd class="precise">
+                A Taylor expansion about zero, used in the previous phase to
+                keep trigonometry out of the simulation.
+              </dd>
+
+              <dt>Object pool</dt>
+              <dd class="plain">
+                Keeping a box of spare parts and reusing them, instead of buying
+                a new one every time.
+              </dd>
+              <dd class="precise">
+                A fixed set of preallocated instances handed out and recycled
+                rather than constructed and collected, to avoid allocation
+                inside a per-frame loop.
+              </dd>
+
+              <dt>Physics engine</dt>
+              <dd class="plain">
+                A ready-made library that works out how objects really move,
+                collide and topple.
+              </dd>
+              <dd class="precise">
+                A rigid-body dynamics solver. Deliberately not used here: an
+                arcade racer wants a bike that responds as the player expects
+                rather than as a rigid body would, and tuning an engine to feel
+                arcadey is harder than writing the arcade model.
+              </dd>
+
+              <dt>Quad strip</dt>
+              <dd class="plain">
+                A ribbon built out of rectangles laid end to end.
+              </dd>
+              <dd class="precise">
+                A run of connected quadrilaterals sharing edges. The road
+                surface is one, emitted by sampling the centreline at fixed
+                intervals.
+              </dd>
+
+              <dt>Rigid body</dt>
+              <dd class="plain">
+                A solid object that a physics simulation pushes around as a
+                whole.
+              </dd>
+              <dd class="precise">
+                A body with mass and inertia but no deformation. What this bike
+                deliberately is not — the trade is losing weight transfer,
+                wheelies and stoppies.
+              </dd>
+
+              <dt>Scalar</dt>
+              <dd class="plain">
+                A single plain number, with no direction to it.
+              </dd>
+              <dd class="precise">
+                A one-dimensional quantity, as opposed to a vector. A rider here
+                is five of them, and only two move anything.
+              </dd>
+
+              <dt>Simpson's rule</dt>
+              <dd class="plain">
+                A way of measuring the area under a curve accurately by
+                approximating it in small arcs rather than straight slices.
+              </dd>
+              <dd class="precise">
+                Numerical integration fitting quadratics to pairs of intervals.
+                Requires an even number of slices, which is why the code forces
+                one.
+              </dd>
+
+              <dt>Three.js</dt>
+              <dd class="plain">
+                The library that talks to the graphics chip so we don't have to.
+              </dd>
+              <dd class="precise">
+                A WebGL rendering library. The project's only runtime
+                dependency, confined entirely to the render layer.
+              </dd>
+
+              <dt>Track space</dt>
+              <dd class="plain">
+                Describing where you are by how far along the road you are and
+                how far to the side.
+              </dd>
+              <dd class="precise">
+                A curvilinear coordinate system with the road centreline as its
+                axis. The only positional representation the simulation stores.
+              </dd>
+
+              <dt>Type checker</dt>
+              <dd class="plain">
+                A tool that reads the code and points out where it is asking for
+                something that isn't there.
+              </dd>
+              <dd class="precise">
+                TypeScript's compiler in check-only mode. It catches whole
+                classes of mistake before anything runs — including the one that
+                produced a dead end on this page, which the test runner missed
+                because it does not type-check.
+              </dd>
+
+              <dt>Vitest</dt>
+              <dd class="plain">The program that runs the tests.</dd>
+              <dd class="precise">
+                A test runner built on the Vite toolchain. 208 tests run here in
+                about two seconds — and, importantly, it does not type-check.
+              </dd>
+
+              <dt>WebGL</dt>
+              <dd class="plain">
+                The standard that lets a web page use the graphics chip
+                directly.
+              </dd>
+              <dd class="precise">
+                A browser API exposing GPU-accelerated rendering. Notably, it is
+                needed only to <em>draw</em> — Three.js builds geometry and
+                scene graphs on the CPU, which is why the render layer has
+                thirteen tests that run with no browser at all.
+              </dd>
+            </dl>
+          </section>
+
+          <section class="s-code" aria-labelledby="cd-02">
+            <p class="eyebrow" id="cd-02">Show me in the code</p>
+            <p class="file-ref">
+              src/core/sim/bike.ts → <code>tuneBike()</code>
+            </p>
+            <p>
+              Nine lines that make the whole authority split work: turning a
+              shape with no magnitude, plus a top speed, plus a stated time,
+              into the one constant the simulation integrates.
+            </p>
+            <pre><code>export function tuneBike(spec: Bike, integralSlices: number): TunedBike {
+  const topSpeedMs = spec.topSpeed * KMH_TO_MS;
+  const integral = inverseCurveIntegral(spec.accelCurve, integralSlices);
+  return {
+    spec,
+    topSpeedMs,
+    accelScale: (topSpeedMs * integral) / spec.timeToTopSpeed,
+  };
+}</code></pre>
+            <ol class="annotations">
+              <li data-line="2">
+                The data file is written in km/h because that is what a person
+                reading a stat sheet expects; the simulation works in metres per
+                second. Converting once, here, means the conversion never
+                appears in the loop where it could drift.
+              </li>
+              <li data-line="3">
+                The one number that summarises the shape. It depends only on the
+                curve, so it is computed once per bike at load rather than sixty
+                times a second.
+              </li>
+              <li data-line="7">
+                The entire solve, and the reason the design rule holds. Double
+                every entry in <code>accelCurve</code> and
+                <code>integral</code> halves, so <code>accelScale</code>
+                doubles, so the time to top speed is unchanged — which is
+                exactly what "the shape carries no magnitude" has to mean. A
+                test asserts it rather than trusting the algebra.
+              </li>
+            </ol>
+          </section>
+
+          <section class="s-spoken" aria-labelledby="sp-02">
+            <p class="eyebrow" id="sp-02">Say it out loud</p>
+            <blockquote>
+              The bike's an arcade model — five scalars per rider, and only
+              speed and lateral velocity actually integrate. The interesting bit
+              is the acceleration solve. Speed, power, mass and acceleration
+              over-determine a vehicle, so we fixed an authority split in the
+              design doc: topSpeed owns the ceiling, timeToTopSpeed owns the
+              magnitude, and accelCurve is shape only. That means the curve
+              can't be read as acceleration directly — you write the time as the
+              integral of dv over K times f of u, solve for K, and you get K
+              equals vmax times the integral of one over f, over T. Simpson's
+              rule at load, once per bike. Doubling the curve halves the
+              integral and doubles K, so the time to top speed is invariant,
+              which is the property the split actually needs, and there's a test
+              on it. The loop is a fixed sixtieth of a second with render
+              interpolation, and the accumulator never touches a clock — the
+              caller passes elapsed time in, so a replay test can jitter the
+              wall clock from 240 hertz to 12 and still get a bit-identical
+              world.
+            </blockquote>
+          </section>
+        </section>
+
         <!-- ================= 90 SECONDS ================= -->
         <section class="page" id="ninety-seconds" aria-labelledby="h-90" hidden>
           <header class="page-head">
             <p class="eyebrow">The whole thing</p>
             <h2 id="h-90">In 90 seconds</h2>
             <p class="standfirst">
-              Where the project stands after Phase 1, and the decisions carrying
+              Where the project stands after Phase 2, and the decisions carrying
               the most weight.
             </p>
           </header>
@@ -1858,18 +2427,18 @@
             <p>
               Rashta is an arcade motorcycle combat racer set on Delhi's ring
               roads at night — fourteen riders, point-to-point, no rules. The
-              interesting idea is that nothing in the simulation knows where it
-              is in the world. Every rider stores two numbers: how far along the
-              road they are, and how far sideways. Who's winning becomes a
-              comparison of two numbers instead of a geometry problem, and the
-              whole race replays exactly from a single starting number. Actual
-              positions in space are worked out only when something has to be
-              drawn. That replay guarantee has teeth: because computers don't
-              agree on sine and cosine to the last digit, the simulation is
-              banned from using them at all, so the road's geometry is worked
-              out once when it loads and looked up thereafter. The road now
-              exists and is proven correct — bends, hills, camber, and a fork
-              that splits and rejoins. Nothing is drawn yet. Riding it is next.
+              idea it is built on is that nothing in the simulation knows where
+              it is in the world. Every rider is two numbers: how far along the
+              road, and how far sideways. Who is winning becomes a comparison
+              instead of a geometry problem, and a whole race replays exactly
+              from one starting number. Positions in real space are worked out
+              only when something is drawn. That replay promise has teeth —
+              computers disagree about sine and cosine in the last digit, so the
+              simulation is banned from using them, and the road's geometry is
+              solved once at load and looked up thereafter. Right now there is a
+              road, a bike that accelerates exactly as fast as its data file
+              promises, and a camera behind it. The next question is not
+              technical: is riding it any good?
             </p>
           </section>
 
@@ -1879,31 +2448,37 @@
 <b>src/core/</b>      the simulation. Pure TypeScript.
               <i>No Three.js. No DOM. No clock. No Math.random.</i>
               <i>No sin/cos/pow — asserted by test, not hoped for.</i>
-  rng.ts        mulberry32, seeded, state saveable  <b>·done</b>
-  vec.ts        minimal Vec3, allocation-free       <b>·done</b>
-  track/        <b>·done</b>
-    geometry    the ONLY trig. Load time only.
-    path        precomputed node table → sample(s, out)
-    distance    trackDistance() · progress()
-    validate    throws naming file + field
-  sim/ ai/ combat/ economy/ reputation/   <i>Phases 2–9</i>
+  rng.ts        mulberry32, seeded, state saveable   <b>·done</b>
+  vec.ts        minimal Vec3, allocation-free        <b>·done</b>
+  track/        sample · trackDistance · progress    <b>·done</b>
+  sim/          <b>·done</b>
+    bike        solves K = vmax·I/T per bike at load
+    step        speed · lateral · grip · lean, fixed dt
+    world       create + allocation-free copy
+  ai/ combat/ economy/ reputation/        <i>Phases 5–9</i>
 
+<b>src/app/</b>       FixedStepDriver — the accumulator. Never sees a clock.
+<b>src/input/</b>     keyboard + gamepad, rebindable; resolve() is pure
 <b>src/render/</b>    all Three.js. Reads core, never writes to it.
-<b>src/input/</b> <b>src/audio/</b> <b>src/ui/</b> <b>src/app/</b>
-<b>src/data/</b>      tracks, bikes, riders, tuning — JSON, validated
+  RoadMeshBuilder  chunked; culled by s, not by frustum
+  Scenery          440 instanced objects, pooled and recycled
+  ChaseCamera      FOV · drop · pull-back · lateral lag
+<b>src/ui/</b>        HUD + dev overlay (` toggles)
+<b>src/data/</b>      tracks · bikes · tuning — JSON, validated on load
 
-<i>position</i>  = (s, t, branchId)          <i>s along, t sideways</i>
-<i>world</i>     = sample(s).position + right × t   <i>render time only</i>
-<i>ranking</i>   = progress(pos)             <i>never raw s — forks differ</i>
-<i>range</i>     = trackDistance(a, b)       <i>metres, curvature-corrected</i>
-<i>the loop</i>  = fixed 60 Hz sim · render interpolates between states
+<i>position</i> = (s, t, branchId)         <i>s along, t sideways</i>
+<i>world</i>    = sample(s).position + right × t    <i>render time only</i>
+<i>ranking</i>  = progress(pos)             <i>never raw s — forks differ</i>
+<i>range</i>    = trackDistance(a, b)       <i>metres, curvature-corrected</i>
+<i>loop</i>     = 60 Hz sim · render interpolates by alpha
 
 <b>npm run check</b>  typecheck · lint · test+coverage · size
-              <i>121 tests · 100% lines on track/ · 117 KB of 500</i></pre>
+              <i>208 tests · 100% lines in core · 129 KB of 500</i>
+              <i>sim step 0.21 µs against a 1 ms budget</i></pre>
             <p class="cost">
-              Built so far: the road and the arithmetic under it, plus the
-              workshop and an empty lit scene. Everything from
-              <i>sim/</i> down is Phases 2–10.
+              Built so far: the road, the bike, the loop, and enough renderer to
+              see them. Traffic, rivals, combat, police, career and reputation
+              are Phases 4–9.
             </p>
           </section>
 
@@ -1920,19 +2495,19 @@
                   render time and stored nowhere.
                 </p>
                 <p>
-                  Why: it turns the hard questions into arithmetic. Who's ahead,
-                  am I on the road, spawn a bus 300 m up — each is a comparison
-                  rather than a geometry query. It is also what makes the
-                  simulation pure, testable, and cheap to replay.
+                  Why: it turns the hard questions into arithmetic. Who is
+                  ahead, am I on the road, spawn a bus 300 m up, which chunks of
+                  road are worth drawing — each is a comparison rather than a
+                  geometry query. It is also what makes the simulation pure,
+                  testable, and cheap to replay.
                 </p>
                 <p class="cost">
                   <b>Cost:</b> the road can never cross itself, fold back, or
-                  branch freely, and free-roam is impossible. Forks are explicit
-                  machinery rather than something the geometry gives us. And
-                  track space is not metric — a rectangle in it is a curved
-                  wedge in the world — so every question genuinely about metres
-                  needs a correction that world space would have given away
-                  free. For a point-to-point racer, still an easy trade.
+                  branch freely, and free-roam is impossible. And track space is
+                  not metric — a rectangle in it is a curved wedge in the world
+                  — so every question genuinely about metres needs a correction
+                  that world space would have given away free. For a
+                  point-to-point racer, still an easy trade.
                 </p>
               </li>
               <li>
@@ -1942,49 +2517,58 @@
                     constrains the arithmetic it may use.</b
                   >
                   Same seed plus same inputs gives the same race on any machine.
-                  All randomness goes through one seeded generator — and, less
-                  obviously, no sine, cosine, or power function is allowed
-                  anywhere the simulation can reach.
+                  All randomness goes through one seeded generator; no sine,
+                  cosine or power function is allowed anywhere the simulation
+                  reaches; and the simulation cannot read a clock at all.
                 </p>
                 <p>
                   Why: the floating-point standard pins add, subtract, multiply,
-                  divide, and square root to identical results on every engine,
-                  but deliberately leaves the trigonometric functions to the
-                  implementation. A single cosine in the simulation quietly
-                  downgrades "the same everywhere" to "the same here".
-                  Trigonometry is confined to loading the track and to drawing.
+                  divide and square root to identical results everywhere, and
+                  deliberately does not pin the trigonometric functions. A
+                  single cosine downgrades "the same everywhere" to "the same
+                  here". The same logic applies to time: the accumulator is
+                  handed elapsed seconds rather than reading them, so a replay
+                  test can jitter the wall clock from 240 Hz to 12 Hz and still
+                  produce a bit-identical world.
                 </p>
                 <p class="cost">
-                  <b>Cost:</b> real work, permanently. Anything needing angles
-                  has to be precomputed into tables and interpolated, which
-                  costs memory and load time. But Phase 1 changed the shape of
-                  this trade: forced to write the distance formula out
-                  algebraically instead of reaching for a cosine, most of it
-                  collapsed into exact arithmetic, and the version that avoids
-                  the transcendental turned out to be a thousand times more
-                  accurate than the one that would have used it carelessly. The
-                  constraint improved the result.
+                  <b>Cost:</b> real work, permanently. Angles must be
+                  precomputed into tables and interpolated, which costs memory
+                  and load time. But twice now the constraint has improved the
+                  result rather than compromising it — writing the distance
+                  formula out algebraically instead of reaching for a cosine
+                  produced a version a thousand times more accurate, and the
+                  same discipline is what makes replays trustworthy enough to
+                  debug balance with.
                 </p>
               </li>
               <li>
                 <p>
-                  <b>No engine, no framework, no physics library.</b> The
-                  runtime dependency list is one item long: Three.js, for
-                  drawing.
+                  <b
+                    >Data files own the truth, and which field owns what is
+                    fixed in writing.</b
+                  >
+                  Tracks, bikes and tuning are JSON, validated on load with
+                  errors that name the file and the field. Where several numbers
+                  could each define a quantity, one is named authoritative and
+                  the simulation is forbidden the others — a bike's engine power
+                  is display text the sim may never read.
                 </p>
                 <p>
-                  Why: this game is a road, some riders, and arithmetic. An
-                  engine would supply a physics system we have deliberately
-                  rejected in favour of a hand-tuned arcade model, an editor for
-                  a world we generate from data, and a download many times our
-                  entire budget.
+                  Why: speed, power, mass and acceleration over-determine a
+                  vehicle. Two sources of truth that disagree do not announce
+                  themselves; they surface as a bike that misses its own stat
+                  sheet and a tuning session spent on the wrong number. Naming
+                  the authority up front turns that from a judgement call into a
+                  solve — every bike now hits its stated time to top speed by
+                  construction.
                 </p>
                 <p class="cost">
-                  <b>Cost:</b> we write things engines give away — the road
-                  mesh, the camera, the object pooling, the save system. Every
-                  one of those is a phase that could have been free. The return
-                  is a 117 KB download and a codebase where nothing happens that
-                  we did not write.
+                  <b>Cost:</b> the derived constants have to be computed rather
+                  than written down, so the data file no longer reads like a
+                  spec sheet you can eyeball. And validation is real code with
+                  real tests behind it — about a third of the loading code
+                  exists only to reject bad input.
                 </p>
               </li>
             </ol>
