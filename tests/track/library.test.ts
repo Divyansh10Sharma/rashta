@@ -87,21 +87,40 @@ describe('the five routes, five tiers each', () => {
     }
   });
 
+  /**
+   * Milliseconds for the fastest of three runs.
+   *
+   * A single wall-clock reading is not a measurement of this code — it is a
+   * measurement of whatever else the machine was doing, and under the parallel
+   * test run that is a lot. Contention can only ever inflate a timing, never
+   * deflate one below the true cost, so the minimum is the sample least
+   * contaminated by it. A genuinely slow build still fails every run.
+   */
+  function fastestMs(run: () => unknown): number {
+    let best = Infinity;
+    for (let i = 0; i < 3; i += 1) {
+      const start = performance.now();
+      run();
+      best = Math.min(best, performance.now() - start);
+    }
+    return best;
+  }
+
   it('validates all 25 files in well under 200 ms', () => {
     const files = routeFiles();
-    const start = performance.now();
-    loadTrackLibrary(files);
-    expect(performance.now() - start).toBeLessThan(200);
+    expect(fastestMs(() => loadTrackLibrary(files))).toBeLessThan(200);
   });
 
   it('builds any single track in well under 200 ms', () => {
     // The criterion that matters at runtime: the game rides one track. Tier 5
-    // is the worst case at roughly 28 km of precomputed frames.
-    const fresh = loadTrackLibrary(routeFiles());
+    // is the worst case at roughly 28 km of precomputed frames. A fresh
+    // library each run, because a built track is cached and the second read
+    // would measure the cache rather than the build.
     for (const route of ROUTES) {
-      const start = performance.now();
-      const track = fresh.get(`${route}-t5`);
-      const ms = performance.now() - start;
+      let track;
+      const ms = fastestMs(() => {
+        track = loadTrackLibrary(routeFiles()).get(`${route}-t5`);
+      });
       expect(track).toBeDefined();
       expect(`${route}-t5 built in ${ms < 200 ? 'under' : 'over'} 200 ms`).toBe(
         `${route}-t5 built in under 200 ms`,
@@ -344,6 +363,17 @@ describe('the library rejects bad data, naming the file', () => {
   it('rejects an unknown scenery tag', () => {
     expect(withFile({ ...good(), scenery: 'mars' })).toThrow(
       /bad\.json: scenery/,
+    );
+  });
+
+  it('rejects a traffic density that is missing or negative', () => {
+    // Density is read during extends resolution, before a track is ever built,
+    // so a bad value has to be caught there as well as in full validation.
+    expect(withFile({ ...good(), trafficDensity: -1 })).toThrow(
+      /bad\.json: trafficDensity/,
+    );
+    expect(withFile({ ...good(), trafficDensity: 'lots' })).toThrow(
+      /bad\.json: trafficDensity/,
     );
   });
 

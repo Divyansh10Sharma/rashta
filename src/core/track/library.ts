@@ -169,11 +169,6 @@ export class TrackLibrary {
     private readonly resolved: Map<string, { file: string; data: TrackData }>,
   ) {}
 
-  /** Every track id, in file order. */
-  get ids(): string[] {
-    return [...this.resolved.keys()];
-  }
-
   get size(): number {
     return this.resolved.size;
   }

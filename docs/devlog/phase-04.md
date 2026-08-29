@@ -148,19 +148,103 @@ its valid sweep — so a distant pair on a tight road reported as touching. Now
 it saturates to `2R + |dt|`, an upper bound on any chord, because the only
 property a collision check needs is that far things never read as close.
 
-### Still open at the point of writing
+### Attempt 5 — and the diagnosis that was wrong
 
-The worst case is down to about **−0.79 m** on `ring-road-t5`, from around
-−7.5 m at the start. The remaining cause is the lateral crossing: `lane`
-commits instantly while `t` drifts over a couple of seconds, and during that
-crossing the vehicle occupies both lanes. Demanding 28 m of clearance before
-starting a change covers most of it and is not yet sufficient.
+At this point the worst case was about **-0.79 m** on `ring-road-t5`, down from
+around -7.5 m. I wrote down what I believed the cause was: the lateral
+crossing, `lane` committing instantly while `t` drifts across over a couple of
+seconds, so a vehicle mid-change occupies both lanes. The fix that followed
+from it was to keep the simulation's `t` exactly on a lane centre and let the
+renderer smooth the crossing.
 
-The next thing to try is the one that makes it structural rather than
-tuned: keep the simulation's `t` exactly on a lane centre at all times, and
-let the *renderer* smooth the crossing. Then two vehicles are either in the
-same lane, where the velocity cap orders them, or in different lanes, where
-the narrowest lane in the game (4 m, Old City) is still wider than the widest
-combined footprint (2.6 m). Non-overlap would hold by construction with no
-margin to tune — at the cost of the simulation no longer knowing a vehicle is
-mid-manoeuvre, which combat in Phase 6 may want.
+Before writing that, I dumped the worst pair every seven ticks with every
+number that went into it. It was not the crossing, and it was not one cause.
+
+```
+ring-road-t5
+  clear=-0.79 auto/bus lat=1.21 needWide=2.00 lanes=2/2 t=2.75/3.96
+                                              nlanes=4 hw=11.00
+old-city-t5
+  clear=-0.60 bus/bus   lat=2.00 needWide=2.60 lanes=1/0 t=2.00/0.00
+                        onc=0/1                nlanes=2 hw=4.00
+```
+
+Both pairs are doing something no lane-change decision explains.
+
+**The Ring Road pair is in the same lane already** — `lanes=2/2` — and 3 m
+apart laterally. Lane 2 of a four-lane 11 m road is centred at 2.75; the bus
+is at 3.96 and sliding down. Nobody decided to change lane. `halfWidth` and
+`lanes` are step functions of `s`: the Ring Road goes from three lanes across
+10 m to four across 11 m at a segment boundary, so lane 2's centre jumps from
+6.67 to 2.75 and every vehicle in it is dragged 3.9 m sideways. The road moved,
+not the vehicle. No gap was checked because no decision was taken.
+
+And `leaderFor` did not order the pair, because it asked only whether the two
+overlapped laterally *now*. Mid-slide they did not, so the bus was never
+constrained against the auto it was sliding into.
+
+**The Old City pair is head-on.** A two-way road that narrows to one lane has
+its single lane centred on the divider, and `respawn` placed an oncoming bus
+at exactly `t = 0` — half of it in the other direction's half from the moment
+it appeared. Nothing was going to fix that afterwards.
+
+Three changes, and each one closes a hole the others do not:
+
+1. **`leaderFor` orders by lane index *or* lateral overlap.** Attempt 3 tried
+   replacing lateral overlap with lane index and made things worse; the union
+   is strictly more constraining than either, and it is what actually
+   describes a vehicle part-way through a crossing — it is genuinely in two
+   lanes, so it is ordered against both.
+2. **Lateral movement is movement, so it only happens into free space.** The
+   drift toward a lane centre now passes the same `hasRoom` test a spawn does.
+   Blocked, a vehicle holds its line until the road beside it clears. If
+   holding leaves it hanging off the road it is recycled, which is invisible.
+3. **On a two-way road the centreline is a wall.** A vehicle's whole footprint
+   stays on its own side, at spawn as well as while driving. Two vehicles
+   going opposite ways are then at least their combined width apart *by
+   construction* — which is the acceptance criterion itself, not a margin
+   tuned until it passed.
+
+Worst-case clearance, from -7.53 m at the start of the phase:
+
+```
+ring-road-t5   +0.61 m
+old-city-t5    +1.40 m
+yamuna-bank-t3 +1.23 m
+```
+
+The Ring Road's +0.61 is the interesting one: it is `ABREAST_MARGIN`, almost
+exactly. That pair is a bus held mid-slide against an auto it cannot get past,
+stopped at the width where the two start minding each other. The margin is
+what the number is made of, which is the sign that the mechanism is doing the
+work rather than the luck.
+
+Worth keeping: the fix I was about to write was aimed at a cause that was not
+producing the failure. It would have been a real change, it would probably have
+moved the number, and it would have left both actual bugs in — the geometry
+drag and the head-on spawn — for something later to trip over. Four attempts of
+tuning had got to -0.79 m; fifteen minutes of printing the numbers got to +0.61
+and explained every one of them.
+
+### Two tests that were measuring the machine
+
+`builds any single track in well under 200 ms` failed in the full run and
+passed on its own, three times. It was timing a build under a parallel test
+run and reading scheduler contention as build cost — the same shape as the
+three flaky heap-delta tests in Phases 2 and 3. Both timing budgets now take
+the fastest of three runs: contention can only inflate a reading, never deflate
+one below the true cost, so the minimum is the least contaminated sample and a
+genuinely slow build still fails every run.
+
+The two ten-minute-ride tests were at 4.85 s against Vitest's 5 s default. Ten
+simulated minutes is the acceptance criterion, so the timeout moved rather than
+the ride.
+
+### Coverage found two untested error paths and one dead getter
+
+`src/core/track/**` is held at 100% lines, and it caught that both
+`trafficDensity` validators — the one in `library.ts` that runs during
+`extends` resolution and the one in `validate.ts` that runs on an assembled
+track — had no test. Also `TrackLibrary.ids`, which nothing has ever called.
+Deleted rather than tested: it is an API invented for a caller that does not
+exist.

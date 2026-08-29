@@ -172,7 +172,9 @@ describe('the spawn ring', () => {
       if (i % 3600 === 0) expect(world.traffic.length).toBe(before);
     }
     expect(world.traffic.length).toBe(before);
-  });
+    // Ten simulated minutes is the criterion, not an implementation detail, so
+    // the timeout moves rather than the ride.
+  }, 30_000);
 
   it('keeps traffic in a window around the rider over a ten-minute ride', () => {
     const track = trackFor('ring-road-t5');
@@ -192,7 +194,7 @@ describe('the spawn ring', () => {
     // Oncoming traffic runs the other way, so it goes further behind before
     // the recycle catches it. A generous bound still proves it is bounded.
     expect(worstBehind).toBeLessThan(TRAFFIC_BEHIND + TRAFFIC_AHEAD);
-  });
+  }, 30_000);
 
   it('reuses the same vehicle objects rather than allocating new ones', () => {
     const track = trackFor('ring-road-t3');

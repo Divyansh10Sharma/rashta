@@ -60,6 +60,9 @@ const BUMPER_MARGIN = 1.5;
 /** How early, in metres of width, two vehicles start minding each other. */
 const ABREAST_MARGIN = 0.6;
 
+/** Clear space, in metres, kept between a footprint and the centreline. */
+const CENTRELINE_MARGIN = 0.2;
+
 /**
  * Extra clearance, in metres, demanded before starting a lane change.
  *
@@ -86,6 +89,31 @@ export function laneCentre(
 ): number {
   const width = (halfWidth * 2) / lanes;
   return -halfWidth + width * (index + 0.5);
+}
+
+/**
+ * Where this vehicle is trying to sit laterally, in metres.
+ *
+ * Its lane centre, except that on a two-way road the centreline is a wall.
+ * Lane centres move as the road widens and narrows — the Ring Road steps from
+ * three lanes to four, the Old City from two to one — and a moving lane centre
+ * can put a vehicle's footprint across the divider without any decision being
+ * taken. Keeping the whole footprint on its own half is what makes a head-on
+ * impossible by construction rather than by margin: two vehicles going
+ * opposite ways are then always at least their combined width apart.
+ */
+function targetT(
+  track: Track,
+  vehicle: TrafficVehicle,
+  lane: number,
+  lanes: number,
+  halfWidth: number,
+): number {
+  const want = laneCentre(lanes, lane, halfWidth);
+  if (track.segmentAt(vehicle.pos.s, vehicle.pos.branchId).oneWay) return want;
+
+  const clear = TRAFFIC_SIZES[vehicle.kind].width / 2 + CENTRELINE_MARGIN;
+  return vehicle.oncoming ? Math.min(want, -clear) : Math.max(want, clear);
 }
 
 /** Creates the pool. Size is fixed from the track's density and the window. */
@@ -178,20 +206,26 @@ function respawn(
     const lanes = track.lanesAt(s);
     const halfWidth = track.widthAt(s);
     const lane = rng.nextInt(lanes);
-    const t = laneCentre(lanes, lane, halfWidth);
 
     const seg = track.segmentAt(s);
     // A two-way road runs the left half against you. A one-way carriageway
     // does not, which is most of why the flyway is fast and the Old City is
     // terrifying.
     const oncoming = !seg.oneWay && lane < lanes / 2;
+
+    // Spawn on the same side of the divider the vehicle will drive on. A
+    // one-lane stretch of a two-way road has its only lane centre *on* the
+    // centreline, so spawning at the raw lane centre puts half a bus into the
+    // oncoming half from the moment it appears — and once there it cannot
+    // always get out, because moving is only allowed into free space.
+    vehicle.pos.s = s;
+    vehicle.oncoming = oncoming;
+    const t = targetT(track, vehicle, lane, lanes, halfWidth);
     if (!hasRoom(pool, vehicle, t, s)) continue;
     const [lo, hi] = SPEED_RANGE[kind];
 
-    vehicle.pos.s = s;
     vehicle.pos.t = t;
     vehicle.lane = lane;
-    vehicle.oncoming = oncoming;
     vehicle.cruise = rng.nextRange(lo, hi);
     vehicle.speed = vehicle.cruise;
     vehicle.laneChangeTimer = rng.nextRange(2, 9);
@@ -222,10 +256,13 @@ function laneStillValid(
 /**
  * The nearest vehicle ahead that this one is actually behind.
  *
- * A vehicle belongs to exactly one lane at a time. A lane change commits
- * immediately — `lane` changes, and `t` catches up over about a second — so
- * from the instant it commits it is ordered against its new lane's traffic,
- * which is what stops it drifting into anything.
+ * A vehicle counts as ahead if it shares this one's lane *or* overlaps it
+ * laterally, and the union matters. Neither half is sufficient alone: lateral
+ * overlap alone misses a vehicle that is committed to your lane but still
+ * crossing into it, and lane index alone misses one that is physically in
+ * front of you while nominally belonging somewhere else. A vehicle part-way
+ * through a crossing genuinely occupies two lanes, so it is ordered against
+ * both — which is the whole reason the crossing cannot drive through anyone.
  */
 function leaderFor(
   pool: TrafficVehicle[],
@@ -239,14 +276,14 @@ function leaderFor(
     if (other.pos.branchId !== vehicle.pos.branchId) continue;
     if (other.oncoming !== vehicle.oncoming) continue;
 
-    // Lateral overlap, not lane index: a lane change commits `lane` at once
-    // while `t` drifts across, so index alone leaves a changer unconstrained
-    // against the traffic it is physically driving through.
     const abreast =
       (TRAFFIC_SIZES[vehicle.kind].width + TRAFFIC_SIZES[other.kind].width) /
         2 +
       ABREAST_MARGIN;
-    if (Math.abs(other.pos.t - vehicle.pos.t) >= abreast) continue;
+    const shares =
+      other.lane === vehicle.lane ||
+      Math.abs(other.pos.t - vehicle.pos.t) < abreast;
+    if (!shares) continue;
 
     const gap = vehicle.oncoming
       ? vehicle.pos.s - other.pos.s
@@ -334,10 +371,28 @@ export function stepTraffic(
       respawn(vehicle, pool, track, riderS, rng);
       continue;
     }
-    const want = laneCentre(lanes, vehicle.lane, halfWidth);
+    const want = targetT(track, vehicle, vehicle.lane, lanes, halfWidth);
     const step = tuning.trafficLaneChangeSpeed * dt;
     const delta = want - vehicle.pos.t;
-    vehicle.pos.t += Math.abs(delta) < step ? delta : Math.sign(delta) * step;
+    const next =
+      Math.abs(delta) < step ? want : vehicle.pos.t + Math.sign(delta) * step;
+
+    // Moving sideways is moving, and it can only happen into space that is
+    // free. Without this a vehicle slides through its neighbour whenever the
+    // road's geometry shifts its lane centre underneath it — no decision is
+    // ever taken, so no gap is ever checked. Blocked, it simply holds its line
+    // until the road ahead of it clears.
+    if (hasRoom(pool, vehicle, next, vehicle.pos.s)) {
+      vehicle.pos.t = next;
+    } else if (
+      Math.abs(vehicle.pos.t) + TRAFFIC_SIZES[vehicle.kind].width / 2 >
+      track.driveableHalfWidthAt(vehicle.pos.s, vehicle.pos.branchId)
+    ) {
+      // Held out of its lane and now hanging off the road: recycle rather than
+      // leave it there. A vehicle vanishing ahead of you is invisible.
+      respawn(vehicle, pool, track, riderS, rng);
+      continue;
+    }
 
     vehicle.laneChangeTimer -= dt;
     if (vehicle.laneChangeTimer <= 0) {
@@ -368,7 +423,7 @@ function maybeChangeLane(
     if (wouldOncome !== vehicle.oncoming) return;
   }
 
-  const t = laneCentre(lanes, lane, halfWidth);
+  const t = targetT(track, vehicle, lane, lanes, halfWidth);
   if (!hasRoom(pool, vehicle, t, vehicle.pos.s, LANE_CHANGE_CLEARANCE)) return;
   vehicle.lane = lane;
 }

@@ -138,6 +138,11 @@ describe('every error names the file and the field', () => {
       (t) => (t['branches'] = 1),
       /branches must be an array/,
     ],
+    [
+      'negative traffic density',
+      (t) => (t['trafficDensity'] = -3),
+      /trafficDensity must not be negative/,
+    ],
   ];
 
   for (const [name, mutate, pattern] of cases) {
