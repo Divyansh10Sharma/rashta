@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Track } from '../core/track/Track.ts';
 import { createFrame } from '../core/track/path.ts';
+import { ENVIRONMENTS } from './environments.ts';
 
 /**
  * Roadside furniture: streetlights, poles, kerb stones.
@@ -34,8 +35,32 @@ export const DEFAULT_SCENERY: SceneryConfig = {
   behind: 60,
 };
 
+/**
+ * Beyond this distance, small roadside objects are hidden.
+ *
+ * The crudest level of detail there is, and the right one here: a bollard at
+ * 300 m is under a pixel, so the cheapest way to draw it well is not to. Masts
+ * and lamp heads are exempt — a receding line of streetlights is most of what
+ * sells the distance, and losing it is instantly visible.
+ */
+export const SMALL_OBJECT_LOD_METRES = 220;
+
+/** Scenery tuned for a district: spacing and colours from the environment. */
+export function sceneryFor(scenery: keyof typeof ENVIRONMENTS): SceneryConfig {
+  const env = ENVIRONMENTS[scenery];
+  return {
+    lightSpacing: env.lightSpacing,
+    kerbSpacing: 4,
+    bollardSpacing: env.bollardSpacing,
+    ahead: env.sceneryAhead,
+    behind: 60,
+  };
+}
+
 interface Pool {
   mesh: THREE.InstancedMesh;
+  /** Hidden past `SMALL_OBJECT_LOD_METRES` — see the constant. */
+  small: boolean;
   spacing: number;
   /**
    * The `s` distance one full cycle of this pool covers. Recycling shifts a
@@ -93,8 +118,9 @@ function bollardGeometry(): THREE.BufferGeometry {
  */
 export function createScenery(
   track: Track,
-  config: SceneryConfig = DEFAULT_SCENERY,
+  config: SceneryConfig = sceneryFor(track.data.scenery),
 ): SceneryField {
+  const env = ENVIRONMENTS[track.data.scenery];
   const group = new THREE.Group();
   const frame = createFrame();
   const matrix = new THREE.Matrix4();
@@ -113,6 +139,7 @@ export function createScenery(
     spacing: number,
     lateral: number,
     bothSides: boolean,
+    small = false,
   ): void => {
     const perSide = Math.ceil(span / spacing) + 1;
     const total = bothSides ? perSide * 2 : perSide;
@@ -131,6 +158,7 @@ export function createScenery(
     group.add(mesh);
     pools.push({
       mesh,
+      small,
       spacing,
       window: perSide * spacing,
       slotS,
@@ -140,18 +168,18 @@ export function createScenery(
   };
 
   const mastMaterial = new THREE.MeshStandardMaterial({
-    color: 0x3a3a42,
+    color: env.furniture,
     roughness: 0.85,
   });
   // Sodium vapour. The lamp heads are the only warm thing in the scene.
   const lampMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffc077,
-    emissive: 0xff9c3c,
+    color: env.keyColour,
+    emissive: env.keyColour,
     emissiveIntensity: 1.6,
     roughness: 0.4,
   });
   const kerbMaterial = new THREE.MeshStandardMaterial({
-    color: 0x55525a,
+    color: env.kerb,
     roughness: 0.95,
   });
   const bollardMaterial = new THREE.MeshStandardMaterial({
@@ -173,7 +201,19 @@ export function createScenery(
   let count = 0;
   for (const pool of pools) count += pool.mesh.count;
 
-  const place = (pool: Pool, index: number, s: number): void => {
+  const place = (
+    pool: Pool,
+    index: number,
+    s: number,
+    hidden = false,
+  ): void => {
+    if (hidden) {
+      // Scaled to nothing rather than removed: the instance count stays fixed,
+      // so this costs a matrix write and no allocation.
+      matrix.makeScale(0, 0, 0);
+      pool.mesh.setMatrixAt(index, matrix);
+      return;
+    }
     track.sample(s, frame);
     const edge = frame.halfWidth + frame.shoulder + pool.lateral;
     const offset = edge * (pool.side[index] ?? -1);
@@ -210,7 +250,7 @@ export function createScenery(
         while (slot < lo) slot += window;
         while (slot >= lo + window) slot -= window;
         pool.slotS[i] = slot;
-        place(pool, i, slot);
+        place(pool, i, slot, pool.small && slot - s > SMALL_OBJECT_LOD_METRES);
       }
       pool.mesh.instanceMatrix.needsUpdate = true;
     }

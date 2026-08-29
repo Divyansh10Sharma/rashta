@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Track } from '../core/track/Track.ts';
 import { createFrame } from '../core/track/path.ts';
 import { MAIN_BRANCH } from '../core/types.ts';
+import { ENVIRONMENTS, type Environment } from './environments.ts';
 
 /**
  * Builds the road surface as a quad strip walked along the track centreline.
@@ -22,9 +23,11 @@ export interface RoadChunk {
   mesh: THREE.Mesh;
   /** Lane markings, parented to `mesh` so they inherit its visibility. */
   paint: THREE.Mesh;
-  /** Track-space span this chunk covers. */
+  /** Track-space span this chunk covers, on its own path. */
   startS: number;
   endS: number;
+  /** Which path this chunk belongs to. Branch chunks draw alongside the main. */
+  branchId: number;
 }
 
 export interface RoadMesh {
@@ -33,16 +36,19 @@ export interface RoadMesh {
   dispose: () => void;
 }
 
-/** Lane paint, as a repeating dashed line down the centre of each lane join. */
-function buildMaterials(): { road: THREE.Material; paint: THREE.Material } {
+/** Road surface and lane paint, coloured for the district. */
+function buildMaterials(env: Environment): {
+  road: THREE.Material;
+  paint: THREE.Material;
+} {
   return {
     road: new THREE.MeshStandardMaterial({
-      color: 0x24242a,
-      roughness: 0.92,
+      color: env.road,
+      roughness: env.roadRoughness,
       metalness: 0.02,
     }),
     paint: new THREE.MeshStandardMaterial({
-      color: 0xd8d4c4,
+      color: env.paint,
       roughness: 0.7,
       emissive: 0x2a2620,
     }),
@@ -158,31 +164,34 @@ function buildPaintGeometry(
   return geometry;
 }
 
-/** Builds the whole road, chunked. Called once per track load. */
-export function buildRoadMesh(
-  track: Track,
-  branchId: number = MAIN_BRANCH,
-): RoadMesh {
-  const materials = buildMaterials();
+/**
+ * Builds the whole road, chunked — the main path plus every fork branch.
+ *
+ * Branch chunks carry their own `branchId` and their `s` range is expressed on
+ * the main path, so culling can treat all of them the same way: a branch is
+ * visible when the rider is near the stretch of route it replaces, whichever
+ * of the two they are actually on. Both roads of a fork are drawn, which is
+ * what makes a split look like a choice.
+ */
+export function buildRoadMesh(track: Track): RoadMesh {
+  const env = ENVIRONMENTS[track.data.scenery];
+  const materials = buildMaterials(env);
   const group = new THREE.Group();
   const chunks: RoadChunk[] = [];
-  const total = track.totalLength;
 
-  for (let startS = 0; startS < total; startS += CHUNK_METRES) {
-    const endS = Math.min(startS + CHUNK_METRES, total);
+  addPath(track, MAIN_BRANCH, 0, track.totalLength, materials, group, chunks);
 
-    const surface = new THREE.Mesh(
-      buildChunkGeometry(track, startS, endS, branchId),
-      materials.road,
+  track.branches.forEach((branch, i) => {
+    addPath(
+      track,
+      i + 1,
+      branch.forkS,
+      branch.forkS + branch.path.length,
+      materials,
+      group,
+      chunks,
     );
-    const paint = new THREE.Mesh(
-      buildPaintGeometry(track, startS, endS, branchId),
-      materials.paint,
-    );
-    surface.add(paint);
-    group.add(surface);
-    chunks.push({ mesh: surface, paint, startS, endS });
-  }
+  });
 
   return {
     group,
@@ -196,6 +205,34 @@ export function buildRoadMesh(
       materials.paint.dispose();
     },
   };
+}
+
+function addPath(
+  track: Track,
+  branchId: number,
+  fromS: number,
+  toS: number,
+  materials: { road: THREE.Material; paint: THREE.Material },
+  group: THREE.Group,
+  chunks: RoadChunk[],
+): void {
+  const total = toS;
+
+  for (let startS = fromS; startS < total; startS += CHUNK_METRES) {
+    const endS = Math.min(startS + CHUNK_METRES, total);
+
+    const surface = new THREE.Mesh(
+      buildChunkGeometry(track, startS, endS, branchId),
+      materials.road,
+    );
+    const paint = new THREE.Mesh(
+      buildPaintGeometry(track, startS, endS, branchId),
+      materials.paint,
+    );
+    surface.add(paint);
+    group.add(surface);
+    chunks.push({ mesh: surface, paint, startS, endS, branchId });
+  }
 }
 
 /**
@@ -213,6 +250,9 @@ export function cullChunks(
 ): number {
   let visible = 0;
   for (const chunk of road.chunks) {
+    // Branch chunks carry their span in main-path `s` too, so both roads of a
+    // fork come into view together and the split reads as a choice rather than
+    // as one road that happens to bend.
     const shown = chunk.endS > s - behind && chunk.startS < s + ahead;
     chunk.mesh.visible = shown;
     if (shown) visible += 1;

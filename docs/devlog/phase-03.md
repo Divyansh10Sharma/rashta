@@ -158,3 +158,39 @@ All three are now deterministic: identity checks that the same objects and
 buffers survive the loop, plus a source scan of the hot files for `new`,
 `.map(`, `.filter(` and friends, sitting alongside the existing
 no-transcendental guard. `new Error(...)` is exempt and says why in a comment.
+
+### Environments, fork rendering, and a level of detail
+
+`environments.ts` is one table keyed by scenery tag holding sky, fog range,
+light colours, road and kerb colour, and roadside spacing. Adding a sixth
+district is a row, not a change to the renderer. The five are deliberately
+different in a way you can feel rather than name:
+
+| District | Fog | Character |
+|---|---|---|
+| Ridge | 45–260 m | Unlit, blue, blind crests. Darkest place in the game. |
+| Yamuna | 70–520 m | Wide, hazy off the water, few lamps, long sightlines. |
+| Ring Road | 90–420 m | The default. Lit end to end, everything orange. |
+| Old City | 25–150 m | Fog pulled right in — you cannot see round the corner anyway. |
+| DND Flyway | 120–700 m | Longest sightlines in the game, and no barrier on one side. |
+
+Chunk residency is now derived from the district's fog rather than a constant:
+there is no point keeping road loaded past the distance you can see it. The
+Old City holds about three chunks and the flyway about a dozen.
+
+**Fork rendering** turned out to need almost nothing new. Branch chunks carry
+their `s` range expressed on the main path, so the existing numeric cull
+handles them unchanged — both roads of a split come into view together
+because their spans overlap. That is the track-space dividend again: "is this
+piece of road worth drawing" stayed a comparison of two numbers even after the
+road stopped being a single line.
+
+**LOD** is the crudest possible and the right one: kerb stones and bollards are
+scaled to zero past 220 m. A bollard at 300 m is under a pixel, so the cheapest
+way to draw it well is not to. Streetlight masts and lamp heads are exempt — a
+receding line of lamps is most of what sells distance, and losing it is
+instantly obvious. Hidden instances keep their slot and cost one matrix write,
+so the pool stays fixed-size and allocation-free.
+
+Which route the app loads is a URL parameter (`?track=old-city-t3`) until the
+track-select menu arrives in Phase 8. All 25 serve.

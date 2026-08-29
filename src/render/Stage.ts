@@ -4,6 +4,7 @@ import { ChaseCamera } from './ChaseCamera.ts';
 import { createRiderView, type RiderView } from './Rider.ts';
 import { createScenery, type SceneryField } from './Scenery.ts';
 import { buildRoadMesh, cullChunks, type RoadMesh } from './RoadMeshBuilder.ts';
+import { ENVIRONMENTS, applyEnvironment } from './environments.ts';
 
 /** Everything Three.js, assembled. Reads core state and never writes to it. */
 export interface Stage {
@@ -35,7 +36,6 @@ export interface Stage {
 }
 
 /** How far ahead and behind road chunks stay resident. */
-const CHUNK_AHEAD = 460;
 const CHUNK_BEHIND = 90;
 
 /**
@@ -57,9 +57,16 @@ export function createStage(canvas: HTMLCanvasElement, track: Track): Stage {
   const key = new THREE.DirectionalLight(0xffb765, 1.5);
   key.position.set(-30, 60, 20);
   scene.add(key);
-  scene.add(new THREE.AmbientLight(0x2b3452, 1.1));
+  const ambient = new THREE.AmbientLight(0x2b3452, 1.1);
+  scene.add(ambient);
   // A faint warm haze at road level, as if the whole city is under one lamp.
-  scene.add(new THREE.HemisphereLight(0xffa94d, 0x14141c, 0.55));
+  const hemi = new THREE.HemisphereLight(0xffa94d, 0x14141c, 0.55);
+  scene.add(hemi);
+
+  // Sky, fog and light colours all come from the track's district.
+  applyEnvironment(scene, key, ambient, hemi, ENVIRONMENTS[track.data.scenery]);
+
+  const chunkAhead = ENVIRONMENTS[track.data.scenery].fogFar + 60;
 
   const road = buildRoadMesh(track);
   scene.add(road.group);
@@ -98,7 +105,9 @@ export function createStage(canvas: HTMLCanvasElement, track: Track): Stage {
     rider.update(track, s, t, lean, wheelAngle, branchId);
     chase.update(track, s, t, speedFraction, branchId, dt);
     scenery.update(s);
-    return cullChunks(road, s, CHUNK_AHEAD, CHUNK_BEHIND);
+    // Chunks stay resident as far as the district's fog lets you see, so a
+    // narrow lane loads three chunks and the flyway loads a dozen.
+    return cullChunks(road, s, chunkAhead, CHUNK_BEHIND);
   };
 
   return {

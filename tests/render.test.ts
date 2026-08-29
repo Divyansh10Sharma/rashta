@@ -9,6 +9,7 @@ import {
 } from '../src/render/RoadMeshBuilder.ts';
 import { createScenery, DEFAULT_SCENERY } from '../src/render/Scenery.ts';
 import { createRiderView } from '../src/render/Rider.ts';
+import { MAIN_BRANCH } from '../src/core/types.ts';
 import { ChaseCamera } from '../src/render/ChaseCamera.ts';
 
 /**
@@ -30,26 +31,38 @@ const testTrack = parseTrack(
 );
 
 describe('the road mesh', () => {
-  it('covers the whole track in chunks', () => {
+  it('covers the whole main path in chunks', () => {
     const road = buildRoadMesh(track);
-    expect(road.chunks.length).toBe(
-      Math.ceil(track.totalLength / CHUNK_METRES),
-    );
-    expect(road.chunks[0]?.startS).toBe(0);
-    expect(road.chunks[road.chunks.length - 1]?.endS).toBeCloseTo(
-      track.totalLength,
-      6,
-    );
+    const main = road.chunks.filter((c) => c.branchId === MAIN_BRANCH);
+    expect(main.length).toBe(Math.ceil(track.totalLength / CHUNK_METRES));
+    expect(main[0]?.startS).toBe(0);
+    expect(main[main.length - 1]?.endS).toBeCloseTo(track.totalLength, 6);
     road.dispose();
   });
 
-  it('leaves no gap between consecutive chunks', () => {
+  it('leaves no gap between consecutive chunks of the same path', () => {
     const road = buildRoadMesh(testTrack);
-    for (let i = 1; i < road.chunks.length; i += 1) {
-      expect(road.chunks[i]?.startS).toBeCloseTo(
-        road.chunks[i - 1]?.endS ?? -1,
-        9,
-      );
+    const paths = new Set(road.chunks.map((c) => c.branchId));
+    expect(paths.size).toBeGreaterThan(1);
+
+    for (const branchId of paths) {
+      const run = road.chunks.filter((c) => c.branchId === branchId);
+      for (let i = 1; i < run.length; i += 1) {
+        expect(run[i]?.startS).toBeCloseTo(run[i - 1]?.endS ?? -1, 9);
+      }
+    }
+    road.dispose();
+  });
+
+  it('draws every fork branch as well as the main path', () => {
+    // Both roads of a split have to be visible, or a fork reads as one road
+    // that happens to bend.
+    const road = buildRoadMesh(testTrack);
+    for (let i = 0; i < testTrack.branches.length; i += 1) {
+      const branch = testTrack.branches[i];
+      const run = road.chunks.filter((c) => c.branchId === i + 1);
+      expect(run.length).toBeGreaterThan(0);
+      expect(run[0]?.startS).toBeCloseTo(branch?.forkS ?? -1, 6);
     }
     road.dispose();
   });

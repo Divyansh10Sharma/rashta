@@ -1,10 +1,9 @@
 import './style.css';
 import bikesJson from '../data/bikes.json';
 import tuningJson from '../data/tuning.json';
-import trackJson from '../data/tracks/straight.json';
+import { loadTrackLibrary } from '../core/track/library.ts';
 
 import { loadBikes, loadTuning } from '../core/sim/load.ts';
-import { loadTrack } from '../core/track/load.ts';
 import { step } from '../core/sim/step.ts';
 import { copyWorld, createWorld } from '../core/sim/world.ts';
 import { Input } from '../input/Input.ts';
@@ -28,7 +27,23 @@ const READOUT_INTERVAL_MS = 250;
 function run(canvas: HTMLCanvasElement): void {
   const tuning = loadTuning('tuning.json', tuningJson);
   const bikes = loadBikes('bikes.json', bikesJson, tuning);
-  const track = loadTrack('straight.json', trackJson);
+  // Every route file, resolved as one library so `extends` can find its base.
+  const files = import.meta.glob('../data/tracks/*-t*.json', { eager: true });
+  const raw: Record<string, unknown> = {};
+  for (const [path, module] of Object.entries(files)) {
+    raw[path.split('/').pop() ?? path] = (
+      module as { default: unknown }
+    ).default;
+  }
+  const library = loadTrackLibrary(raw);
+
+  // Which route to ride is a menu in Phase 8; until then it is the URL, so
+  // every one of the 25 can actually be looked at.
+  const wanted =
+    new URLSearchParams(location.search).get('track') ?? 'ring-road-t1';
+  const track = library.get(wanted) ?? library.get('ring-road-t1');
+  if (!track)
+    throw new Error(`no track "${wanted}" and no ring-road-t1 either`);
 
   const bike = bikes[1] ?? bikes[0];
   if (!bike) throw new Error('bikes.json contained no bikes');
