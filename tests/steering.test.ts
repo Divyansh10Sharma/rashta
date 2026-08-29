@@ -12,6 +12,7 @@ import { createWorld } from '../src/core/sim/world.ts';
 import { parseTrack } from '../src/core/track/load.ts';
 import { createRiderView } from '../src/render/Rider.ts';
 import { ChaseCamera } from '../src/render/ChaseCamera.ts';
+import type { TunedBike } from '../src/core/sim/types.ts';
 
 /**
  * The whole chain, from a key press to a pixel's worth of direction.
@@ -35,8 +36,12 @@ const track = parseTrack(
   's',
   readFileSync('src/data/tracks/straight.json', 'utf8'),
 );
-const bike = bikes[1] ?? bikes[0];
-if (!bike) throw new Error('no bikes');
+function requireBike(index: number): TunedBike {
+  const found = bikes[index] ?? bikes[0];
+  if (!found) throw new Error('no bikes in the data file');
+  return found;
+}
+const bike = requireBike(1);
 
 const keys = defaultKeyBindings();
 const pads = defaultPadBindings();
