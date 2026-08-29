@@ -1,7 +1,8 @@
 {
   "id": "ridge-run-t1",
-  "name": "Ridge Run — Tier 1",
+  "name": "Ridge Run \u2014 Tier 1",
   "scenery": "ridge",
+  "trafficDensity": 4.0,
   "segments": [
     {
       "length": 620,

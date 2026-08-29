@@ -1,7 +1,8 @@
 {
   "id": "yamuna-bank-t4",
-  "name": "Yamuna Bank — Tier 4",
+  "name": "Yamuna Bank \u2014 Tier 4",
   "scenery": "yamuna",
+  "trafficDensity": 25.2,
   "extends": "yamuna-bank-t3",
   "segments": [
     {

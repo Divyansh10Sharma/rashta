@@ -2,6 +2,7 @@
   "id": "test-track",
   "name": "Test Track",
   "scenery": "ringroad",
+  "trafficDensity": 0,
   "segments": [
     {
       "length": 200,

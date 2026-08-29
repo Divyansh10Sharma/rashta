@@ -62,7 +62,7 @@ function recordInputs(seed: number, count: number): InputFrame[] {
 
 /** Runs the sequence straight through, one tick per frame. */
 function runDirect(frames: InputFrame[]): WorldState {
-  const world = createWorld(bike);
+  const world = createWorld(bike, track);
   for (const frame of frames) step(world, frame, track, tuning);
   return world;
 }
@@ -72,7 +72,7 @@ function runDirect(frames: InputFrame[]): WorldState {
  * clock — the situation a player on a laggy machine is actually in.
  */
 function runJittered(frames: InputFrame[], seed: number): WorldState {
-  const world = createWorld(bike);
+  const world = createWorld(bike, track);
   const driver = new FixedStepDriver();
   const rng = createRng(seed);
   let consumed = 0;

@@ -58,7 +58,16 @@ function trackFor(id: string): Track {
   return track;
 }
 
-/** Rides a track holding a steady lean, recording which branches were used. */
+/**
+ * Rides a track, leaning toward one side as each fork approaches and
+ * straightening up in between — which is what a rider does, and what makes
+ * this a test of route selection rather than of survival.
+ *
+ * Holding full lean the whole way is not a neutral choice: on the DND Flyway
+ * it means riding the edge of an elevated road with no barrier, so the rider
+ * falls off over and over and covers a fifth of the route. Correct behaviour,
+ * useless test.
+ */
 function rideHolding(
   track: Track,
   lean: number,
@@ -67,13 +76,22 @@ function rideHolding(
   branchesUsed: Set<number>;
   rejoined: boolean;
 } {
-  const world = createWorld(bike);
-  const input = { throttle: 1, brake: 0, lean };
+  const world = createWorld(bike, track);
+  // Route selection is the thing under test; traffic would just add crashes.
+  world.traffic.length = 0;
+  const approaching = (s: number): boolean =>
+    track.branches.some((br) => s > br.forkS - 220 && s < br.forkS + 5);
+  const input = { throttle: 1, brake: 0, lean: 0 };
   const branchesUsed = new Set<number>();
   let leftMainAt = -1;
   let rejoined = false;
 
   for (let i = 0; i < 60 * 60 * 20; i += 1) {
+    input.lean =
+      world.player.pos.branchId === MAIN_BRANCH &&
+      approaching(world.player.pos.s)
+        ? lean
+        : 0;
     step(world, input, track, tuning);
     const id = world.player.pos.branchId;
     if (id !== MAIN_BRANCH) {
@@ -135,7 +153,7 @@ describe('the capture rule', () => {
     const branch = track.branches[0];
     if (!branch) throw new Error('no branch');
 
-    const world = createWorld(bike);
+    const world = createWorld(bike, track);
     world.player.pos.s = branch.forkS - 1;
     world.player.pos.t = FORK_CAPTURE_T - 0.2;
     world.player.speed = 30;
@@ -151,7 +169,7 @@ describe('the capture rule', () => {
     const branch = track.branches[1];
     if (!branch) throw new Error('no second branch');
 
-    const world = createWorld(bike);
+    const world = createWorld(bike, track);
     world.player.pos.s = branch.forkS - 1;
     world.player.pos.t = 3.5;
     world.player.speed = 30;
@@ -163,7 +181,7 @@ describe('the capture rule', () => {
 describe('progress across a fork', () => {
   it('never goes backwards, whichever route is taken', () => {
     const track = trackFor('ring-road-t1');
-    const world = createWorld(bike);
+    const world = createWorld(bike, track);
     const input = { throttle: 1, brake: 0, lean: 1 };
     let previous = -Infinity;
 

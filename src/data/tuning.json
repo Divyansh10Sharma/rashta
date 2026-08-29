@@ -16,6 +16,19 @@
   "leanMax": 0.62,
   "leanResponse": 9.0,
 
+  "trafficAccel": 3.2,
+  "trafficLaneChangeSpeed": 1.4,
+
+  "crashSeconds": 1.6,
+  "remountSeconds": 1.9,
+  "crashDecel": 18.0,
+  "remountGraceSeconds": 1.4,
+  "remountRecentre": 3.5,
+  "slipSeconds": 1.1,
+  "slipGrip": 0.28,
+  "potholeSpeedLoss": 6.0,
+  "dogCrashSpeed": 25.0,
+
   "wheelRadius": 0.31,
   "revsIdle": 0.08,
   "gearCount": 6

@@ -28,6 +28,8 @@ export interface TrackSource {
   id: string;
   name: string;
   scenery: SceneryTag;
+  /** Vehicles per kilometre. A tier may raise it without restating the road. */
+  trafficDensity: number;
   /** Id of the tier this one appends to, if any. */
   extends?: string;
   /** Only the segments this file adds. */
@@ -76,6 +78,14 @@ export function validateTrackSource(file: string, raw: unknown): TrackSource {
     );
   }
 
+  const density = t['trafficDensity'];
+  if (typeof density !== 'number' || !Number.isFinite(density) || density < 0) {
+    fail(
+      file,
+      `trafficDensity must be a non-negative number, got ${JSON.stringify(density)}`,
+    );
+  }
+
   const segments = validateSegmentList(file, 'segments', t['segments']);
 
   const rawBranches = t['branches'];
@@ -91,6 +101,7 @@ export function validateTrackSource(file: string, raw: unknown): TrackSource {
     id,
     name,
     scenery: scenery as SceneryTag,
+    trafficDensity: density,
     segments,
     branches,
   };
@@ -115,6 +126,7 @@ function assemble(
       id: source.id,
       name: source.name,
       scenery: source.scenery,
+      trafficDensity: source.trafficDensity,
       segments: [...source.segments],
       branches: [...source.branches],
     };
@@ -130,21 +142,68 @@ function assemble(
     id: source.id,
     name: source.name,
     scenery: source.scenery,
+    // A tier states its own density: heavier traffic is how tiers 4 and 5
+    // make route knowledge matter more than top speed.
+    trafficDensity: source.trafficDensity,
     segments: [...base.segments, ...source.segments],
     branches: [...base.branches, ...source.branches],
   };
 }
 
 /**
- * Resolves and builds every track in a set of files.
+ * Every track definition, validated, with geometry built on demand.
+ *
+ * Validation is eager: a typo in tier 4 should fail at startup, not when
+ * somebody unlocks it. Building is lazy, because building means walking the
+ * road and precomputing a frame every metre or two, and the game rides exactly
+ * one track at a time. Doing all 25 up front means building 450 km of node
+ * tables to look at 8 km of road — it broke the 200 ms budget the moment tier
+ * 5 existed, which is the roadmap's criterion doing its job.
+ *
+ * Built tracks are cached, so a route re-selected is free.
+ */
+export class TrackLibrary {
+  private readonly built = new Map<string, Track>();
+
+  constructor(
+    private readonly resolved: Map<string, { file: string; data: TrackData }>,
+  ) {}
+
+  /** Every track id, in file order. */
+  get ids(): string[] {
+    return [...this.resolved.keys()];
+  }
+
+  get size(): number {
+    return this.resolved.size;
+  }
+
+  has(id: string): boolean {
+    return this.resolved.has(id);
+  }
+
+  /** Builds the track's geometry, or returns the cached one. */
+  get(id: string): Track | undefined {
+    const cached = this.built.get(id);
+    if (cached) return cached;
+
+    const entry = this.resolved.get(id);
+    if (!entry) return undefined;
+
+    const track = new Track(entry.file, entry.data);
+    this.built.set(id, track);
+    return track;
+  }
+}
+
+/**
+ * Validates and resolves every track in a set of files.
  *
  * Takes all the files at once because `extends` can point at any of them; a
  * loader that resolved one file at a time would need to go back to disk
  * mid-validation.
  */
-export function loadTrackLibrary(
-  files: Record<string, unknown>,
-): Map<string, Track> {
+export function loadTrackLibrary(files: Record<string, unknown>): TrackLibrary {
   const sources = new Map<string, { file: string; source: TrackSource }>();
 
   for (const [file, raw] of Object.entries(files)) {
@@ -156,10 +215,8 @@ export function loadTrackLibrary(
     sources.set(source.id, { file, source });
   }
 
-  const tracks = new Map<string, Track>();
-  for (const [file, source] of [...sources.values()].map(
-    (e) => [e.file, e.source] as const,
-  )) {
+  const resolved = new Map<string, { file: string; data: TrackData }>();
+  for (const { file, source } of sources.values()) {
     const data = assemble(file, source, sources, new Set());
 
     const mainLength = data.segments.reduce((sum, seg) => sum + seg.length, 0);
@@ -167,7 +224,7 @@ export function loadTrackLibrary(
       checkBranchRange(file, `branches[${i}]`, branch, mainLength);
     });
 
-    tracks.set(data.id, new Track(file, data));
+    resolved.set(data.id, { file, data });
   }
-  return tracks;
+  return new TrackLibrary(resolved);
 }

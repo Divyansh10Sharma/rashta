@@ -61,11 +61,27 @@ export interface TrackBranch {
   segments: TrackSegment[];
 }
 
+/** A hazard resolved to an absolute `s` on a path, ready to collide with. */
+export interface PlacedHazard {
+  kind: HazardKind;
+  /** Metres along the path that owns it. */
+  s: number;
+  t: number;
+  branchId: number;
+}
+
 /** A track as it appears on disk, before validation and precompute. */
 export interface TrackData {
   id: string;
   name: string;
   scenery: SceneryTag;
+  /**
+   * Vehicles per kilometre. Per route *and* per tier: the Ring Road carries
+   * more than the Ridge at the same tier because that is what those roads
+   * are, and a tier lookup table could not express it. See
+   * docs/devlog/phase-04.md.
+   */
+  trafficDensity: number;
   segments: TrackSegment[];
   branches: TrackBranch[];
 }

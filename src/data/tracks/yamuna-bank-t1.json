@@ -1,7 +1,8 @@
 {
   "id": "yamuna-bank-t1",
-  "name": "Yamuna Bank — Tier 1",
+  "name": "Yamuna Bank \u2014 Tier 1",
   "scenery": "yamuna",
+  "trafficDensity": 9.0,
   "segments": [
     {
       "length": 1100,

@@ -1,6 +1,11 @@
 import { Vec3 } from '../vec.ts';
 import { MAIN_BRANCH } from '../types.ts';
-import type { TrackData, TrackFrame, TrackSegment } from '../types.ts';
+import type {
+  PlacedHazard,
+  TrackData,
+  TrackFrame,
+  TrackSegment,
+} from '../types.ts';
 import { headingOf } from './geometry.ts';
 import { Path, createFrame } from './path.ts';
 
@@ -30,6 +35,16 @@ export class Track {
 
   /** Total length of the main path, in metres. */
   readonly totalLength: number;
+
+  /**
+   * Every hazard on the track, resolved to an absolute `s` and sorted by it.
+   *
+   * Authored per segment as an offset, which is convenient to write and
+   * useless to collide against — a rider knows their `s`, not which segment
+   * they are in. Flattening once at load turns "what am I about to hit" into a
+   * scan of a sorted list.
+   */
+  readonly hazards: readonly PlacedHazard[];
 
   constructor(
     readonly file: string,
@@ -63,6 +78,34 @@ export class Track {
     });
 
     this.assertBranchesRejoin();
+    this.hazards = this.placeHazards();
+  }
+
+  /** Flattens per-segment hazard offsets into absolute positions. */
+  private placeHazards(): PlacedHazard[] {
+    const placed: PlacedHazard[] = [];
+
+    const walk = (segments: TrackSegment[], branchId: number, from: number) => {
+      let s = from;
+      for (const seg of segments) {
+        for (const hazard of seg.hazards) {
+          placed.push({
+            kind: hazard.kind,
+            s: s + hazard.offset,
+            t: hazard.t,
+            branchId,
+          });
+        }
+        s += seg.length;
+      }
+    };
+
+    walk(this.data.segments, MAIN_BRANCH, 0);
+    this.builtBranches.forEach((branch, i) => {
+      walk(branch.path.segments, i + 1, branch.forkS);
+    });
+
+    return placed.sort((a, b) => a.s - b.s);
   }
 
   /**

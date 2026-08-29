@@ -26,11 +26,17 @@ import type { Track } from './Track.ts';
 function chordOverArc(u: number): number {
   const u2 = u * u;
   const factor = 1 - u2 / 24 + (u2 * u2) / 1920 - (u2 * u2 * u2) / 322_560;
-  // The series diverges for absurdly large sweeps. This is a near-field
-  // measure — nothing asks the distance between two riders half a lap apart —
-  // but a negative along-track leg would be worse than an inaccurate one.
   return factor > 0 ? factor : 0;
 }
+
+/**
+ * Beyond this sweep the four-term series stops being trustworthy.
+ *
+ * It holds to about 3e-6 out to `u = 2` and degrades fast after — far enough
+ * for anything a collision asks about. Past it the answer only has to be
+ * safely large, never wrongly small.
+ */
+const SERIES_MAX_SWEEP = 2;
 
 /**
  * Approximate metric separation between two track positions, in metres.
@@ -68,8 +74,16 @@ export function trackDistance(a: TrackPos, b: TrackPos, track: Track): number {
   const rb = radius * (1 - tb * curvature);
 
   const sweep = Math.abs(ds) * Math.abs(curvature);
-  const along = Math.sqrt(ra * rb) * sweep * chordOverArc(sweep);
 
+  // Past the series' range, saturate rather than let it collapse. The chord of
+  // any arc is at most the circle's diameter, so `2R + |dt|` is a safe upper
+  // bound — and safe here means "never reports a far pair as close", which is
+  // the only property a collision check needs. Letting the series run on
+  // instead returns near-zero for two vehicles 273 m apart on a tight road,
+  // which is a false collision rather than an inaccurate distance.
+  if (sweep > SERIES_MAX_SWEEP) return 2 * radius + Math.abs(dt);
+
+  const along = Math.sqrt(ra * rb) * sweep * chordOverArc(sweep);
   return Math.sqrt(along * along + dt * dt);
 }
 

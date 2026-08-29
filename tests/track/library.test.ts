@@ -56,7 +56,11 @@ function trackFor(route: string, tier: number): Track {
 
 /** Rides a track flat out and reports whether it completed, and how long it took. */
 function rideToEnd(track: Track): { finished: boolean; seconds: number } {
-  const world = createWorld(bike);
+  const world = createWorld(bike, track);
+  // These tests are about the road, not about what is on it. A rider holding
+  // full throttle down the centre of a two-way road meets oncoming traffic
+  // head-on forever, which says nothing about whether the route is traversable.
+  world.traffic.length = 0;
   const input = { throttle: 1, brake: 0, lean: 0 };
   const maxTicks = 60 * 60 * 30; // half an hour of sim, far beyond any route
   for (let i = 0; i < maxTicks; i += 1) {
@@ -83,12 +87,31 @@ describe('the five routes, five tiers each', () => {
     }
   });
 
-  it('loads the whole library in under 200 ms', () => {
+  it('validates all 25 files in well under 200 ms', () => {
     const files = routeFiles();
     const start = performance.now();
     loadTrackLibrary(files);
-    const ms = performance.now() - start;
-    expect(ms).toBeLessThan(200);
+    expect(performance.now() - start).toBeLessThan(200);
+  });
+
+  it('builds any single track in well under 200 ms', () => {
+    // The criterion that matters at runtime: the game rides one track. Tier 5
+    // is the worst case at roughly 28 km of precomputed frames.
+    const fresh = loadTrackLibrary(routeFiles());
+    for (const route of ROUTES) {
+      const start = performance.now();
+      const track = fresh.get(`${route}-t5`);
+      const ms = performance.now() - start;
+      expect(track).toBeDefined();
+      expect(`${route}-t5 built in ${ms < 200 ? 'under' : 'over'} 200 ms`).toBe(
+        `${route}-t5 built in under 200 ms`,
+      );
+    }
+  });
+
+  it('caches a built track rather than rebuilding it', () => {
+    const fresh = loadTrackLibrary(routeFiles());
+    expect(fresh.get('ring-road-t1')).toBe(fresh.get('ring-road-t1'));
   });
 
   it('runs about 8 km at tier 1, per GAME_DESIGN.md', () => {
@@ -247,8 +270,15 @@ describe('rideability', () => {
   it('keeps the rider on the road the whole way', () => {
     for (const route of ROUTES) {
       const track = trackFor(route, 5);
-      const world = createWorld(bike);
+      const world = createWorld(bike, track);
+      world.traffic.length = 0;
       const input = { throttle: 1, brake: 0, lean: 0.35 };
+
+      // Accumulate the worst overrun and assert once. An `expect` per tick is
+      // ~150,000 assertions across five 28 km routes, which is slow enough to
+      // trip the default timeout and tells you nothing extra when it passes.
+      let worstOverrun = 0;
+      let worstAt = 0;
       while (
         world.player.pos.s < track.totalLength &&
         world.tick < 60 * 60 * 30
@@ -258,8 +288,16 @@ describe('rideability', () => {
           world.player.pos.s,
           world.player.pos.branchId,
         );
-        expect(Math.abs(world.player.pos.t)).toBeLessThanOrEqual(limit + 1e-9);
+        const overrun = Math.abs(world.player.pos.t) - limit;
+        if (overrun > worstOverrun) {
+          worstOverrun = overrun;
+          worstAt = world.player.pos.s;
+        }
       }
+      expect(`${route} worst overrun ${worstOverrun.toFixed(9)} m`).toBe(
+        `${route} worst overrun ${(0).toFixed(9)} m`,
+      );
+      expect(worstAt).toBeGreaterThanOrEqual(0);
     }
   });
 });
@@ -269,6 +307,7 @@ describe('the library rejects bad data, naming the file', () => {
     id: 'a',
     name: 'A',
     scenery: 'ringroad',
+    trafficDensity: 0,
     segments: [
       {
         length: 100,

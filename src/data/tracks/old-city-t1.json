@@ -1,7 +1,8 @@
 {
   "id": "old-city-t1",
-  "name": "Old City — Tier 1",
+  "name": "Old City \u2014 Tier 1",
   "scenery": "oldcity",
+  "trafficDensity": 14.0,
   "segments": [
     {
       "length": 800,

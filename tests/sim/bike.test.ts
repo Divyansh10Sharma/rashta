@@ -27,7 +27,7 @@ const straight = parseTrack(
 
 /** Runs full throttle from rest and returns seconds to reach `fraction` of top speed. */
 function timeToReach(bike: TunedBike, fraction: number): number {
-  const world = createWorld(bike);
+  const world = createWorld(bike, straight);
   const input = { throttle: 1, brake: 0, lean: 0 };
   const target = bike.topSpeedMs * fraction;
   for (let tick = 0; tick < 60 * 120; tick += 1) {
@@ -82,7 +82,7 @@ describe('the authority split in GAME_DESIGN.md', () => {
 
   it('never exceeds topSpeed however long the throttle is held', () => {
     for (const bike of bikes) {
-      const world = createWorld(bike);
+      const world = createWorld(bike, straight);
       const input = { throttle: 1, brake: 0, lean: 0 };
       for (let i = 0; i < 60 * 90; i += 1) step(world, input, straight, tuning);
       expect(world.player.speed).toBeLessThanOrEqual(bike.topSpeedMs);

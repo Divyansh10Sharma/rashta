@@ -49,8 +49,10 @@ function run(canvas: HTMLCanvasElement): void {
   if (!bike) throw new Error('bikes.json contained no bikes');
 
   // Two states so the renderer can interpolate between them.
-  const current = createWorld(bike);
-  const previous = createWorld(bike);
+  // Seeded from the URL so a race can be handed to someone else exactly.
+  const seed = Number(new URLSearchParams(location.search).get('seed') ?? 1);
+  const current = createWorld(bike, track, Number.isFinite(seed) ? seed : 1);
+  const previous = createWorld(bike, track, Number.isFinite(seed) ? seed : 1);
 
   const input = new Input();
   input.attach();

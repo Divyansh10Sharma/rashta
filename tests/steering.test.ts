@@ -48,7 +48,7 @@ const pads = defaultPadBindings();
 
 /** Presses a key for a second and returns where the rider ends up on screen. */
 function ride(code: string): { t: number; lean: number; screenX: number } {
-  const world = createWorld(bike);
+  const world = createWorld(bike, track);
   const camera = new THREE.PerspectiveCamera(62, 16 / 9, 0.1, 900);
   const chase = new ChaseCamera(camera);
   const rider = createRiderView();

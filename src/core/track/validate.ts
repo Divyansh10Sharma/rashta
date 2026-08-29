@@ -311,6 +311,15 @@ export function validateTrackData(file: string, raw: unknown): TrackData {
     fail(file, 'scenery', `must be one of ${SCENERY.join(', ')}`);
   }
 
+  const trafficDensity = requireFiniteNumber(
+    file,
+    'trafficDensity',
+    t['trafficDensity'],
+  );
+  if (trafficDensity < 0) {
+    fail(file, 'trafficDensity', `must not be negative, got ${trafficDensity}`);
+  }
+
   const segments = validateSegmentList(file, 'segments', t['segments']);
   const mainLength = segments.reduce((sum, seg) => sum + seg.length, 0);
 
@@ -318,5 +327,12 @@ export function validateTrackData(file: string, raw: unknown): TrackData {
     validateBranch(file, `branches[${i}]`, b, mainLength),
   );
 
-  return { id, name, scenery: scenery as SceneryTag, segments, branches };
+  return {
+    id,
+    name,
+    scenery: scenery as SceneryTag,
+    trafficDensity,
+    segments,
+    branches,
+  };
 }

@@ -1,4 +1,5 @@
 import type { TrackPos } from '../types.ts';
+import type { Rng } from '../rng.ts';
 
 /** What a rider is doing. Only `riding` is reachable before Phase 4. */
 export type RiderState =
@@ -43,6 +44,28 @@ export interface TunedBike {
   accelScale: number;
 }
 
+/** What put a rider on the tarmac. Kept so a results screen can say why. */
+export type CrashCause = 'traffic' | 'hazard' | 'cliff';
+
+/** A kind of vehicle sharing the road. */
+export type TrafficKind = 'auto' | 'car' | 'bus' | 'truck';
+
+/** One vehicle in the traffic pool. Recycled, never destroyed. */
+export interface TrafficVehicle {
+  kind: TrafficKind;
+  pos: TrackPos;
+  /** m/s. Always positive; `oncoming` carries the direction. */
+  speed: number;
+  /** The speed it wants, before anything gets in the way. */
+  cruise: number;
+  lane: number;
+  oncoming: boolean;
+  /** Seconds until it next considers changing lane. */
+  laneChangeTimer: number;
+  /** Inactive vehicles are pool slots waiting to be respawned. */
+  active: boolean;
+}
+
 /** Every tunable constant, from `src/data/tuning.json`. */
 export interface Tuning {
   accelIntegralSlices: number;
@@ -60,6 +83,22 @@ export interface Tuning {
   wheelRadius: number;
   revsIdle: number;
   gearCount: number;
+
+  trafficAccel: number;
+  trafficLaneChangeSpeed: number;
+
+  crashSeconds: number;
+  remountSeconds: number;
+  crashDecel: number;
+  /** Immunity after remounting, so a crash cannot repeat on the spot. */
+  remountGraceSeconds: number;
+  /** How far back toward the centreline a remount puts you. */
+  remountRecentre: number;
+  slipSeconds: number;
+  /** How much grip is left while slipping, as a fraction. */
+  slipGrip: number;
+  potholeSpeedLoss: number;
+  dogCrashSpeed: number;
 }
 
 /**
@@ -91,12 +130,27 @@ export interface Rider {
   wheelAngle: number;
   stamina: number;
   state: RiderState;
+  /** Seconds left in `crashing` or `remounting`. */
+  stateTimer: number;
+  /** Why the rider is down, for the results screen. */
+  crashCause: CrashCause | null;
+  /** Seconds of reduced grip left, from oil, sand or a pothole. */
+  slipTimer: number;
+  /** Seconds of immunity after remounting, so you cannot re-hit what got you. */
+  graceTimer: number;
   bike: TunedBike;
 }
 
 /** Everything the simulation owns. */
 export interface WorldState {
   player: Rider;
+  /** A fixed pool. Count never changes after creation. */
+  traffic: TrafficVehicle[];
+  /**
+   * The world's randomness, carried so a saved game resumes the same race
+   * rather than a similar one. See ARCHITECTURE.md 6.
+   */
+  rng: Rng;
   /** Ticks elapsed. The sim's only clock. */
   tick: number;
 }

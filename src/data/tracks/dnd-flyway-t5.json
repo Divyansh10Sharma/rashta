@@ -1,7 +1,8 @@
 {
   "id": "dnd-flyway-t5",
-  "name": "DND Flyway — Tier 5",
+  "name": "DND Flyway \u2014 Tier 5",
   "scenery": "flyway",
+  "trafficDensity": 25.2,
   "extends": "dnd-flyway-t4",
   "segments": [
     {

@@ -32,7 +32,7 @@ if (!bike) throw new Error('no bikes');
 
 describe('simulation cost', () => {
   it('runs a tick in well under 1 ms', () => {
-    const world = createWorld(bike);
+    const world = createWorld(bike, track);
     const input = { throttle: 1, brake: 0, lean: 0.3 };
     const TICKS = 200_000;
 
@@ -52,8 +52,8 @@ describe('simulation cost', () => {
   it('copies a world state in well under a tick', () => {
     // The loop copies state every tick so the renderer can interpolate, so the
     // copy is part of the per-tick budget.
-    const from = createWorld(bike);
-    const to = createWorld(bike);
+    const from = createWorld(bike, track);
+    const to = createWorld(bike, track);
     const COPIES = 500_000;
 
     for (let i = 0; i < 50_000; i += 1) copyWorld(from, to);
@@ -70,7 +70,7 @@ describe('simulation cost', () => {
     // first in the same process — it passed alone and failed in a full run.
     // The deterministic claim is that `step()` mutates in place: the same
     // rider, the same position object, the same bike, no new fields.
-    const world = createWorld(bike);
+    const world = createWorld(bike, track);
     const input = { throttle: 1, brake: 0, lean: -0.4 };
 
     const player = world.player;
@@ -90,7 +90,7 @@ describe('simulation cost', () => {
   it('keeps a rider on the road for a long ride', () => {
     // Ten minutes at full throttle with the bars hard over. Nothing should
     // drift off the road, go negative, or turn into a NaN.
-    const world = createWorld(bike);
+    const world = createWorld(bike, track);
     const input = { throttle: 1, brake: 0, lean: 1 };
     for (let i = 0; i < 60 * 600; i += 1) {
       step(world, input, track, tuning);

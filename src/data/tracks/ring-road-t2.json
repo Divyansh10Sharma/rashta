@@ -1,7 +1,8 @@
 {
   "id": "ring-road-t2",
-  "name": "Ring Road — Tier 2",
+  "name": "Ring Road \u2014 Tier 2",
   "scenery": "ringroad",
+  "trafficDensity": 33.0,
   "extends": "ring-road-t1",
   "segments": [
     {

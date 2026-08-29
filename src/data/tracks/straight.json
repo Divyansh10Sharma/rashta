@@ -2,6 +2,7 @@
   "id": "straight",
   "name": "Ring Road Straight",
   "scenery": "ringroad",
+  "trafficDensity": 0,
   "segments": [
     {
       "length": 2000,
