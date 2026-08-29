@@ -167,8 +167,12 @@ export class Path {
       .normalize();
 
     // Unbanked road frame: right is horizontal, up completes it.
-    scratchRight.crossVectors(WORLD_UP, scratchFwd).normalize();
-    scratchUp.crossVectors(scratchFwd, scratchRight);
+    //
+    // `forward x up`, not `up x forward`. In a right-handed Y-up system
+    // those differ by a sign, and the wrong one puts the rider's right on
+    // the viewer's left — see geometry.ts on the heading convention.
+    scratchRight.crossVectors(scratchFwd, WORLD_UP).normalize();
+    scratchUp.crossVectors(scratchRight, scratchFwd);
 
     // Then roll about forward by the segment's camber. Positive bank tilts up
     // toward `right`, which is the inside of a right-hand (positive) curve.
@@ -198,7 +202,7 @@ export class Path {
 export function createFrame(): TrackFrame {
   return {
     position: new Vec3(),
-    forward: new Vec3(0, 0, 1),
+    forward: new Vec3(0, 0, -1),
     right: new Vec3(1, 0, 0),
     up: new Vec3(0, 1, 0),
     halfWidth: 0,

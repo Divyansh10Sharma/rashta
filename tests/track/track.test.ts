@@ -165,7 +165,8 @@ describe('road properties', () => {
     track.sample(-50, frame);
     expect(frame.position.z).toBeCloseTo(0, 9);
     track.sample(500, frame);
-    expect(frame.position.z).toBeCloseTo(100, 9);
+    // Forward is -Z, so 100 m along the track is 100 m in -Z.
+    expect(frame.position.z).toBeCloseTo(-100, 9);
   });
 });
 

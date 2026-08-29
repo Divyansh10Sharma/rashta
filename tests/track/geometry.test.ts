@@ -6,13 +6,13 @@ import { segment, trackOf } from '../helpers/tracks.ts';
 const frame = createFrame();
 
 describe('sampling a straight', () => {
-  it('produces a straight line along +Z', () => {
+  it('produces a straight line along -Z, the direction a camera faces', () => {
     const track = trackOf(segment({ length: 100 }));
     for (const s of [0, 25, 50, 99.5, 100]) {
       track.sample(s, frame);
       expect(frame.position.x).toBeCloseTo(0, 12);
       expect(frame.position.y).toBeCloseTo(0, 12);
-      expect(frame.position.z).toBeCloseTo(s, 9);
+      expect(frame.position.z).toBeCloseTo(-s, 9);
     }
   });
 
@@ -20,7 +20,7 @@ describe('sampling a straight', () => {
     const track = trackOf(segment({ length: 100 }));
     track.sample(40, frame);
     expect(frame.forward.x).toBeCloseTo(0, 12);
-    expect(frame.forward.z).toBeCloseTo(1, 12);
+    expect(frame.forward.z).toBeCloseTo(-1, 12);
     expect(frame.right.x).toBeCloseTo(1, 12);
     expect(frame.up.y).toBeCloseTo(1, 12);
   });
@@ -107,7 +107,7 @@ describe('bank', () => {
   it('tilts up toward the inside of a right-hand curve', () => {
     const track = trackOf(segment({ length: 100, curvature: 0.01, bank: 0.2 }));
     track.sample(0, frame);
-    // Heading is +Z at s = 0, so "right" is +X and a positive bank tilts up
+    // Heading is -Z at s = 0, so "right" is +X and a positive bank tilts up
     // that way.
     expect(frame.up.x).toBeGreaterThan(0);
     expect(frame.up.length()).toBeCloseTo(1, 12);

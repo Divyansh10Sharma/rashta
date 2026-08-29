@@ -17,7 +17,14 @@ import type { TrackSegment } from '../types.ts';
 /** Where the integrator has got to. Mutated in place while walking a path. */
 export interface PathCursor {
   position: Vec3;
-  /** Radians. Zero faces +Z; increasing turns right, toward +X. */
+  /**
+   * Radians. Zero faces -Z, and increasing turns right, toward +X.
+   *
+   * -Z is forward because that is the way a Three.js camera looks down its
+   * own axis. With +Z as forward the two are mirror images: world +X lands
+   * on the viewer's left, so a rider steering right visibly moves left.
+   * That was a real bug, caught by riding it and not by any test.
+   */
   heading: number;
 }
 
@@ -70,18 +77,18 @@ export function positionAt(
     out.set(
       cursor.position.x + Math.sin(theta) * distance,
       cursor.position.y,
-      cursor.position.z + Math.cos(theta) * distance,
+      cursor.position.z - Math.cos(theta) * distance,
     );
   } else {
     // The arc's centre sits one radius along the right vector, so the
     // displacement is R * (right(theta) - right(theta + dTheta)), with
-    // right(a) = (cos a, 0, -sin a). This is exact, not a small-angle
+    // right(a) = (cos a, 0, sin a). This is exact, not a small-angle
     // approximation, which is why segments can be arbitrarily long.
     const radius = 1 / segment.curvature;
     out.set(
       cursor.position.x + radius * (Math.cos(theta) - Math.cos(theta + dTheta)),
       cursor.position.y,
-      cursor.position.z + radius * (Math.sin(theta + dTheta) - Math.sin(theta)),
+      cursor.position.z + radius * (Math.sin(theta) - Math.sin(theta + dTheta)),
     );
   }
 
@@ -103,7 +110,7 @@ export function forwardAt(
 ): Vec3 {
   const theta = cursor.heading + segment.curvature * distance;
   return out
-    .set(Math.sin(theta), segment.gradient, Math.cos(theta))
+    .set(Math.sin(theta), segment.gradient, -Math.cos(theta))
     .normalize();
 }
 
@@ -112,7 +119,7 @@ export function forwardAt(
  * start a fork branch from the main path's frame at the fork point.
  */
 export function headingOf(forward: Vec3): number {
-  return Math.atan2(forward.x, forward.z);
+  return Math.atan2(forward.x, -forward.z);
 }
 
 /** Advances the cursor to the far end of `segment`, mutating it. */

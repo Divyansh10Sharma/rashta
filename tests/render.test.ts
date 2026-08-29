@@ -9,6 +9,7 @@ import {
 } from '../src/render/RoadMeshBuilder.ts';
 import { createScenery, DEFAULT_SCENERY } from '../src/render/Scenery.ts';
 import { createRiderView } from '../src/render/Rider.ts';
+import { ChaseCamera } from '../src/render/ChaseCamera.ts';
 
 /**
  * The render layer, tested without a GPU.
@@ -72,7 +73,7 @@ describe('the road mesh', () => {
     const chunk = road.chunks[0];
     if (!chunk) throw new Error('no chunks');
     const position = chunk.mesh.geometry.getAttribute('position');
-    // The straight runs along +Z, so the road's extent is in X.
+    // The straight runs along -Z, so the road's extent is in X.
     let minX = Infinity;
     let maxX = -Infinity;
     for (let i = 0; i < position.count; i += 1) {
@@ -132,15 +133,16 @@ describe('the scenery pool', () => {
         for (let i = 0; i < child.count; i += 1) {
           child.getMatrixAt(i, matrix);
           position.setFromMatrixPosition(matrix);
-          // The straight runs along +Z, so world Z is track s.
+          // The straight runs along -Z, so track s is -z.
           //
           // A pool's cycle is `ceil(span / spacing) + 1` positions, so it is
           // longer than the visible span by under two spacings — the rounding
           // up, plus one deliberate spare so nothing pops into view at the far
           // edge. That excess is the most any instance can sit beyond `ahead`.
           const slack = 2 * DEFAULT_SCENERY.lightSpacing;
-          expect(position.z).toBeGreaterThan(s - DEFAULT_SCENERY.behind - 2);
-          expect(position.z).toBeLessThan(s + DEFAULT_SCENERY.ahead + slack);
+          const along = -position.z;
+          expect(along).toBeGreaterThan(s - DEFAULT_SCENERY.behind - 2);
+          expect(along).toBeLessThan(s + DEFAULT_SCENERY.ahead + slack);
         }
       }
     }
@@ -163,7 +165,7 @@ describe('the scenery pool', () => {
       for (let i = 0; i < child.count; i += 1) {
         child.getMatrixAt(i, matrix);
         position.setFromMatrixPosition(matrix);
-        if (position.x > 0) kerbs.push(position.z);
+        if (position.x > 0) kerbs.push(-position.z);
       }
     }
     kerbs.sort((a, b) => a - b);
@@ -177,13 +179,37 @@ describe('the scenery pool', () => {
     scenery.dispose();
   });
 
-  it('allocates nothing while recycling', () => {
+  it('reuses the same meshes and buffers rather than replacing them', () => {
+    // Deterministic, unlike a heap measurement: if recycling ever allocated,
+    // it would have to produce new instances or new backing buffers, and
+    // these identity checks would fail. An earlier version of this test read
+    // `heapUsed` instead and passed or failed depending on which other tests
+    // had run first in the same process, which is worse than no test.
     const scenery = createScenery(track);
     scenery.update(0);
-    const before = process.memoryUsage().heapUsed;
+
+    const meshes = scenery.group.children.filter(
+      (c): c is THREE.InstancedMesh => c instanceof THREE.InstancedMesh,
+    );
+    const before = meshes.map((m) => ({
+      mesh: m,
+      count: m.count,
+      buffer: m.instanceMatrix.array,
+    }));
+
     for (let i = 0; i < 3000; i += 1) scenery.update(i * 3);
-    const grown = process.memoryUsage().heapUsed - before;
-    expect(grown).toBeLessThan(4_000_000);
+
+    const after = scenery.group.children.filter(
+      (c): c is THREE.InstancedMesh => c instanceof THREE.InstancedMesh,
+    );
+    expect(after.length).toBe(before.length);
+    for (let i = 0; i < before.length; i += 1) {
+      const was = before[i];
+      const now = after[i];
+      expect(now).toBe(was?.mesh);
+      expect(now?.count).toBe(was?.count);
+      expect(now?.instanceMatrix.array).toBe(was?.buffer);
+    }
     scenery.dispose();
   });
 });
@@ -192,8 +218,9 @@ describe('the rider view', () => {
   it('places the rider at the track-space position it is given', () => {
     const rider = createRiderView();
     rider.update(track, 500, 3, 0, 0, 0);
-    // Straight along +Z with t measured in +X.
-    expect(rider.group.position.z).toBeCloseTo(500, 6);
+    // Forward is -Z, and positive t is the rider's right, which is +X — the
+    // handedness that makes steering right also move right on screen.
+    expect(rider.group.position.z).toBeCloseTo(-500, 6);
     expect(rider.group.position.x).toBeCloseTo(3, 6);
     rider.dispose();
   });
@@ -213,5 +240,88 @@ describe('the rider view', () => {
     rider.update(track, 100, 0, 0.4, 0, 0);
     expect(rider.group.position.distanceTo(upright)).toBeCloseTo(0, 9);
     rider.dispose();
+  });
+});
+
+describe("handedness: the rider's right is the viewer's right", () => {
+  /**
+   * The test that was missing.
+   *
+   * Every earlier render test asserted world coordinates against a convention
+   * this file itself had chosen, so a mirrored convention satisfied all of
+   * them. Nothing connected track space to what the camera actually shows —
+   * and the result was a bike that leaned right and travelled left, found by
+   * riding it rather than by running anything.
+   *
+   * Three.js cameras look down their own -Z with +X to the right of the
+   * screen, so projecting a rider into camera space and reading the sign of x
+   * is exactly the question "which way did they appear to go".
+   */
+  function cameraSpaceX(t: number, s = 400): number {
+    const camera = new THREE.PerspectiveCamera(62, 16 / 9, 0.1, 900);
+    const chase = new ChaseCamera(camera);
+    chase.reset(0);
+    // Settle the easing so the camera is actually behind the rider.
+    for (let i = 0; i < 240; i += 1) chase.update(track, s, 0, 0.5, 0, 1 / 60);
+    camera.updateMatrixWorld(true);
+
+    const rider = createRiderView();
+    rider.update(track, s, t, 0, 0, 0);
+    const local = rider.group.position
+      .clone()
+      .applyMatrix4(camera.matrixWorldInverse);
+    rider.dispose();
+    return local.x;
+  }
+
+  it('puts positive t on the right of the screen', () => {
+    expect(cameraSpaceX(4)).toBeGreaterThan(0);
+  });
+
+  it('puts negative t on the left of the screen', () => {
+    expect(cameraSpaceX(-4)).toBeLessThan(0);
+  });
+
+  it('puts the centreline in the middle', () => {
+    expect(Math.abs(cameraSpaceX(0))).toBeLessThan(0.01);
+  });
+
+  it('keeps the rider in front of the camera, not behind it', () => {
+    // Camera space -Z is forward, so a rider ahead of the camera has z < 0.
+    const camera = new THREE.PerspectiveCamera(62, 16 / 9, 0.1, 900);
+    const chase = new ChaseCamera(camera);
+    chase.reset(0);
+    for (let i = 0; i < 240; i += 1)
+      chase.update(track, 400, 0, 0.5, 0, 1 / 60);
+    camera.updateMatrixWorld(true);
+
+    const rider = createRiderView();
+    rider.update(track, 400, 0, 0, 0, 0);
+    const local = rider.group.position
+      .clone()
+      .applyMatrix4(camera.matrixWorldInverse);
+    expect(local.z).toBeLessThan(0);
+    rider.dispose();
+  });
+
+  it('turns the road right for positive curvature, on screen', () => {
+    // The same question asked of the track itself: a right-hand bend must
+    // bend toward the right of the frame.
+    const camera = new THREE.PerspectiveCamera(62, 16 / 9, 0.1, 900);
+    const chase = new ChaseCamera(camera);
+    chase.reset(0);
+    // Segment 1 of the test track is a right-hander (curvature +1/150).
+    for (let i = 0; i < 240; i += 1)
+      chase.update(testTrack, 210, 0, 0.5, 0, 1 / 60);
+    camera.updateMatrixWorld(true);
+
+    const rider = createRiderView();
+    rider.update(testTrack, 300, 0, 0, 0, 0);
+    const ahead = rider.group.position
+      .clone()
+      .applyMatrix4(camera.matrixWorldInverse);
+    rider.dispose();
+    expect(testTrack.curvatureAt(250)).toBeGreaterThan(0);
+    expect(ahead.x).toBeGreaterThan(0);
   });
 });

@@ -200,3 +200,86 @@ threshold itself.
 - **Grip scrub is untested against a real corner at speed**, because Phase 2's
   road is deliberately straight. The unit tests cover it on synthetic curves;
   Phase 3 is where it gets ridden.
+
+---
+
+## After the feel gate — Divyansh rode it
+
+### The bug: steering right moved the bike left
+
+Reported from the seat, not from a test: "press right key is making the rider
+lean right but going left". The lean looked correct, the travel did not.
+
+**Cause: a handedness error mapping track space to world space.** The frame
+used `forward = +Z` with `right = up x forward = +X`. In a right-handed Y-up
+system, facing +Z your right hand points to **-X**. And Three.js cameras look
+down their own local -Z with local +X on the right of the screen, so world +X
+was landing on the viewer's left. Positive `t` moved the rider toward +X —
+correct in the simulation, mirrored on the screen. The lean read correctly
+because it is applied about the bike model's own local axis, which was itself
+mirrored, so the two errors cancelled for the roll and not for the travel.
+
+Verified rather than assumed before touching anything: computed the camera's
+screen-right vector from the Three.js `lookAt` construction and compared it
+against both `up x forward` and `forward x up`. `up x forward` was mirrored in
+both possible forward conventions.
+
+**Fix:** adopt `forward = -Z`, which is Three.js's native forward, making
+`right = forward x up = +X`. In `geometry.ts` the straight case advances along
+`-cos(theta)` in Z, the arc's Z displacement flips sign so the centre still
+sits one radius along `right`, and `headingOf` becomes `atan2(x, -z)`. In
+`path.ts` the two cross products swap order.
+
+Nothing in the simulation changed. `s`, `t` and curvature never referenced a
+world axis, and the `(1 - t*k)` derivation only assumed positive `t` is the
+inside of a positive-curvature bend — still true. Five tests failed and all
+five were assertions about the old convention, not about behaviour.
+
+### Why no test caught it
+
+This is the part worth keeping. Thirteen render tests passed against a
+mirrored world, because **every one of them asserted world coordinates against
+a convention this codebase had itself chosen.** They were self-consistent. Not
+one of them connected track space to what the camera actually displays, so a
+mirror image satisfied all of them equally well.
+
+Added five tests that do close that loop: project a rider at positive `t` into
+camera space through the real `ChaseCamera` and assert the sign of its x. That
+is the question "which way did it appear to go", asked in code. Also asserts a
+right-hand bend curves toward the right of the frame, and that the rider is in
+front of the camera rather than behind it.
+
+The general lesson: a test that checks a system against its own convention
+proves consistency, not correctness. Somewhere there has to be one test that
+crosses the boundary to the thing a person actually perceives.
+
+### A flaky test replaced while in there
+
+`allocates nothing while recycling` measured `heapUsed` before and after 3,000
+recycles. Adding the handedness tests pushed it to 6.3 MB against a 4 MB bound
+— and it passed when run alone. It was measuring the shared process heap, so
+its result depended on which other tests had run first.
+
+Replaced with identity checks: the same `InstancedMesh` objects, the same
+instance counts, and the same backing `instanceMatrix` buffers before and
+after. Recycling that allocated would have to produce new ones. Deterministic,
+and it tests the actual claim rather than a side effect of it.
+
+### Measurements from the seat
+
+Divyansh's readout, riding the Nagin on the straight:
+
+```
+speed 151.4 km/h    60.0 fps   16.66 ms mean   16.90 p95   17.20 worst
+sim 0.006 ms/tick   ticks/frame 1   dropped 11
+draw 16 calls       chunks 3        scenery 440
+```
+
+Sim step 0.006 ms against a 1 ms budget — 166x of headroom in a real browser,
+against 0.21 microseconds measured in Node. 16 draw calls for 440 scenery
+objects plus three road chunks, which is instancing doing its job. Frame time
+pinned to vsync at 16.66 ms; the "63 over 16.6" counter is vsync jitter a
+hair over the threshold rather than dropped frames.
+
+Still outstanding: whether that reading was taken under 4x CPU throttling, and
+the subjective verdict itself.
