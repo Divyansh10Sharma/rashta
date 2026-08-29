@@ -329,3 +329,31 @@ Deferred at Divyansh's request, with the diagnostic in place to resolve it
 cheaply next time the overlay is open. Recording plainly that this is a defect
 and not intended behaviour: a racer where right goes left is broken, and
 Phase 3 onward would author every track against a mirrored world.
+
+### Resolved — it was a stale browser the whole time
+
+Divyansh reran it and steering is correct in both directions. The handedness
+fix was right; the two reports after it were a page still holding the module
+graph from before the change.
+
+Correcting the section above rather than deleting it, because the wrong
+reasoning is the useful part. On the second report I started constructing an
+explanation for why the code might be correct *and* the symptom real — the
+chase-camera lateral tracking theory. It was plausible, it was specific, and
+it was wrong. The evidence at the time already pointed the other way: the
+source on disk had the fix, and an end-to-end test through the real binding,
+the real `step()`, the real `RiderView` and the real `ChaseCamera` was green.
+When the code says one thing and the screen says another, "the screen is
+showing old code" deserves to be eliminated before a new theory gets built.
+The cost of that hypothesis was a round trip and a diagnostic written to
+answer a question that was already answered.
+
+I killed the dev server with `pkill` during the previous session, so the tab
+had no chance of picking the change up. That is on me, and "hard-reload after
+a server restart" should have been the first thing said rather than the third.
+
+The diagnostic stays. It cost little and it now reads `— agree` on every
+frame, so a future handedness inversion announces itself on screen instead of
+being argued about. Along with the end-to-end steering test, the class of bug
+is now covered from both sides — one guard that fails in CI, one that is
+visible while riding.
