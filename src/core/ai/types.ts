@@ -39,4 +39,16 @@ export interface RacerBrain {
    * brain deliberately does not.
    */
   pace: number;
+  /**
+   * Stamina the rider had last tick.
+   *
+   * The only way a rival notices it is being attacked: an unexplained drop is
+   * a hit. Cheaper and more honest than telling the AI who swung at it —
+   * a rider on a motorcycle at night does not know either.
+   */
+  lastStamina: number;
+  /** Seconds of wanting to hit back, set when stamina drops unexpectedly. */
+  grudge: number;
+  /** Seconds until this rider may throw another attack. */
+  swingTimer: number;
 }

@@ -2,10 +2,12 @@ import './style.css';
 import bikesJson from '../data/bikes.json';
 import tuningJson from '../data/tuning.json';
 import racersJson from '../data/racers.json';
+import combatJson from '../data/combat.json';
 import { loadTrackLibrary } from '../core/track/library.ts';
 
 import { loadBikes, loadTuning } from '../core/sim/load.ts';
 import { loadRacers, PLAYER_ID } from '../core/ai/load.ts';
+import { loadCombat } from '../core/combat/load.ts';
 import {
   copyRace,
   createRace,
@@ -15,6 +17,9 @@ import {
 import { Input } from '../input/Input.ts';
 import { createStage } from '../render/Stage.ts';
 import { createHud } from '../ui/Hud.ts';
+import { createStaminaBars } from '../ui/StaminaBars.ts';
+import { engagedWith } from '../core/combat/combat.ts';
+import { glowFor } from '../render/FieldView.ts';
 import { createDevOverlay, StepTimer } from '../ui/DevOverlay.ts';
 import { FrameMeter } from '../ui/FrameMeter.ts';
 import { FixedStepDriver } from './FixedStepDriver.ts';
@@ -52,6 +57,7 @@ function run(canvas: HTMLCanvasElement): void {
     throw new Error(`no track "${wanted}" and no ring-road-t1 either`);
 
   const racers = loadRacers('racers.json', racersJson);
+  const combat = loadCombat('combat.json', combatJson);
   const byId = new Map(bikes.map((b) => [b.spec.id, b]));
   const bikeFor = (profile: { startingBike: string }) => {
     const found = byId.get(profile.startingBike);
@@ -64,8 +70,8 @@ function run(canvas: HTMLCanvasElement): void {
   // Seeded from the URL so a race can be handed to someone else exactly.
   const asked = Number(new URLSearchParams(location.search).get('seed') ?? 1);
   const seed = Number.isFinite(asked) ? asked : 1;
-  const current = createRace(racers, PLAYER_ID, bikeFor, track, seed);
-  const previous = createRace(racers, PLAYER_ID, bikeFor, track, seed);
+  const current = createRace(racers, PLAYER_ID, bikeFor, track, combat, seed);
+  const previous = createRace(racers, PLAYER_ID, bikeFor, track, combat, seed);
   const me = playerEntry(current);
   const bike = me.rider.bike;
 
@@ -81,6 +87,7 @@ function run(canvas: HTMLCanvasElement): void {
   stage.chase.reset(0);
 
   const hud = createHud(document.body);
+  const stamina = createStaminaBars(document.body);
   const dev = createDevOverlay(document.body);
   const meter = new FrameMeter(120);
   const stepTimer = new StepTimer(120);
@@ -122,7 +129,7 @@ function run(canvas: HTMLCanvasElement): void {
     stage.traffic.update(previous.traffic, current.traffic, alpha);
     // Rivals interpolate off the same pair of states, so the bike you are
     // about to be pushed into is where the simulation says it is.
-    stage.field.update(previous.entries, current.entries, alpha, track);
+    stage.field.update(previous.entries, current.entries, alpha, track, combat);
 
     visibleChunks = stage.sync(
       s,
@@ -136,6 +143,21 @@ function run(canvas: HTMLCanvasElement): void {
 
     stage.renderer.render(stage.scene, stage.camera);
     hud.update(speed, bike.topSpeedMs, tuning);
+
+    // Who you are fighting is the nearest rider in range, which is also who
+    // the second bar belongs to — see GAME_DESIGN.md, Combat.
+    const foe = engagedWith(b, current.riders, track, combat);
+    const foeEntry =
+      foe === null
+        ? null
+        : (current.entries.find((e) => e.rider === foe) ?? null);
+    stamina.update(
+      b.stamina,
+      foe === null ? null : foe.stamina,
+      foeEntry?.profile.name ?? '',
+      b.weapon === null ? null : combat.weapons[b.weapon].name,
+    );
+    stage.rider.highlight(glowFor(b, combat), b.staggerTimer > 0);
 
     if (now - lastReadout >= READOUT_INTERVAL_MS) {
       dev.update(

@@ -666,6 +666,13 @@
           <span class="stone-label">Phase</span>
         </span>
       </button>
+      <button class="stone" data-goto="phase-06" type="button">
+        <span class="stone-band" aria-hidden="true"></span>
+        <span class="stone-body">
+          <span class="stone-num">06</span>
+          <span class="stone-label">Phase</span>
+        </span>
+      </button>
       <button class="stone" data-goto="ninety-seconds" type="button">
         <span class="stone-band" aria-hidden="true"></span>
         <span class="stone-body">
@@ -690,6 +697,7 @@
         <a href="#phase-03">03 · Real tracks</a>
         <a href="#phase-04">04 · Traffic and hazards</a>
         <a href="#phase-05">05 · Racers</a>
+        <a href="#phase-06">06 · Combat</a>
         <a href="#ninety-seconds">90 seconds</a>
       </nav>
 
@@ -3822,6 +3830,429 @@
           </section>
         </section>
 
+        <!-- ================= PHASE 06 ================= -->
+        <section class="page" id="phase-06" aria-labelledby="h-06" hidden>
+          <header class="page-head">
+            <p class="eyebrow">Phase 06</p>
+            <h2 id="h-06">Combat</h2>
+            <p class="standfirst">
+              Three attacks with real commitment, three weapons that circulate
+              and are never created, and a range check that has to be right on a
+              bend as well as a straight.
+            </p>
+          </header>
+
+          <section class="s-goal">
+            <p class="eyebrow">What we were trying to do</p>
+            <p>
+              This is a racing game where you are allowed to hit the other
+              riders. This phase adds the hitting.
+            </p>
+            <p>
+              There are three attacks. A punch is quick and light. A kick is
+              slower and mostly shoves the other rider sideways, which near the
+              open edge of a flyover is the whole point. A backhand is slowest
+              and hurts most. Each has a windup before it lands and a recovery
+              afterwards, and during both of those you cannot steer — so a heavy
+              attack taken into a corner is how you crash. That is the entire
+              risk of fighting, and without it attacking would be free.
+            </p>
+            <p>
+              There are also three weapons, which multiply damage and extend
+              reach. You never buy one. You take one off a rider you knock down,
+              or you knock one loose from a rider who has one — and you lose
+              yours the same way. There are exactly as many weapons at the end
+              of a race as there were at the start.
+            </p>
+            <p>
+              And it has to be readable. Fourteen bikes on an unlit road at
+              night, and you have to be able to tell who is swinging at whom,
+              and how close the rider you are fighting is to going down.
+            </p>
+          </section>
+
+          <section class="s-hard">
+            <p class="eyebrow">Why this was hard</p>
+            <p>
+              The stated difficulty was the range check, and it was stated
+              sharply in the plan: prove it on a tight corner as well as a
+              straight, because a range check that only passes on a straight is
+              not passing.
+            </p>
+            <p>
+              The reason is the coordinate system. Everything in this game is
+              held as a distance along the road and an offset across it, so the
+              tempting way to ask "is that rider within two and a half metres"
+              is to subtract two pairs of numbers. On a straight that is
+              correct. On a bend it is not, and — this is the part I had wrong —
+              it is not wrong in a predictable direction. Two riders with
+              identical coordinates are further apart than the numbers say on
+              the outside of a bend and closer on the inside.
+            </p>
+            <p>
+              The second difficulty was that the frame budget was already nearly
+              spent. The previous phase left the simulation using 0.83 of the 1
+              millisecond it is allowed, and this one had to add fighting
+              without going over.
+            </p>
+          </section>
+
+          <section class="s-deadends">
+            <p class="eyebrow">What we tried that didn't work</p>
+
+            <article class="deadend">
+              <h4>A range test built on an assumption that was backwards</h4>
+              <p class="plain">
+                The first version of the corner test asserted that two riders
+                with the same coordinates are further apart on a bend than on a
+                straight. It failed. On a 40-metre bend, two riders 2.4 metres
+                apart along the road measure 2.61 metres on the outside of the
+                turn and 2.19 on the inside.
+              </p>
+              <p class="why">
+                I had reasoned about the geometry in one direction and only one.
+                The riders sit at different radii, so which of them is on the
+                longer arc depends on which side of the centreline they are.
+                This turned out to make the test stronger than the one I meant
+                to write: subtracting coordinates gives 2.4 in all three cases
+                and is wrong twice, in opposite directions. The test now asserts
+                both, then puts a punch's 2.5 metres of reach between them — it
+                connects on the straight and misses from identical coordinates
+                on the outside of the bend.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>A weapon steal that lasted a single frame</h4>
+              <p class="plain">
+                Knocking a weapon out of someone's hand worked perfectly and
+                achieved nothing: the rider who lost it picked it straight back
+                up. The test that caught it expected the target to be unarmed
+                and found them holding the same weapon.
+              </p>
+              <p class="why">
+                The weapon lands in the road at the feet of the rider who just
+                lost it, and the pick-up check runs in the same tick. Weapons
+                now spend a second or so tumbling before anyone can collect
+                them, which is both the fix and roughly what a metal object
+                dropped at eighty kilometres an hour actually does.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>Riders who kept swinging after being knocked off</h4>
+              <p class="plain">
+                A rider hit by a bus in the middle of a backhand carried on
+                attacking for a tick, because the combat step clears attacks
+                first and collisions with traffic resolve afterwards.
+              </p>
+              <p class="why">
+                The tempting fix is to reorder the tick, which trades this bug
+                for a different ordering bug later. Instead the swing is now
+                cancelled inside the single function that puts a rider on the
+                tarmac — every cause of a crash already goes through it, so
+                every cause now ends the swing, whatever order things happen in.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>Four phases of trying to time things on a busy machine</h4>
+              <p class="plain">
+                The frame-budget test measured 0.63 milliseconds per tick on an
+                idle machine and 4.22 running inside the full test suite. That
+                is the fourth time in this project a timing test has measured
+                the computer rather than the code, and the previous three fixes
+                — take the best of several samples, take shorter samples — did
+                not work this time.
+              </p>
+              <p class="why">
+                Those fixes assume the interference comes in bursts, so some
+                sample lands in a quiet moment. The suite is now twenty-seven
+                files, several of which simulate entire races, and the machine
+                is oversubscribed for the whole run. There is no quiet moment.
+                So the budget is no longer asserted as a number of milliseconds:
+                it is asserted as a ratio against a single rider measured in the
+                same conditions. Both are limited by the processor, both are
+                slowed by the same amount, and the ratio is the part that means
+                something on a machine you do not control.
+              </p>
+            </article>
+          </section>
+
+          <section class="s-decision">
+            <p class="eyebrow">What we went with, and why</p>
+            <p>
+              An attack is a field on the same structure that carries the
+              throttle and the steering — captured once per tick, exactly like
+              any other button. Not a message, not an event, not a function
+              somebody calls.
+            </p>
+            <p>
+              That one decision paid for itself twice over. Replays stayed exact
+              for free, because there is no second route through which a fight
+              can happen: reproduce the buttons and you reproduce the fight. And
+              the computer riders got combat at no cost, because they already
+              produce one of these structures every tick — a rival now fills in
+              one more field. There is no separate attack code for the AI that
+              could drift away from what the player experiences.
+            </p>
+            <p class="tradeoff">
+              What this costs: the field is optional. Thirty-four places in the
+              codebase build one of these input structures and only two of them
+              care about fighting, so an absent attack means "no button
+              pressed". That is exactly what absence should mean here, but it is
+              a looser type than this project generally allows, and it is the
+              kind of thing that hides a bug elsewhere.
+            </p>
+            <p class="rejected">
+              We didn't give the computer riders knowledge of who hit them,
+              which would have made grudges straightforward. Instead a rival
+              notices its own stamina dropping for no reason it can account for
+              and gets angry in general. It is cheaper, and it is closer to
+              true: a rider on a motorcycle at night does not necessarily know
+              who just hit them either.
+            </p>
+          </section>
+
+          <section class="s-words">
+            <p class="eyebrow">Words to know</p>
+            <dl>
+              <dt>Acceptance criteria</dt>
+              <dd class="plain">
+                The list of things that must be true before a piece of work
+                counts as finished.
+              </dd>
+              <dd class="precise">
+                Pre-agreed, testable conditions written before implementation,
+                each demonstrated rather than assumed.
+              </dd>
+
+              <dt>Conservation law</dt>
+              <dd class="plain">
+                A quantity that can move around but can never change in total.
+              </dd>
+              <dd class="precise">
+                Here: weapons are only ever transferred, so carried plus dropped
+                is invariant across a race — which turns a duplication bug into
+                a failing test rather than an economy.
+              </dd>
+
+              <dt>Curvature</dt>
+              <dd class="plain">How tightly the road is bending at a point.</dd>
+              <dd class="precise">
+                One divided by the radius of the circle that best fits the road
+                there; zero on a straight and large in a hairpin.
+              </dd>
+
+              <dt>Determinism</dt>
+              <dd class="plain">
+                Same start, same actions, same result — every time, on every
+                computer.
+              </dd>
+              <dd class="precise">
+                The property that the whole state of a simulation is a pure
+                function of its seed and its input sequence.
+              </dd>
+
+              <dt>Emissive</dt>
+              <dd class="plain">
+                A surface that gives off light rather than only reflecting it.
+              </dd>
+              <dd class="precise">
+                A material property that adds colour independently of the
+                scene's lighting; used here so a rider mid-swing reads at night
+                without adding a light source per rider.
+              </dd>
+
+              <dt>Frame budget</dt>
+              <dd class="plain">
+                How long the game gets to do everything before the next picture
+                is due.
+              </dd>
+              <dd class="precise">
+                16.6 ms at 60 frames a second, of which the simulation is
+                allotted 1 ms and the renderer the rest.
+              </dd>
+
+              <dt>Input frame</dt>
+              <dd class="plain">
+                A snapshot of what the controls were doing at one instant.
+              </dd>
+              <dd class="precise">
+                The throttle, brake, steering and attack, latched once per
+                simulation tick so the simulation cannot tell how the render
+                loop was scheduled.
+              </dd>
+
+              <dt>Object pool</dt>
+              <dd class="plain">
+                Keeping a box of spare parts instead of buying a new one every
+                time.
+              </dd>
+              <dd class="precise">
+                A fixed set of pre-allocated instances reused rather than
+                constructed and garbage-collected; the dropped-weapon pool is
+                sized to the number of weapons in the race, so it cannot
+                overflow unless one was created.
+              </dd>
+
+              <dt>Stagger</dt>
+              <dd class="plain">The brief wobble after you are hit.</dd>
+              <dd class="precise">
+                A timer during which lateral control is suppressed; it shares
+                the steering lock with attack windup and recovery.
+              </dd>
+
+              <dt>Stamina</dt>
+              <dd class="plain">How much more hitting you can take.</dd>
+              <dd class="precise">
+                A 0–100 value that attacks subtract from and that regenerates
+                slowly; at zero the rider goes down through the same crash path
+                a collision uses.
+              </dd>
+
+              <dt>Three.js</dt>
+              <dd class="plain">The library that does the actual drawing.</dd>
+              <dd class="precise">
+                A JavaScript 3D library over WebGL, used only in the render
+                layer, which the simulation is forbidden from importing.
+              </dd>
+
+              <dt>Tick</dt>
+              <dd class="plain">One step of the game's clock.</dd>
+              <dd class="precise">
+                A single fixed-duration simulation step; exactly sixty per
+                second regardless of frame rate.
+              </dd>
+
+              <dt>Track space</dt>
+              <dd class="plain">
+                Describing a position as "how far along the road, and how far
+                left or right".
+              </dd>
+              <dd class="precise">
+                The curvilinear coordinate system the whole simulation works in;
+                distances within it must be measured along the curve, not by
+                subtracting coordinates.
+              </dd>
+
+              <dt>Windup / active / recovery</dt>
+              <dd class="plain">
+                The wind-up before a blow, the moment it can land, and the
+                moment afterwards where you are wide open.
+              </dd>
+              <dd class="precise">
+                The three phases of an attack, defined in seconds in the data
+                file; steering is locked through the first and last, which is
+                the entire cost of attacking.
+              </dd>
+            </dl>
+          </section>
+
+          <section class="s-code">
+            <p class="eyebrow">Show me in the code</p>
+            <p class="file-ref">
+              src/core/combat/combat.ts → <code>land()</code>
+            </p>
+            <p>
+              What happens when a blow connects. Damage, the shove, the weapon
+              changing hands, and — if that was the last of the target's stamina
+              — putting them on the road.
+            </p>
+            <pre><code>function land(
+  attacker: Rider,
+  target: Rider,
+  spec: AttackSpec,
+  dropped: DroppedWeapon[],
+  data: CombatData,
+  tuning: Tuning,
+): void {
+  const weapon = attacker.weapon;
+  const damage =
+    spec.damage * (weapon === null ? 1 : data.weapons[weapon].damage);
+  target.stamina -= damage;
+  target.staggerTimer = Math.max(target.staggerTimer, spec.stagger);
+
+  // The shove is away from the attacker. Near the flyway's open edge this is
+  // the whole danger, and it is why a kick exists.
+  const away = target.pos.t &gt;= attacker.pos.t ? 1 : -1;
+  target.pos.t += away * spec.push;
+  target.lateral = 0;
+
+  // A clean hit knocks a weapon loose. An unarmed attacker takes it; an armed
+  // one puts it in the road. Either way it moves and is never copied.
+  if (target.weapon !== null) {
+    const loose = target.weapon;
+    target.weapon = null;
+    if (attacker.weapon === null) attacker.weapon = loose;
+    else drop(dropped, loose, target);
+  }
+
+  if (target.stamina &lt;= 0) {
+    target.stamina = 0;
+    if (target.weapon !== null) {
+      drop(dropped, target.weapon, target);
+      target.weapon = null;
+    }
+    crash(target, 'combat', tuning);
+  }
+}</code></pre>
+            <ol class="annotations">
+              <li data-line="13">
+                Stagger takes the larger of what is already running and what
+                this blow adds, rather than replacing it. Two quick punches
+                should not shorten the stagger the first one caused.
+              </li>
+              <li data-line="17">
+                Which way the shove goes is decided by where the target already
+                is relative to the attacker, so a kick always pushes outward. On
+                the DND Flyway, outward is off the edge.
+              </li>
+              <li data-line="19">
+                Lateral velocity is zeroed rather than added to. Being hit
+                interrupts what the rider was doing; it does not compose with
+                it.
+              </li>
+              <li data-line="24">
+                The whole weapon economy is these five lines, and the shape
+                matters: the weapon is read into a variable, cleared from the
+                target, and then given to exactly one destination. There is no
+                path through this code that produces two of something.
+              </li>
+              <li data-line="26">
+                Stealing only happens if the attacker's hands are free.
+                Otherwise it goes into the road, where anybody — including the
+                rider who just lost it, a second later — can pick it up.
+              </li>
+              <li data-line="30">
+                Going down is not a separate mechanism. It calls the same crash
+                the game already had for hitting a bus, so the slide, the
+                remount, the time penalty and the results screen all work
+                without knowing combat exists.
+              </li>
+            </ol>
+          </section>
+
+          <section class="s-spoken">
+            <p class="eyebrow">Say it out loud</p>
+            <blockquote>
+              The design decision that carried this phase was making an attack a
+              field on the input frame rather than a method call. Replays stayed
+              bit-exact for free, because there's no second channel a fight can
+              happen through, and the AI got combat for nothing since it already
+              returns an input frame every tick. The interesting bug was in my
+              own test: I asserted that two riders with identical track-space
+              coordinates are further apart on a bend, and they're only further
+              apart on the outside — on the inside they're closer. Which makes
+              the point better than I'd planned, because subtracting coordinates
+              is wrong in both directions. And the frame-budget test finally
+              defeated wall-clock timing: twenty-seven test files saturate the
+              machine, so I assert a ratio against a single rider measured in
+              the same conditions instead of a number of milliseconds.
+            </blockquote>
+          </section>
+        </section>
+
         <!-- ================= 90 SECONDS ================= -->
         <section class="page" id="ninety-seconds" aria-labelledby="h-90" hidden>
           <header class="page-head">
@@ -3848,7 +4279,8 @@
               every position as a distance along the road, does its trigonometry
               once when a track loads, and reads tables thereafter. Five routes,
               five tiers, city traffic, hazards, and fourteen riders who all go
-              through identical physics.
+              through identical physics — including the fighting, which is one
+              more field on the same input frame that carries the throttle.
             </p>
           </section>
 
@@ -3874,8 +4306,11 @@
     collide     traffic · hazard · cliff → crash, remount
     race        countdown → racing → finished/failed
   ai/           <b>·done</b>
-    racer       line · corner limit · following → InputFrame
-  combat/ economy/ reputation/            <i>Phases 6–9</i>
+    racer       line · corner limit · following · grudges → InputFrame
+  combat/       <b>·done</b>
+    combat      windup/active/recovery · range by trackDistance
+                weapons circulate — carried + dropped is constant
+  economy/ reputation/                    <i>Phases 7–9</i>
 
 <b>src/app/</b>       FixedStepDriver — the accumulator. Never sees a clock.
 <b>src/input/</b>     keyboard + gamepad, rebindable; resolve() is pure
@@ -3885,25 +4320,27 @@
   Scenery          pooled, instanced, LOD past 220 m
   TrafficView      instanced per kind; head/tail lamps separate
   HazardView       static — every matrix written once at build
-  FieldView        13 rivals, one livery each
+  FieldView        13 rivals, one livery each; lit while swinging
   ChaseCamera      FOV · drop · pull-back · lateral lag
-<b>src/data/</b>      25 tracks · 204 hazards · 14 racers · bikes · tuning
+<b>src/ui/</b>        plain DOM. Speed · tacho · two stamina bars
+<b>src/data/</b>      25 tracks · 204 hazards · 14 racers · bikes · combat · tuning
 
 <i>position</i> = (s, t, branchId)          <i>s along, t sideways</i>
 <i>world</i>    = sample(s).position + right × t     <i>render time only</i>
 <i>ranking</i>  = progress(pos)              <i>never raw s — forks differ</i>
 <i>range</i>    = trackDistance(a, b)        <i>metres, curvature-corrected</i>
-<i>rival</i>    = Rider + think() → {throttle, brake, lean}   <i>no cheating</i>
+<i>rival</i>    = Rider + think() → InputFrame        <i>no cheating, ever</i>
+<i>attack</i>   = a field on InputFrame           <i>so replays replay fights</i>
 <i>loop</i>     = 60 Hz sim · render interpolates by alpha
 
 <b>npm run check</b>  typecheck · lint · test+coverage · size
-              <i>371 tests · core 99.8% lines · 149 KB of 500</i>
-              <i>race tick 0.83 ms worst case, 1 ms budget</i></pre>
+              <i>427 tests · core 99.5% lines · 147 KB of 500</i>
+              <i>race tick 0.63 ms idle, 1 ms budget; asserted as a ratio</i></pre>
             <p class="cost">
               Built so far: the road, the bike, the loop, twenty-five routes,
-              city traffic, hazards, crashes, thirteen rivals and a race that
-              runs start to finish. Combat, police, career and reputation are
-              Phases 6–9; the desktop build is Phase 10.
+              city traffic, hazards, crashes, thirteen rivals, a race that runs
+              start to finish, and a fight you can lose it in. Police, career
+              and reputation are Phases 7–9; the desktop build is Phase 10.
             </p>
           </section>
 

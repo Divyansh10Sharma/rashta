@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { preferredT, think } from '../../src/core/ai/racer.ts';
 import { stepRace, playerEntry, allHome } from '../../src/core/sim/race.ts';
-import { raceOn, racers, trackFor, tuning } from '../helpers/race.ts';
+import { combat, raceOn, racers, trackFor, tuning } from '../helpers/race.ts';
 import type { RacerBrain, RacerProfile } from '../../src/core/ai/types.ts';
 import type { InputFrame, RaceState } from '../../src/core/sim/types.ts';
 
@@ -14,7 +14,15 @@ function profileFor(id: string): RacerProfile {
 }
 
 function brain(): RacerBrain {
-  return { targetT: 0, thinkTimer: 0, cornerLimit: 0, pace: 1 };
+  return {
+    targetT: 0,
+    thinkTimer: 0,
+    cornerLimit: 0,
+    pace: 1,
+    lastStamina: 100,
+    grudge: 0,
+    swingTimer: 0,
+  };
 }
 
 describe('where a racer chooses to sit', () => {
@@ -57,6 +65,7 @@ describe('what a racer is allowed to touch', () => {
       race.traffic,
       track,
       tuning,
+      combat,
       entry.input,
       1 / 60,
     );
@@ -106,6 +115,7 @@ describe('what a racer is allowed to touch', () => {
         race.traffic,
         track,
         tuning,
+        combat,
         out,
         1 / 60,
       );
@@ -170,6 +180,7 @@ describe('how a racer reads the road', () => {
         race.traffic,
         track,
         tuning,
+        combat,
         out,
         1 / 60,
       );
@@ -201,6 +212,7 @@ function ridden(trackId: string, seed: number): { place: number; at: number } {
       race.traffic,
       track,
       tuning,
+      combat,
       input,
       1 / 60,
     );

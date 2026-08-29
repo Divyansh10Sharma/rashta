@@ -1,0 +1,54 @@
+{
+  "attacks": {
+    "punch": {
+      "windup": 0.1,
+      "active": 0.08,
+      "recovery": 0.17,
+      "damage": 9,
+      "range": 2.5,
+      "push": 0.5,
+      "cost": 4,
+      "stagger": 0.25
+    },
+    "kick": {
+      "windup": 0.2,
+      "active": 0.1,
+      "recovery": 0.32,
+      "damage": 12,
+      "range": 2.9,
+      "push": 2.4,
+      "cost": 7,
+      "stagger": 0.4
+    },
+    "backhand": {
+      "windup": 0.34,
+      "active": 0.1,
+      "recovery": 0.5,
+      "damage": 23,
+      "range": 2.2,
+      "push": 1.1,
+      "cost": 11,
+      "stagger": 0.7
+    }
+  },
+  "weapons": {
+    "pipe": {
+      "name": "Length of pipe",
+      "damage": 1.8,
+      "reach": 1.1
+    },
+    "chain": {
+      "name": "Bicycle chain",
+      "damage": 1.5,
+      "reach": 1.9
+    },
+    "bat": {
+      "name": "Cricket bat",
+      "damage": 2.2,
+      "reach": 1.4
+    }
+  },
+  "staminaRegen": 5.5,
+  "pickupRange": 3.0,
+  "engageRange": 6.0
+}

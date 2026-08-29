@@ -1,5 +1,8 @@
 import { TRAFFIC_SIZES } from '../sim/traffic.ts';
 import { RIDER_HALF_WIDTH } from '../sim/collide.ts';
+import { engagedWith, reachOf } from '../combat/combat.ts';
+import { trackDistance } from '../track/distance.ts';
+import type { AttackKind, CombatData } from '../combat/types.ts';
 import type { Track } from '../track/Track.ts';
 import type {
   InputFrame,
@@ -218,6 +221,61 @@ function followLimit(
 }
 
 /**
+ * Decides whether to swing, and with what.
+ *
+ * Aggression sets how often a rival attacks at all; vengefulness sets how long
+ * being hit keeps it interested. A rival with low aggression and high
+ * vengefulness — Pritam Sodhi — never starts anything and does not let go.
+ */
+function chooseAttack(
+  rider: Rider,
+  profile: RacerProfile,
+  brain: RacerBrain,
+  field: readonly Rider[],
+  track: Track,
+  data: CombatData,
+  dt: number,
+): AttackKind | null {
+  // An unexplained fall in stamina is the only evidence a rival gets that
+  // somebody hit it. Regeneration only ever raises it.
+  if (rider.stamina < brain.lastStamina - 0.001) {
+    brain.grudge = 2 + 6 * profile.vengefulness;
+  }
+  brain.lastStamina = rider.stamina;
+  if (brain.grudge > 0) brain.grudge -= dt;
+  if (brain.swingTimer > 0) brain.swingTimer -= dt;
+
+  if (rider.state !== 'riding' || rider.attack !== null) return null;
+  if (brain.swingTimer > 0) return null;
+
+  const heat = profile.aggression + (brain.grudge > 0 ? 0.5 : 0);
+  if (heat < 0.35) return null;
+
+  const target = engagedWith(rider, field, track, data);
+  if (!target) return null;
+
+  // Only swing at something actually in reach, measured along the road.
+  const kind: AttackKind =
+    heat > 1.0 && rider.stamina > 55
+      ? 'backhand'
+      : Math.abs(target.pos.t - rider.pos.t) > 1.2
+        ? 'kick'
+        : 'punch';
+  const spec = data.attacks[kind];
+  if (rider.stamina <= spec.cost * 2) return null;
+  if (
+    trackDistance(rider.pos, target.pos, track) > reachOf(rider, spec, data)
+  ) {
+    return null;
+  }
+
+  // A rival that swings every time it can is a rival that is always in
+  // recovery, and recovery is where you crash.
+  brain.swingTimer = 2.4 - 1.6 * profile.aggression;
+  return kind;
+}
+
+/**
  * Advances one rival's decisions and writes its input for this tick.
  *
  * `brain.pace` is applied here rather than computed here: rubber-banding needs
@@ -231,6 +289,7 @@ export function think(
   traffic: readonly TrafficVehicle[],
   track: Track,
   tuning: Tuning,
+  combat: CombatData,
   out: InputFrame,
   dt: number,
 ): void {
@@ -262,4 +321,6 @@ export function think(
     out.throttle = 1;
     out.brake = 0;
   }
+
+  out.attack = chooseAttack(rider, profile, brain, field, track, combat, dt);
 }

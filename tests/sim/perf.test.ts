@@ -4,6 +4,8 @@ import { loadBikes, loadTuning } from '../../src/core/sim/load.ts';
 import { step } from '../../src/core/sim/step.ts';
 import { createWorld, copyWorld } from '../../src/core/sim/world.ts';
 import { parseTrack } from '../../src/core/track/load.ts';
+import { stepRace } from '../../src/core/sim/race.ts';
+import { raceOn, trackFor, tuning as realTuning } from '../helpers/race.ts';
 
 /**
  * The frame-budget criteria that can be measured without a screen.
@@ -102,4 +104,75 @@ describe('simulation cost', () => {
     expect(world.player.speed).toBeGreaterThanOrEqual(0);
     expect(Number.isFinite(world.player.wheelAngle)).toBe(true);
   });
+});
+
+describe('a full race costs no more than a lone rider did', () => {
+  it('costs no more than fourteen times a lone rider on the same road', () => {
+    // The frame budget is 16.6 ms and the simulation gets one of it. On an
+    // idle machine this route measures 0.63 ms a tick — but this file runs
+    // beside twenty-six others, several of which simulate whole races, and a
+    // saturated machine inflated the same measurement to 4.2 ms. Best-of-N
+    // cannot fix a machine that is oversubscribed for the entire run.
+    //
+    // So the budget is asserted as a ratio against a lone rider stepped in the
+    // same conditions. Both are CPU-bound and both inflate together, which
+    // makes the ratio the part that means something on any machine. The
+    // absolute number belongs in the devlog, measured on an idle one.
+    const track = trackFor('ring-road-t5');
+    const input = { throttle: 1, brake: 0, lean: 0 };
+    const race = raceOn(track, 3);
+    const bike = bikes[0];
+    if (!bike) throw new Error('no bikes');
+    const lone = createWorld(bike, track, 3);
+
+    for (let i = 0; i < 1200; i += 1) {
+      stepRace(race, input, track, realTuning);
+      step(lone, input, track, realTuning);
+    }
+
+    // Many short samples rather than a few long ones: contention can only
+    // inflate a wall-clock reading, so the minimum is the least contaminated
+    // sample, and a 60-tick sample is far likelier to land inside one
+    // scheduling slice than a 600-tick one. Fourth timing test in this project
+    // to need saying — see the Phase 4 and 5 devlogs for the other three.
+    const best = (run: () => void): number => {
+      let lowest = Infinity;
+      for (let attempt = 0; attempt < 30; attempt += 1) {
+        const started = performance.now();
+        for (let i = 0; i < 60; i += 1) run();
+        lowest = Math.min(lowest, (performance.now() - started) / 60);
+      }
+      return lowest;
+    };
+
+    const raceMs = best(() => stepRace(race, input, track, realTuning));
+    const loneMs = best(() => step(lone, input, track, realTuning));
+    const ratio = raceMs / loneMs;
+
+    // Fourteen riders, three and a half times the traffic, and combat, against
+    // one rider and a small pool: measured at 13.7 on an idle machine. Twenty
+    // leaves room for noise and still fails on any real regression.
+    expect(
+      ratio,
+      `${raceMs.toFixed(3)} ms/tick vs ${loneMs.toFixed(3)} lone, ratio ${ratio.toFixed(1)}`,
+    ).toBeLessThan(20);
+  }, 120_000);
+
+  it('allocates nothing per tick that survives the tick', () => {
+    const track = trackFor('old-city-t3');
+    const race = raceOn(track, 4);
+    const input = { throttle: 1, brake: 0, lean: 0 };
+    const riders = race.riders.map((r) => r);
+    const drops = race.dropped.map((d) => d);
+
+    for (let i = 0; i < 60 * 120; i += 1)
+      stepRace(race, input, track, realTuning);
+    // Pools are pools: the same objects, all race long.
+    for (let i = 0; i < riders.length; i += 1) {
+      expect(race.riders[i]).toBe(riders[i]);
+    }
+    for (let i = 0; i < drops.length; i += 1) {
+      expect(race.dropped[i]).toBe(drops[i]);
+    }
+  }, 60_000);
 });

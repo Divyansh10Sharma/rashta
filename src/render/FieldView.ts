@@ -2,7 +2,26 @@ import * as THREE from 'three';
 import { createRiderView } from './Rider.ts';
 import type { RiderView } from './Rider.ts';
 import type { Track } from '../core/track/Track.ts';
-import type { RaceEntry } from '../core/sim/types.ts';
+import type { RaceEntry, Rider } from '../core/sim/types.ts';
+import type { CombatData } from '../core/combat/types.ts';
+import { phaseOf } from '../core/combat/combat.ts';
+
+/**
+ * How brightly a rider is lit, 0 to 1.
+ *
+ * A swing builds through the windup and peaks as it lands, so you can see it
+ * coming and see it connect. Being staggered lights you up too — that is how
+ * you tell who just took the hit.
+ */
+export function glowFor(rider: Rider, combat: CombatData): number {
+  if (rider.staggerTimer > 0) return Math.min(1, rider.staggerTimer * 2.5);
+  const phase = phaseOf(rider, combat);
+  if (phase === null) return 0;
+  if (phase === 'recovery') return 0.15;
+  if (phase === 'active') return 1;
+  const spec = combat.attacks[rider.attack ?? 'punch'];
+  return 0.2 + 0.6 * (rider.attackElapsed / spec.windup);
+}
 
 /**
  * The thirteen rivals, drawn.
@@ -26,6 +45,7 @@ export interface FieldView {
     current: readonly RaceEntry[],
     alpha: number,
     track: Track,
+    combat: CombatData,
   ) => void;
   dispose: () => void;
 }
@@ -54,6 +74,7 @@ export function createField(riders: number): FieldView {
     current: readonly RaceEntry[],
     alpha: number,
     track: Track,
+    combat: CombatData,
   ): void => {
     let slot = 0;
     for (let i = 0; i < current.length; i += 1) {
@@ -84,6 +105,7 @@ export function createField(riders: number): FieldView {
 
       view.group.visible = true;
       view.update(track, s, t, lean, wheel, b.pos.branchId);
+      view.highlight(glowFor(b, combat), b.staggerTimer > 0);
     }
   };
 

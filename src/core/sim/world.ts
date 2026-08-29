@@ -16,6 +16,10 @@ export function createRider(bike: TunedBike, s = 0, t = 0): Rider {
     lean: 0,
     wheelAngle: 0,
     stamina: 100,
+    weapon: null,
+    attack: null,
+    attackElapsed: 0,
+    staggerTimer: 0,
     state: 'riding',
     stateTimer: 0,
     crashCause: null,
@@ -56,6 +60,10 @@ export function copyRider(from: Rider, to: Rider): void {
   to.lean = from.lean;
   to.wheelAngle = from.wheelAngle;
   to.stamina = from.stamina;
+  to.weapon = from.weapon;
+  to.attack = from.attack;
+  to.attackElapsed = from.attackElapsed;
+  to.staggerTimer = from.staggerTimer;
   to.state = from.state;
   to.stateTimer = from.stateTimer;
   to.crashCause = from.crashCause;

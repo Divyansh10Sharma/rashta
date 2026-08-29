@@ -1,4 +1,10 @@
 import type { RacerBrain, RacerProfile } from '../ai/types.ts';
+import type {
+  AttackKind,
+  CombatData,
+  DroppedWeapon,
+  WeaponKind,
+} from '../combat/types.ts';
 import type { TrackPos } from '../types.ts';
 import type { Rng } from '../rng.ts';
 
@@ -46,7 +52,7 @@ export interface TunedBike {
 }
 
 /** What put a rider on the tarmac. Kept so a results screen can say why. */
-export type CrashCause = 'traffic' | 'hazard' | 'cliff';
+export type CrashCause = 'traffic' | 'hazard' | 'cliff' | 'combat';
 
 /** A kind of vehicle sharing the road. */
 export type TrafficKind = 'auto' | 'car' | 'bus' | 'truck';
@@ -130,6 +136,15 @@ export interface InputFrame {
   brake: number;
   /** -1 (left) .. 1 (right) */
   lean: number;
+  /**
+   * The attack thrown this tick, if any.
+   *
+   * Optional because absent is exactly what "no button pressed" means, and
+   * because an attack is input like any other — latched once per tick, so a
+   * replay of the inputs replays the fight. There is no second channel through
+   * which a fight can happen.
+   */
+  attack?: AttackKind | null;
 }
 
 /** A rider's full simulation state. Positional data is track space only. */
@@ -151,7 +166,16 @@ export interface Rider {
   lean: number;
   /** Radians of wheel rotation, accumulated for the renderer. */
   wheelAngle: number;
+  /** 0..100. At zero the rider goes down. */
   stamina: number;
+  /** What this rider is carrying, or null. Weapons circulate; see Phase 6. */
+  weapon: WeaponKind | null;
+  /** The attack in progress, or null. */
+  attack: AttackKind | null;
+  /** Seconds since `attack` began. The phase is derived from it. */
+  attackElapsed: number;
+  /** Seconds of lost lateral control left, from being hit. */
+  staggerTimer: number;
   state: RiderState;
   /** Seconds left in `crashing` or `remounting`. */
   stateTimer: number;
@@ -185,12 +209,19 @@ export interface RaceEntry {
 /** A whole race. Supersedes WorldState once a race is running. */
 export interface RaceState {
   phase: RacePhase;
+  /** Attack and weapon data. Immutable config, carried so `stepRace` has it. */
+  combat: CombatData;
   entries: RaceEntry[];
   /** Every entry's rider, in entry order. Built once so the AI can scan it. */
   riders: Rider[];
   /** Indices into `entries`, best first. Sorted on progress, never raw s. */
   order: number[];
   traffic: TrafficVehicle[];
+  /**
+   * Weapons lying in the road. A fixed pool: weapons circulate rather than
+   * being created, so carried plus dropped is constant for a whole race.
+   */
+  dropped: DroppedWeapon[];
   rng: Rng;
   tick: number;
   /** Seconds of racing elapsed. Does not include the countdown. */

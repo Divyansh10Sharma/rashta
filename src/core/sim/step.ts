@@ -1,3 +1,4 @@
+import { canSteer } from '../combat/combat.ts';
 import { MAIN_BRANCH } from '../types.ts';
 import type { Track } from '../track/Track.ts';
 import { curveAt } from './bike.ts';
@@ -77,7 +78,7 @@ function stepSpeed(
  */
 function stepLateral(
   rider: Rider,
-  input: InputFrame,
+  lean: number,
   track: Track,
   tuning: Tuning,
   dt: number,
@@ -90,7 +91,7 @@ function stepLateral(
   const grip = rider.slipTimer > 0 ? tuning.slipGrip : 1;
 
   const target =
-    input.lean *
+    lean *
     tuning.maxLateralSpeed *
     rider.bike.spec.handling *
     speedFactor *
@@ -217,7 +218,10 @@ export function stepRider(
 
   const previousS = rider.pos.s;
   stepSpeed(rider, input, track, tuning, dt);
-  stepLateral(rider, input, track, tuning, dt);
+  // Steering is locked through an attack's windup and recovery, and while
+  // staggered. That lock is the entire cost of attacking: it is why a backhand
+  // taken into a bend is how you crash. See GAME_DESIGN.md, Combat.
+  stepLateral(rider, canSteer(rider) ? input.lean : 0, track, tuning, dt);
   rider.pos.s += rider.speed * dt;
   stepRoute(rider, track, previousS);
   // `s` moved and the branch may have changed, so the road under the rider is

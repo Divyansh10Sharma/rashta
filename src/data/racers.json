@@ -45,7 +45,7 @@
       "caution": 0.77,
       "startingBike": "marwar-gully",
       "startingCash": 18000,
-      "startingWeapon": null,
+      "startingWeapon": "pipe",
       "bio": "Keeps a workshop off the bypass and half the grid owes him for it.\nHe has never swung first at anybody. He has also never forgotten anybody."
     },
     {
@@ -69,7 +69,7 @@
       "caution": 0.61,
       "startingBike": "marwar-gully",
       "startingCash": 15000,
-      "startingWeapon": null,
+      "startingWeapon": "pipe",
       "bio": "Drives a tempo by day, which is why nothing in traffic surprises him.\nHe is not the quickest out here and he finishes more races than most who are."
     },
     {

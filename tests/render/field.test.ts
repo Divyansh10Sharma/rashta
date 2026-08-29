@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { createField } from '../../src/render/FieldView.ts';
+import { createField, glowFor } from '../../src/render/FieldView.ts';
 import { createFrame } from '../../src/core/track/path.ts';
 import { MAIN_BRANCH } from '../../src/core/types.ts';
-import { raceOn, trackFor } from '../helpers/race.ts';
-import type { RaceEntry } from '../../src/core/sim/types.ts';
+import { combat, raceOn, trackFor } from '../helpers/race.ts';
+import type { RaceEntry, Rider } from '../../src/core/sim/types.ts';
 
 /**
  * The rivals, drawn.
@@ -56,7 +56,7 @@ describe('the rivals, drawn', () => {
     expect(view.count).toBe(13);
 
     const { before, now } = pair(0);
-    view.update(before, now, 0.5, track);
+    view.update(before, now, 0.5, track, combat);
     expect(shown(view.group).length).toBe(13);
     view.dispose();
   });
@@ -64,7 +64,7 @@ describe('the rivals, drawn', () => {
   it('puts a rival where the simulation says it is', () => {
     const view = createField(13);
     const { before, now } = pair(0);
-    view.update(before, now, 1, track);
+    view.update(before, now, 1, track, combat);
 
     const want = worldAt(300, 2);
     for (const child of shown(view.group)) {
@@ -77,12 +77,12 @@ describe('the rivals, drawn', () => {
     const view = createField(13);
     const { before, now } = pair(10);
 
-    view.update(before, now, 0.5, track);
+    view.update(before, now, 0.5, track, combat);
     const half = shown(view.group)[0]?.position.clone();
     if (!half) throw new Error('nothing drawn');
     expect(half.distanceTo(worldAt(305, 2))).toBeLessThan(1e-3);
 
-    view.update(before, now, 0, track);
+    view.update(before, now, 0, track, combat);
     const start = shown(view.group)[0]?.position.clone();
     if (!start) throw new Error('nothing drawn');
     expect(start.distanceTo(worldAt(300, 2))).toBeLessThan(1e-3);
@@ -98,7 +98,7 @@ describe('the rivals, drawn', () => {
     first.finishTick = 900;
     same.finishTick = 900;
 
-    view.update(before, now, 0.5, track);
+    view.update(before, now, 0.5, track, combat);
     expect(shown(view.group).length).toBe(12);
     view.dispose();
   });
@@ -112,7 +112,7 @@ describe('the rivals, drawn', () => {
     if (!entry) throw new Error('no rivals');
     entry.rider.pos.branchId = 1;
 
-    view.update(before, now, 0.5, track);
+    view.update(before, now, 0.5, track, combat);
     expect(shown(view.group).length).toBe(12);
     view.dispose();
   });
@@ -133,5 +133,77 @@ describe('the rivals, drawn', () => {
     // and no two riders sharing the body colour that identifies them.
     expect(colours.size).toBeGreaterThan(13);
     view.dispose();
+  });
+});
+
+describe('combat is legible: you can tell who is hitting whom', () => {
+  const lit = (setup: (r: Rider) => void): number => {
+    const race = raceOn(track);
+    const entry = race.entries[0];
+    if (!entry) throw new Error('no field');
+    setup(entry.rider);
+    return glowFor(entry.rider, combat);
+  };
+
+  it('shows nothing on a rider who is just riding', () => {
+    expect(lit(() => {})).toBe(0);
+  });
+
+  it('builds through the windup, so you see it coming', () => {
+    const spec = combat.attacks.backhand;
+    const early = lit((r) => {
+      r.attack = 'backhand';
+      r.attackElapsed = spec.windup * 0.1;
+    });
+    const late = lit((r) => {
+      r.attack = 'backhand';
+      r.attackElapsed = spec.windup * 0.9;
+    });
+    expect(early).toBeGreaterThan(0);
+    expect(late).toBeGreaterThan(early);
+    expect(late).toBeLessThan(1);
+  });
+
+  it('peaks on the tick the blow is live', () => {
+    const spec = combat.attacks.punch;
+    expect(
+      lit((r) => {
+        r.attack = 'punch';
+        r.attackElapsed = spec.windup + spec.active * 0.5;
+      }),
+    ).toBe(1);
+  });
+
+  it('drops away through the recovery', () => {
+    const spec = combat.attacks.kick;
+    const recovering = lit((r) => {
+      r.attack = 'kick';
+      r.attackElapsed = spec.windup + spec.active + spec.recovery * 0.5;
+    });
+    expect(recovering).toBeGreaterThan(0);
+    expect(recovering).toBeLessThan(0.5);
+  });
+
+  it('lights the rider who was hit, which is how you tell them apart', () => {
+    // The attacker glows warm and the struck rider cold — same channel, two
+    // colours, so a fight reads as a fight rather than as two glowing bikes.
+    const struck = lit((r) => {
+      r.staggerTimer = 0.4;
+    });
+    expect(struck).toBeGreaterThan(0);
+    expect(struck).toBeLessThanOrEqual(1);
+  });
+
+  it('never asks for a glow outside the range the material accepts', () => {
+    const spec = combat.attacks.backhand;
+    for (let e = 0; e < spec.windup + spec.active + spec.recovery; e += 0.01) {
+      const value = lit((r) => {
+        r.attack = 'backhand';
+        r.attackElapsed = e;
+      });
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(1);
+    }
+    expect(lit((r) => (r.staggerTimer = 9))).toBeLessThanOrEqual(1);
   });
 });

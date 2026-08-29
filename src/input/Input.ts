@@ -1,4 +1,5 @@
 import type { InputFrame } from '../core/sim/types.ts';
+import type { AttackKind } from '../core/combat/types.ts';
 import {
   defaultKeyBindings,
   defaultPadBindings,
@@ -84,8 +85,22 @@ export class Input {
 
   /** One tick of input. Called once per simulation tick, never per frame. */
   sample(): InputFrame {
-    return resolveInput(this.pressed, this.keys, this.pollPad(), this.pad);
+    const frame = resolveInput(
+      this.pressed,
+      this.keys,
+      this.pollPad(),
+      this.pad,
+    );
+    // An attack fires on the press, not for as long as the key is held down.
+    // Without this, leaning on the punch key is a machine gun.
+    const held = frame.attack ?? null;
+    frame.attack = held !== null && held !== this.lastAttack ? held : null;
+    this.lastAttack = held;
+    return frame;
   }
+
+  /** The attack key that was down last tick, so a hold is not a repeat. */
+  private lastAttack: AttackKind | null = null;
 
   /** The current key bindings, for a settings screen to render. */
   get keyBindings(): Readonly<KeyBindings> {

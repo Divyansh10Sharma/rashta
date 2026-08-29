@@ -104,3 +104,65 @@ body {
   transform: scaleX(0);
   background: linear-gradient(90deg, #f2a24a, #ff6a3d 78%, #ff3b2f);
 }
+
+/* --- Stamina, Phase 6 -------------------------------------------------- */
+/* Two bars: yours and whoever you are fighting. Bottom-left, out of the way
+   of the tachometer, and legible at a glance in peripheral vision. */
+.stamina-bars {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font:
+    600 11px/1.2 ui-sans-serif,
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #d8d2c4;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.stamina {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stamina.is-hidden {
+  visibility: hidden;
+}
+
+.stamina-name {
+  min-width: 92px;
+  text-align: right;
+  text-shadow: 0 1px 2px #000;
+}
+
+.stamina-track {
+  width: 168px;
+  height: 8px;
+  background: #1a1a20cc;
+  border: 1px solid #00000080;
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.stamina-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #e0a83a, #f0d488);
+  transition: width 90ms linear;
+}
+
+.stamina-fill.is-critical {
+  background: linear-gradient(90deg, #c4321f, #e0603a);
+}
+
+.stamina-weapon {
+  color: #f0d488;
+  text-shadow: 0 1px 2px #000;
+}

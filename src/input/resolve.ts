@@ -1,5 +1,9 @@
 import type { InputFrame } from '../core/sim/types.ts';
 import type { Action, KeyBindings, PadBindings } from './bindings.ts';
+import type { AttackKind } from '../core/combat/types.ts';
+
+/** Checked in this order when several attack keys are down together. */
+const ATTACK_ORDER: readonly AttackKind[] = ['punch', 'kick', 'backhand'];
 
 /**
  * Turning device state into an `InputFrame`.
@@ -86,7 +90,22 @@ export function resolveInput(
     lean = Math.abs(stick) > Math.abs(dpad) ? stick : dpad;
   }
 
+  // Precedence when more than one is down at once. A mash gives you the punch,
+  // which is the one that commits you least — the backhand locks your steering
+  // for nearly a second and is not what anybody meant by pressing everything.
+  let attack: AttackKind | null = null;
+  for (const kind of ATTACK_ORDER) {
+    if (
+      keyHeld(pressed, keys, kind) ||
+      padValue(pad, padBindings, kind) > 0.5
+    ) {
+      attack = kind;
+      break;
+    }
+  }
+
   return {
+    attack,
     throttle: clamp01(throttle),
     brake: clamp01(brake),
     lean: lean < -1 ? -1 : lean > 1 ? 1 : lean,

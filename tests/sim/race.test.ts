@@ -10,7 +10,14 @@ import {
 } from '../../src/core/sim/race.ts';
 import { progress } from '../../src/core/track/distance.ts';
 import { MAIN_BRANCH } from '../../src/core/types.ts';
-import { bikeFor, raceOn, racers, trackFor, tuning } from '../helpers/race.ts';
+import {
+  bikeFor,
+  combat,
+  raceOn,
+  racers,
+  trackFor,
+  tuning,
+} from '../helpers/race.ts';
 import type { Track } from '../../src/core/track/Track.ts';
 import type { InputFrame, RaceState } from '../../src/core/sim/types.ts';
 
@@ -58,7 +65,7 @@ describe('the grid', () => {
 
   it('refuses to build a race for a rider who is not on the roster', () => {
     expect(() =>
-      createRace(racers, 'nobody', bikeFor, trackFor('ridge-run-t1')),
+      createRace(racers, 'nobody', bikeFor, trackFor('ridge-run-t1'), combat),
     ).toThrow(/no racer profile with id "nobody"/);
   });
 });

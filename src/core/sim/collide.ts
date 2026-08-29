@@ -56,6 +56,9 @@ export function crash(rider: Rider, cause: CrashCause, tuning: Tuning): void {
   rider.stateTimer = tuning.crashSeconds;
   rider.lateral = 0;
   rider.lean = 0;
+  // Whatever put you down ends the swing, whichever order things resolved in.
+  rider.attack = null;
+  rider.attackElapsed = 0;
 }
 
 /**

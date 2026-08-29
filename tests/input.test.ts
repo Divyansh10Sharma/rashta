@@ -76,6 +76,7 @@ describe('rebinding', () => {
 describe('resolving keyboard input', () => {
   it('reads nothing when nothing is pressed', () => {
     expect(resolveInput(held(), keys, noPad, pad)).toEqual({
+      attack: null,
       throttle: 0,
       brake: 0,
       lean: 0,
@@ -146,7 +147,7 @@ describe('resolving gamepad input', () => {
 
   it('survives a pad reporting fewer buttons and axes than expected', () => {
     const frame = resolveInput(held(), keys, padWith({}), pad);
-    expect(frame).toEqual({ throttle: 0, brake: 0, lean: 0 });
+    expect(frame).toEqual({ attack: null, throttle: 0, brake: 0, lean: 0 });
   });
 });
 

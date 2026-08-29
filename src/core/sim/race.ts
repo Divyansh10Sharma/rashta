@@ -5,6 +5,10 @@ import { checkHazards, checkOffRoad, checkTraffic } from './collide.ts';
 import { createRng } from '../rng.ts';
 import { progress } from '../track/distance.ts';
 import { think } from '../ai/racer.ts';
+import { startAttack, stepCombat } from '../combat/combat.ts';
+import { WEAPON_KINDS } from '../combat/types.ts';
+import { MAIN_BRANCH } from '../types.ts';
+import type { CombatData, DroppedWeapon, WeaponKind } from '../combat/types.ts';
 import type { Track } from '../track/Track.ts';
 import type { RacerProfile } from '../ai/types.ts';
 import type {
@@ -24,6 +28,15 @@ import type {
  * odometers is wrong in exactly the place it is most visible — mid-fork, on
  * the HUD, with the leader on the other road.
  */
+
+/** A roster's `startingWeapon` string, checked against the real weapons. */
+function asWeapon(name: string | null): WeaponKind | null {
+  if (name === null) return null;
+  if (!WEAPON_KINDS.includes(name as WeaponKind)) {
+    throw new Error(`racers.json: "${name}" is not a weapon`);
+  }
+  return name as WeaponKind;
+}
 
 /** Metres between grid rows, and metres either side of centre within a row. */
 const GRID_ROW = 6;
@@ -56,12 +69,23 @@ function makeEntry(
   isPlayer: boolean,
 ): RaceEntry {
   const t = gridT(slot);
+  const rider = createRider(bike, gridS(slot), t);
+  // The roster says who turns up armed. Nothing creates a weapon after this.
+  rider.weapon = asWeapon(profile.startingWeapon);
   return {
     profile,
     isPlayer,
-    rider: createRider(bike, gridS(slot), t),
+    rider,
     input: { throttle: 0, brake: 0, lean: 0 },
-    brain: { targetT: t, thinkTimer: 0, cornerLimit: 0, pace: 1 },
+    brain: {
+      targetT: t,
+      thinkTimer: 0,
+      cornerLimit: 0,
+      pace: 1,
+      lastStamina: 100,
+      grudge: 0,
+      swingTimer: 0,
+    },
     finishTick: null,
     place: 0,
   };
@@ -78,6 +102,7 @@ export function createRace(
   playerId: string,
   bikeFor: (profile: RacerProfile) => TunedBike,
   track: Track,
+  combat: CombatData,
   seed = 1,
 ): RaceState {
   const player = profiles.find((p) => p.id === playerId);
@@ -91,10 +116,28 @@ export function createRace(
   }
   entries.push(makeEntry(player, bikeFor(player), entries.length, true));
 
+  // One slot per weapon on the grid, and not one more: weapons circulate, so
+  // carried plus dropped is a constant for the whole race, and a pool that
+  // cannot overflow is a duplication bug that cannot happen quietly.
+  const armed = entries.filter((e) => e.rider.weapon !== null).length;
+  const dropped: DroppedWeapon[] = [];
+  for (let i = 0; i < armed; i += 1) {
+    dropped.push({
+      kind: 'pipe',
+      s: 0,
+      t: 0,
+      branchId: MAIN_BRANCH,
+      settle: 0,
+      active: false,
+    });
+  }
+
   const rng = createRng(seed);
   return {
     phase: 'countdown',
+    combat,
     entries,
+    dropped,
     // Built once, not per tick: the AI needs to see every rider, and a
     // fourteen-element array rebuilt sixty times a second is the per-frame
     // allocation CLAUDE.md forbids.
@@ -181,6 +224,7 @@ function gatherInputs(
       entry.input.throttle = playerInput.throttle;
       entry.input.brake = playerInput.brake;
       entry.input.lean = playerInput.lean;
+      entry.input.attack = playerInput.attack ?? null;
       continue;
     }
     entry.brain.pace = paceFor(entry, playerProgress, track, tuning);
@@ -192,6 +236,7 @@ function gatherInputs(
       race.traffic,
       track,
       tuning,
+      race.combat,
       entry.input,
       dt,
     );
@@ -259,6 +304,16 @@ export function stepRace(
   if (leadS - backS > MAX_FIELD_SPAN) backS = leadS - MAX_FIELD_SPAN;
   stepTraffic(race.traffic, track, backS, leadS, race.rng, tuning, dt);
 
+  // Attacks begin from the latched input, then every attack in flight advances
+  // together — so no rider wins an exchange by being stored first.
+  for (const entry of race.entries) {
+    const wanted = entry.input.attack;
+    if (entry.finishTick === null && wanted != null) {
+      startAttack(entry.rider, wanted, race.combat);
+    }
+  }
+  stepCombat(race.riders, race.dropped, track, race.combat, tuning, dt);
+
   for (const entry of race.entries) {
     if (entry.finishTick !== null) continue;
     resolveFor(entry.rider, race, track, tuning);
@@ -295,10 +350,25 @@ export function copyRace(from: RaceState, to: RaceState): void {
     b.input.throttle = a.input.throttle;
     b.input.brake = a.input.brake;
     b.input.lean = a.input.lean;
+    b.input.attack = a.input.attack ?? null;
     b.brain.targetT = a.brain.targetT;
     b.brain.thinkTimer = a.brain.thinkTimer;
     b.brain.cornerLimit = a.brain.cornerLimit;
     b.brain.pace = a.brain.pace;
+    b.brain.lastStamina = a.brain.lastStamina;
+    b.brain.grudge = a.brain.grudge;
+    b.brain.swingTimer = a.brain.swingTimer;
   }
   copyTraffic(from.traffic, to.traffic);
+  for (let i = 0; i < from.dropped.length; i += 1) {
+    const a = from.dropped[i];
+    const b = to.dropped[i];
+    if (!a || !b) continue;
+    b.kind = a.kind;
+    b.s = a.s;
+    b.t = a.t;
+    b.branchId = a.branchId;
+    b.settle = a.settle;
+    b.active = a.active;
+  }
 }

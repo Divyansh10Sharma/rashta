@@ -23,6 +23,14 @@ export interface RiderView {
     wheelAngle: number,
     branchId: number,
   ) => void;
+  /**
+   * Lights the rider up while they are swinging, 0 to 1.
+   *
+   * Combat has to be legible from behind at night: who is winding up, and who
+   * just took it. Nothing else about a rider changes shape when they attack,
+   * so the glow is doing all the work.
+   */
+  highlight: (amount: number, hostile: boolean) => void;
   dispose: () => void;
 }
 
@@ -128,9 +136,23 @@ export function createRiderView(colour = 0xc4402c): RiderView {
     rear.rotation.x = wheelAngle;
   };
 
+  const glowColour = new THREE.Color();
+  let lastGlow = -1;
+  const highlight = (amount: number, hostile: boolean): void => {
+    const clamped = amount < 0 ? 0 : amount > 1 ? 1 : amount;
+    const key = clamped * (hostile ? -1 : 1);
+    if (key === lastGlow) return;
+    lastGlow = key;
+    // Warm for a rider winding up, cold-white for one that has just been hit.
+    glowColour.setHex(hostile ? 0xfff0e0 : 0xff7a2a);
+    bodyMaterial.emissive.copy(glowColour);
+    bodyMaterial.emissiveIntensity = clamped * 1.8;
+  };
+
   return {
     group,
     update,
+    highlight,
     dispose: () => {
       tank.geometry.dispose();
       nose.geometry.dispose();
