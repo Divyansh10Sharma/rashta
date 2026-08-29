@@ -1,0 +1,45 @@
+{
+  "id": "dnd-flyway-t3",
+  "name": "DND Flyway — Tier 3",
+  "scenery": "flyway",
+  "extends": "dnd-flyway-t2",
+  "segments": [
+    {
+      "length": 2400,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 1100,
+      "curvature": -0.0014285714285714286,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 1950,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    }
+  ],
+  "branches": []
+}

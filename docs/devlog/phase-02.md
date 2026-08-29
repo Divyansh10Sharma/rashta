@@ -382,3 +382,19 @@ Replaced with two deterministic checks that test the actual claim:
 
 Ran the full suite three times to confirm the flakiness is gone: 220 passing
 each time.
+
+## The feel gate
+
+Divyansh rode it and cleared it. Recording plainly what that does and does not
+mean: the gate is subjective by design and belongs to him, so this is the
+verdict rather than a measurement. No tuning pass was needed — the constants
+in `tuning.json` are the ones written before anything was ridden, which is
+either good instinct or a straight line being an easy thing to make feel fine.
+Phase 3 puts real corners under it and is the first honest test of the lateral
+model.
+
+**Carried forward, unmeasured:** the 60 fps reading under 4x CPU throttling.
+Raised twice; the reading taken was 60.0 fps at a 16.66 ms mean, which is
+vsync-locked and so almost certainly unthrottled. Not blocking Phase 3 at
+Divyansh's direction, but the number is unknown rather than good, and Phase 3
+adds far denser scenery — so it should be taken there rather than assumed.

@@ -1,0 +1,45 @@
+{
+  "id": "dnd-flyway-t5",
+  "name": "DND Flyway — Tier 5",
+  "scenery": "flyway",
+  "extends": "dnd-flyway-t4",
+  "segments": [
+    {
+      "length": 2800,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 1300,
+      "curvature": -0.0018181818181818182,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 1850,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    }
+  ],
+  "branches": []
+}

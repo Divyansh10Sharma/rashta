@@ -1,0 +1,45 @@
+{
+  "id": "ring-road-t3",
+  "name": "Ring Road — Tier 3",
+  "scenery": "ringroad",
+  "extends": "ring-road-t2",
+  "segments": [
+    {
+      "length": 1700,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 1200,
+      "curvature": 0.0029411764705882353,
+      "gradient": 0,
+      "bank": 0.06,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 1950,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    }
+  ],
+  "branches": []
+}

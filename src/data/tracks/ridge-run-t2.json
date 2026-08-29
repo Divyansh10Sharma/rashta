@@ -1,0 +1,57 @@
+{
+  "id": "ridge-run-t2",
+  "name": "Ridge Run — Tier 2",
+  "scenery": "ridge",
+  "extends": "ridge-run-t1",
+  "segments": [
+    {
+      "length": 1400,
+      "curvature": -0.002631578947368421,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 1500,
+      "curvature": 0,
+      "gradient": 0.035,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 1300,
+      "curvature": 0.004166666666666667,
+      "gradient": 0,
+      "bank": 0.1,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 500,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    }
+  ],
+  "branches": []
+}

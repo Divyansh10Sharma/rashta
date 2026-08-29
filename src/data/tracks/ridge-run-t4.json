@@ -1,0 +1,57 @@
+{
+  "id": "ridge-run-t4",
+  "name": "Ridge Run — Tier 4",
+  "scenery": "ridge",
+  "extends": "ridge-run-t3",
+  "segments": [
+    {
+      "length": 1500,
+      "curvature": -0.00625,
+      "gradient": 0,
+      "bank": 0.12,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 1700,
+      "curvature": 0,
+      "gradient": 0.05,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 1300,
+      "curvature": 0.0038461538461538464,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 700,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    }
+  ],
+  "branches": []
+}

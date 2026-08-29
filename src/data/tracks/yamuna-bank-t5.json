@@ -1,0 +1,45 @@
+{
+  "id": "yamuna-bank-t5",
+  "name": "Yamuna Bank — Tier 5",
+  "scenery": "yamuna",
+  "extends": "yamuna-bank-t4",
+  "segments": [
+    {
+      "length": 2400,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 1500,
+      "curvature": -0.0030303030303030303,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 1850,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    }
+  ],
+  "branches": []
+}

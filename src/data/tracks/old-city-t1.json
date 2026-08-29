@@ -1,0 +1,343 @@
+{
+  "id": "old-city-t1",
+  "name": "Old City — Tier 1",
+  "scenery": "oldcity",
+  "segments": [
+    {
+      "length": 800,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 90,
+      "curvature": 0.022222222222222223,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 3.6,
+      "shoulder": 0.3,
+      "lanes": 1,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 340,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": [
+        {
+          "kind": "cow",
+          "offset": 120,
+          "t": 1.1
+        }
+      ]
+    },
+    {
+      "length": 70,
+      "curvature": -0.02631578947368421,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 3.4,
+      "shoulder": 0.3,
+      "lanes": 1,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 420,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 110,
+      "curvature": 0.01818181818181818,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 3.8,
+      "shoulder": 0.3,
+      "lanes": 1,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 380,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": [
+        {
+          "kind": "roadworks",
+          "offset": 150,
+          "t": -1.4
+        }
+      ]
+    },
+    {
+      "length": 95,
+      "curvature": -0.02,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 3.5,
+      "shoulder": 0.3,
+      "lanes": 1,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 460,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 105,
+      "curvature": 0.016666666666666666,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 3.7,
+      "shoulder": 0.3,
+      "lanes": 1,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 520,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 97.86250873429684,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 900,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 85,
+      "curvature": -0.023809523809523808,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 3.4,
+      "shoulder": 0.3,
+      "lanes": 1,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 77.88366846173011,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 1300,
+      "curvature": -0.008333333333333333,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 1349.254,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    }
+  ],
+  "branches": [
+    {
+      "id": "cloth-market",
+      "forkS": 3390,
+      "rejoinS": 3487.8625087342966,
+      "entryT": -1.4000000000000004,
+      "segments": [
+        {
+          "length": 25.2,
+          "curvature": -0.016666666666666666,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 2.8,
+          "shoulder": 0.2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": [
+            {
+              "kind": "cow",
+              "offset": 15,
+              "t": 0.4
+            }
+          ]
+        },
+        {
+          "length": 25.2,
+          "curvature": 0.016666666666666666,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 2.8,
+          "shoulder": 0.2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": []
+        },
+        {
+          "length": 25.2,
+          "curvature": 0.016666666666666666,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 2.8,
+          "shoulder": 0.2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": []
+        },
+        {
+          "length": 25.2,
+          "curvature": -0.016666666666666666,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 2.8,
+          "shoulder": 0.2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": []
+        }
+      ]
+    },
+    {
+      "id": "spice-lane",
+      "forkS": 4472.862508734297,
+      "rejoinS": 4550.746177196027,
+      "entryT": 1.6,
+      "segments": [
+        {
+          "length": 20,
+          "curvature": 0.02,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 2.6,
+          "shoulder": 0.2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": []
+        },
+        {
+          "length": 20,
+          "curvature": -0.02,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 2.6,
+          "shoulder": 0.2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": []
+        },
+        {
+          "length": 20,
+          "curvature": -0.02,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 2.6,
+          "shoulder": 0.2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": []
+        },
+        {
+          "length": 20,
+          "curvature": 0.02,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 2.6,
+          "shoulder": 0.2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": []
+        }
+      ]
+    }
+  ]
+}

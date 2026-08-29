@@ -1,0 +1,45 @@
+{
+  "id": "ring-road-t5",
+  "name": "Ring Road — Tier 5",
+  "scenery": "ringroad",
+  "extends": "ring-road-t4",
+  "segments": [
+    {
+      "length": 2000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 1400,
+      "curvature": 0.0038461538461538464,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 1950,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    }
+  ],
+  "branches": []
+}

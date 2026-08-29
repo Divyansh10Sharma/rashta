@@ -35,6 +35,9 @@ const HAZARDS = [
 /** Largest length difference between a fork's two routes. See GAME_DESIGN.md. */
 export const MAX_BRANCH_LENGTH_DELTA = 0.05;
 
+/** Every legal scenery tag, for the environment table to key off. */
+export const SCENERY_TAGS = SCENERY;
+
 class TrackDataError extends Error {}
 
 function fail(file: string, path: string, problem: string): never {
@@ -210,7 +213,7 @@ function validateSegment(
   };
 }
 
-function validateSegmentList(
+export function validateSegmentList(
   file: string,
   path: string,
   raw: unknown,
@@ -220,7 +223,7 @@ function validateSegmentList(
   return list.map((seg, i) => validateSegment(file, `${path}[${i}]`, seg));
 }
 
-function validateBranch(
+export function validateBranch(
   file: string,
   path: string,
   raw: unknown,
@@ -233,6 +236,33 @@ function validateBranch(
   const id = requireNonEmptyString(file, `${path}.id`, b['id']);
   const forkS = requireFiniteNumber(file, `${path}.forkS`, b['forkS']);
   const rejoinS = requireFiniteNumber(file, `${path}.rejoinS`, b['rejoinS']);
+  const entryT = requireFiniteNumber(file, `${path}.entryT`, b['entryT']);
+  const segments = validateSegmentList(file, `${path}.segments`, b['segments']);
+
+  checkBranchRange(
+    file,
+    path,
+    { id, forkS, rejoinS, entryT, segments },
+    mainLength,
+  );
+  return { id, forkS, rejoinS, entryT, segments };
+}
+
+/**
+ * Checks a branch's span against the main path it replaces.
+ *
+ * Separate from the rest of validation because with tier extension the main
+ * path's length is not known until the `extends` chain has been resolved — a
+ * fork declared in tier 1 is validated against tier 5's assembled length when
+ * tier 5 is what is being loaded.
+ */
+export function checkBranchRange(
+  file: string,
+  path: string,
+  branch: TrackBranch,
+  mainLength: number,
+): void {
+  const { forkS, rejoinS, segments } = branch;
 
   if (forkS < 0 || forkS >= mainLength) {
     fail(
@@ -249,7 +279,6 @@ function validateBranch(
     );
   }
 
-  const segments = validateSegmentList(file, `${path}.segments`, b['segments']);
   const branchLength = segments.reduce((sum, seg) => sum + seg.length, 0);
   const mainSpan = rejoinS - forkS;
   const delta = Math.abs(branchLength - mainSpan) / mainSpan;
@@ -265,8 +294,6 @@ function validateBranch(
         `${(MAX_BRANCH_LENGTH_DELTA * 100).toFixed(0)}% limit`,
     );
   }
-
-  return { id, forkS, rejoinS, segments };
 }
 
 /** Validates raw parsed JSON and returns it typed. Throws on the first problem. */

@@ -1,0 +1,69 @@
+{
+  "id": "old-city-t3",
+  "name": "Old City — Tier 3",
+  "scenery": "oldcity",
+  "extends": "old-city-t2",
+  "segments": [
+    {
+      "length": 1200,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 95,
+      "curvature": 0.025,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 3.4,
+      "shoulder": 0.3,
+      "lanes": 1,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 1400,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 110,
+      "curvature": -0.022727272727272728,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 3.5,
+      "shoulder": 0.3,
+      "lanes": 1,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 1645,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.4,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    }
+  ],
+  "branches": []
+}

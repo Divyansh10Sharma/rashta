@@ -48,6 +48,16 @@ export interface TrackBranch {
   id: string;
   forkS: number;
   rejoinS: number;
+  /**
+   * Where the branch's centreline sits, in main-path `t`, at the split.
+   *
+   * A slip road leaves from the edge of the road it leaves, not from the
+   * middle of it. Without this the two centrelines are coincident at the fork
+   * and a rider hugging the outside edge is nowhere near the branch they are
+   * plainly next to. On a branch, `t` is measured from the branch's own
+   * centreline, so entering subtracts this and rejoining adds it back.
+   */
+  entryT: number;
   segments: TrackSegment[];
 }
 

@@ -1,0 +1,289 @@
+{
+  "id": "ridge-run-t1",
+  "name": "Ridge Run — Tier 1",
+  "scenery": "ridge",
+  "segments": [
+    {
+      "length": 620,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 480,
+      "curvature": 0.003125,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 300,
+      "curvature": 0,
+      "gradient": 0.045,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": [
+        {
+          "kind": "dog",
+          "offset": 180,
+          "t": 1.2
+        }
+      ]
+    },
+    {
+      "length": 260,
+      "curvature": 0,
+      "gradient": -0.05,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 540,
+      "curvature": -0.0038461538461538464,
+      "gradient": 0,
+      "bank": 0.08,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 700,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 420,
+      "curvature": 0.004761904761904762,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 287.6553231625218,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 1100,
+      "curvature": -0.0025,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 800,
+      "curvature": 0,
+      "gradient": 0.03,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 213.0950913434495,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 900,
+      "curvature": 0.002,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    },
+    {
+      "length": 1579.25,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6.5,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "ridge",
+      "hazards": []
+    }
+  ],
+  "branches": [
+    {
+      "id": "deer-crossing",
+      "forkS": 3320,
+      "rejoinS": 3607.6553231625217,
+      "entryT": 2.5,
+      "segments": [
+        {
+          "length": 75,
+          "curvature": 0.006666666666666667,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ridge",
+          "hazards": [
+            {
+              "kind": "dog",
+              "offset": 40,
+              "t": 0.8
+            }
+          ]
+        },
+        {
+          "length": 75,
+          "curvature": -0.006666666666666667,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ridge",
+          "hazards": []
+        },
+        {
+          "length": 75,
+          "curvature": -0.006666666666666667,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ridge",
+          "hazards": []
+        },
+        {
+          "length": 75,
+          "curvature": 0.006666666666666667,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ridge",
+          "hazards": []
+        }
+      ]
+    },
+    {
+      "id": "quarry-cut",
+      "forkS": 5507.655323162522,
+      "rejoinS": 5720.750414505972,
+      "entryT": -2.7,
+      "segments": [
+        {
+          "length": 55.2,
+          "curvature": -0.008333333333333333,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 0.8,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ridge",
+          "hazards": []
+        },
+        {
+          "length": 55.2,
+          "curvature": 0.008333333333333333,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 0.8,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ridge",
+          "hazards": []
+        },
+        {
+          "length": 55.2,
+          "curvature": 0.008333333333333333,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 0.8,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ridge",
+          "hazards": []
+        },
+        {
+          "length": 55.2,
+          "curvature": -0.008333333333333333,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 0.8,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ridge",
+          "hazards": []
+        }
+      ]
+    }
+  ]
+}

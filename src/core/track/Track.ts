@@ -19,6 +19,8 @@ export interface BuiltBranch {
   id: string;
   forkS: number;
   rejoinS: number;
+  /** Lateral offset of this branch's centreline from the main one, at the fork. */
+  entryT: number;
   path: Path;
 }
 
@@ -42,14 +44,20 @@ export class Track {
     const frame = createFrame();
     this.builtBranches = data.branches.map((branch) => {
       this.main.sample(branch.forkS, frame);
+      // The branch centreline starts `entryT` metres to the side of the main
+      // one, which is where a slip road actually leaves from.
+      const start = frame.position
+        .clone()
+        .addScaledVector(frame.right, branch.entryT);
       const path = new Path(branch.segments, {
-        position: frame.position.clone(),
+        position: start,
         heading: headingOf(frame.forward),
       });
       return {
         id: branch.id,
         forkS: branch.forkS,
         rejoinS: branch.rejoinS,
+        entryT: branch.entryT,
         path,
       };
     });
@@ -68,6 +76,8 @@ export class Track {
     for (const branch of this.builtBranches) {
       branch.path.sample(branch.path.length, branchEnd);
       this.main.sample(branch.rejoinS, mainAt);
+      // The branch rejoins offset by `entryT`, not on the centreline.
+      mainAt.position.addScaledVector(mainAt.right, branch.entryT);
       const miss = branchEnd.position.distanceTo(mainAt.position);
       if (miss > REJOIN_TOLERANCE) {
         throw new Error(

@@ -1,3 +1,4 @@
+import { MAIN_BRANCH } from '../types.ts';
 import type { Track } from '../track/Track.ts';
 import { curveAt } from './bike.ts';
 import type { InputFrame, Rider, Tuning, WorldState } from './types.ts';
@@ -87,8 +88,18 @@ function stepLateral(
   rider.lateral += (target - rider.lateral) * response;
   rider.pos.t += rider.lateral * dt;
 
-  // Riders may use the shoulder but not go past it. Leaving the road properly
-  // is Phase 4's problem.
+  clampToRoad(rider, track);
+}
+
+/**
+ * Riders may use the shoulder but not go past it. Leaving the road properly is
+ * Phase 4's problem.
+ *
+ * Called again after any route change, because a branch can be much narrower
+ * than the road it leaves — and because the road itself narrows at segment
+ * boundaries.
+ */
+function clampToRoad(rider: Rider, track: Track): void {
   const limit = track.driveableHalfWidthAt(rider.pos.s, rider.pos.branchId);
   if (rider.pos.t > limit) {
     rider.pos.t = limit;
@@ -122,6 +133,59 @@ function stepCosmetic(
   rider.wheelAngle += (rider.speed / tuning.wheelRadius) * dt;
 }
 
+/** How far off centre a rider must be at the split to be taken onto a branch. */
+export const FORK_CAPTURE_T = 1.5;
+
+/**
+ * Moves a rider onto a fork branch, or back off one.
+ *
+ * Which branch a rider takes is decided by the branch's own geometry rather
+ * than by a field in the data file: the first segment's curvature says which
+ * way the road peels off, so drifting right at the split takes the right-hand
+ * road. Nothing to keep in sync, and the rule matches what the split looks
+ * like on screen.
+ *
+ * Rejoining is unconditional — reach the end of the branch and you are back on
+ * the main path at its `rejoinS`, carrying `t` across.
+ */
+function stepRoute(rider: Rider, track: Track, previousS: number): void {
+  if (rider.pos.branchId === MAIN_BRANCH) {
+    for (let i = 0; i < track.branches.length; i += 1) {
+      const branch = track.branches[i];
+      if (!branch) continue;
+      // Only at the tick the rider crosses the split, never after.
+      if (previousS >= branch.forkS || rider.pos.s < branch.forkS) continue;
+
+      const first = branch.path.segments[0];
+      if (!first || first.curvature === 0) continue;
+      const side = first.curvature > 0 ? 1 : -1;
+
+      // Committed to that side of the road at all?
+      if (rider.pos.t * side < FORK_CAPTURE_T) continue;
+
+      // And actually alongside the branch's mouth. `t` on a branch is measured
+      // from the branch's own centreline, so entering is a translation, not a
+      // snap — a rider hugging the outside edge of a wide road is exactly on
+      // the outside edge of the slip road leaving it.
+      const local = rider.pos.t - branch.entryT;
+      if (Math.abs(local) > first.halfWidth + first.shoulder) continue;
+
+      rider.pos.t = local;
+      rider.pos.branchId = i + 1;
+      return;
+    }
+    return;
+  }
+
+  const branch = track.branchById(rider.pos.branchId);
+  const end = branch.forkS + branch.path.length;
+  if (rider.pos.s >= end) {
+    rider.pos.s = branch.rejoinS + (rider.pos.s - end);
+    rider.pos.t += branch.entryT;
+    rider.pos.branchId = MAIN_BRANCH;
+  }
+}
+
 /** Advances one rider by one tick. */
 export function stepRider(
   rider: Rider,
@@ -130,9 +194,14 @@ export function stepRider(
   tuning: Tuning,
   dt: number,
 ): void {
+  const previousS = rider.pos.s;
   stepSpeed(rider, input, track, tuning, dt);
   stepLateral(rider, input, track, tuning, dt);
   rider.pos.s += rider.speed * dt;
+  stepRoute(rider, track, previousS);
+  // `s` moved and the branch may have changed, so the road under the rider is
+  // not the one stepLateral clamped against.
+  clampToRoad(rider, track);
   stepCosmetic(rider, track, tuning, dt);
 }
 

@@ -1,0 +1,277 @@
+{
+  "id": "ring-road-t1",
+  "name": "Ring Road — Tier 1",
+  "scenery": "ringroad",
+  "segments": [
+    {
+      "length": 800,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 600,
+      "curvature": 0.002380952380952381,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 900,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 400,
+          "t": -3
+        }
+      ]
+    },
+    {
+      "length": 500,
+      "curvature": -0.0033333333333333335,
+      "gradient": 0,
+      "bank": 0.07,
+      "halfWidth": 10,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 1000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 420,
+      "curvature": 0,
+      "gradient": 0.04,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 2,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 380,
+      "curvature": 0,
+      "gradient": -0.04,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 2,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 421.89447397169863,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 1100,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 238.52610043695978,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 1300,
+      "curvature": 0.0018181818181818182,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 239.579,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 11,
+      "shoulder": 2,
+      "lanes": 4,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    }
+  ],
+  "branches": [
+    {
+      "id": "flyover",
+      "forkS": 4600,
+      "rejoinS": 5021.894473971699,
+      "entryT": 6,
+      "segments": [
+        {
+          "length": 110,
+          "curvature": 0.004545454545454545,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 6,
+          "shoulder": 1,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "ringroad",
+          "hazards": []
+        },
+        {
+          "length": 110,
+          "curvature": -0.004545454545454545,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 6,
+          "shoulder": 1,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "ringroad",
+          "hazards": []
+        },
+        {
+          "length": 110,
+          "curvature": -0.004545454545454545,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 6,
+          "shoulder": 1,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "ringroad",
+          "hazards": []
+        },
+        {
+          "length": 110,
+          "curvature": 0.004545454545454545,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 6,
+          "shoulder": 1,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "ringroad",
+          "hazards": []
+        }
+      ]
+    },
+    {
+      "id": "service-lane",
+      "forkS": 6121.894473971699,
+      "rejoinS": 6360.4205744086585,
+      "entryT": -7.5,
+      "segments": [
+        {
+          "length": 61.6,
+          "curvature": -0.007142857142857143,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ringroad",
+          "hazards": [
+            {
+              "kind": "barricade",
+              "offset": 30,
+              "t": -1.5
+            }
+          ]
+        },
+        {
+          "length": 61.6,
+          "curvature": 0.007142857142857143,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ringroad",
+          "hazards": []
+        },
+        {
+          "length": 61.6,
+          "curvature": 0.007142857142857143,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ringroad",
+          "hazards": []
+        },
+        {
+          "length": 61.6,
+          "curvature": -0.007142857142857143,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 4.5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "ringroad",
+          "hazards": []
+        }
+      ]
+    }
+  ]
+}

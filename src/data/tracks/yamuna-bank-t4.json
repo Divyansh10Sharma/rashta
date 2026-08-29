@@ -1,0 +1,45 @@
+{
+  "id": "yamuna-bank-t4",
+  "name": "Yamuna Bank — Tier 4",
+  "scenery": "yamuna",
+  "extends": "yamuna-bank-t3",
+  "segments": [
+    {
+      "length": 2300,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 1400,
+      "curvature": 0.002631578947368421,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 1800,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    }
+  ],
+  "branches": []
+}

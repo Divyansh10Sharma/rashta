@@ -1,0 +1,241 @@
+{
+  "id": "dnd-flyway-t1",
+  "name": "DND Flyway — Tier 1",
+  "scenery": "flyway",
+  "segments": [
+    {
+      "length": 900,
+      "curvature": 0,
+      "gradient": 0.035,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 1400,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 800,
+      "curvature": 0.0011111111111111111,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 1400,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 600,
+      "curvature": -0.0015384615384615385,
+      "gradient": 0,
+      "bank": 0.05,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 498.60256014837114,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 850,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 337.400561293795,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 900,
+      "curvature": 0,
+      "gradient": -0.03,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 913.997,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    }
+  ],
+  "branches": [
+    {
+      "id": "toll-bypass",
+      "forkS": 5100,
+      "rejoinS": 5598.602560148371,
+      "entryT": 4.6,
+      "segments": [
+        {
+          "length": 130,
+          "curvature": 0.0038461538461538464,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5.5,
+          "shoulder": 0.5,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "flyway",
+          "hazards": []
+        },
+        {
+          "length": 130,
+          "curvature": -0.0038461538461538464,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5.5,
+          "shoulder": 0.5,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "flyway",
+          "hazards": []
+        },
+        {
+          "length": 130,
+          "curvature": -0.0038461538461538464,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5.5,
+          "shoulder": 0.5,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "flyway",
+          "hazards": []
+        },
+        {
+          "length": 130,
+          "curvature": 0.0038461538461538464,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5.5,
+          "shoulder": 0.5,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "flyway",
+          "hazards": []
+        }
+      ]
+    },
+    {
+      "id": "slip-ramp",
+      "forkS": 6448.602560148371,
+      "rejoinS": 6786.003121442166,
+      "entryT": -5.199999999999999,
+      "segments": [
+        {
+          "length": 87.4,
+          "curvature": -0.005263157894736842,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 0.4,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "flyway",
+          "hazards": []
+        },
+        {
+          "length": 87.4,
+          "curvature": 0.005263157894736842,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 0.4,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "flyway",
+          "hazards": []
+        },
+        {
+          "length": 87.4,
+          "curvature": 0.005263157894736842,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 0.4,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "flyway",
+          "hazards": []
+        },
+        {
+          "length": 87.4,
+          "curvature": -0.005263157894736842,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 0.4,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "flyway",
+          "hazards": []
+        }
+      ]
+    }
+  ]
+}

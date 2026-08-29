@@ -1,0 +1,45 @@
+{
+  "id": "dnd-flyway-t4",
+  "name": "DND Flyway — Tier 4",
+  "scenery": "flyway",
+  "extends": "dnd-flyway-t3",
+  "segments": [
+    {
+      "length": 2600,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 1200,
+      "curvature": 0.0016666666666666668,
+      "gradient": 0,
+      "bank": 0.06,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    },
+    {
+      "length": 1900,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 10,
+      "shoulder": 0.6,
+      "lanes": 3,
+      "oneWay": true,
+      "scenery": "flyway",
+      "hazards": []
+    }
+  ],
+  "branches": []
+}

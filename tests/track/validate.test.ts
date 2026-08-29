@@ -201,19 +201,42 @@ describe('branch validation', () => {
 
   it('rejects a branch with no id', () => {
     expect(
-      loadWith(withBranch({ forkS: 10, rejoinS: 50, segments: [] })),
+      loadWith(
+        withBranch({
+          entryT: 0,
+          forkS: 10,
+          rejoinS: 50,
+          segments: [segment({ length: 40 })],
+        }),
+      ),
     ).toThrow(/branches\[0\]\.id/);
   });
 
   it('rejects a fork point off the end of the track', () => {
     expect(
-      loadWith(withBranch({ id: 'b', forkS: 900, rejoinS: 950, segments: [] })),
+      loadWith(
+        withBranch({
+          id: 'b',
+          entryT: 0,
+          forkS: 900,
+          rejoinS: 950,
+          segments: [segment({ length: 50 })],
+        }),
+      ),
     ).toThrow(/branches\[0\]\.forkS must be within \[0, 200\)/);
   });
 
   it('rejects a rejoin before the fork', () => {
     expect(
-      loadWith(withBranch({ id: 'b', forkS: 100, rejoinS: 50, segments: [] })),
+      loadWith(
+        withBranch({
+          id: 'b',
+          entryT: 0,
+          forkS: 100,
+          rejoinS: 50,
+          segments: [segment({ length: 50 })],
+        }),
+      ),
     ).toThrow(/branches\[0\]\.rejoinS must be within \(100, 200\]/);
   });
 
@@ -222,6 +245,7 @@ describe('branch validation', () => {
       loadWith(
         withBranch({
           id: 'scenic',
+          entryT: 0,
           forkS: 50,
           rejoinS: 100,
           segments: [segment({ length: 80 })],
@@ -237,6 +261,7 @@ describe('branch validation', () => {
       loadWith(
         withBranch({
           id: 'nowhere',
+          entryT: 0,
           forkS: 50,
           rejoinS: 100,
           segments: [segment({ length: 50, curvature: 0.02 })],
@@ -250,6 +275,7 @@ describe('branch validation', () => {
       loadWith(
         withBranch({
           id: 'parallel',
+          entryT: 0,
           forkS: 50,
           rejoinS: 100,
           segments: [segment({ length: 50 })],

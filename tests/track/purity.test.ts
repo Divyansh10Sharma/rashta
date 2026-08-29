@@ -111,6 +111,15 @@ describe('the simulation allocates nothing per tick', () => {
   // CLAUDE.md: no allocation inside the per-frame loop. Checked at the source
   // rather than by measuring the heap, because a heap delta in a shared test
   // process depends on what else has run and fails on ordering alone.
+  /**
+   * `new Error(...)` is exempt. Throwing does allocate, but it is a terminal
+   * path — the frame it would have cost is not going to be drawn either way,
+   * and the alternative is preallocating exception objects, which is the kind
+   * of optimisation that makes code worse to read for no measurable gain.
+   */
+  const withoutThrows = (text: string): string =>
+    text.replace(/new Error\(/g, 'THROW(');
+
   const ALLOCATING = [
     'new ',
     '.map(',
@@ -129,10 +138,27 @@ describe('the simulation allocates nothing per tick', () => {
     it(`${path} constructs nothing`, () => {
       const file = files.find((f) => f.path === path);
       expect(file).toBeDefined();
-      const found = ALLOCATING.filter((token) => file?.text.includes(token));
+      const text = withoutThrows(file?.text ?? '');
+      const found = ALLOCATING.filter((token) => text.includes(token));
       expect(`${path}: ${found.join(', ')}`).toBe(`${path}: `);
     });
   }
+
+  it('Path.sample() constructs nothing', () => {
+    // path.ts as a whole *does* allocate — the node tables and the scratch
+    // vectors are built in its constructor, which runs once. Only the sampling
+    // path has to stay clean, so the check is scoped to that function.
+    const file = files.find((f) => f.path === 'src/core/track/path.ts');
+    expect(file).toBeDefined();
+    const body = file?.text.slice(
+      file.text.indexOf('sample(s: number'),
+      file.text.indexOf('export function createFrame'),
+    );
+    expect(body).toBeDefined();
+    const text = withoutThrows(body ?? '');
+    const found = ALLOCATING.filter((token) => text.includes(token));
+    expect(`sample(): ${found.join(', ')}`).toBe('sample(): ');
+  });
 });
 
 describe('rule 4: no transcendental is reachable from the simulation', () => {

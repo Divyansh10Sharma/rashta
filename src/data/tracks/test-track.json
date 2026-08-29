@@ -25,7 +25,13 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "ringroad",
-      "hazards": [{ "kind": "pothole", "offset": 60, "t": -2.5 }]
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 60,
+          "t": -2.5
+        }
+      ]
     },
     {
       "length": 200,
@@ -49,7 +55,13 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": [{ "kind": "sand", "offset": 40, "t": 3 }]
+      "hazards": [
+        {
+          "kind": "sand",
+          "offset": 40,
+          "t": 3
+        }
+      ]
     },
     {
       "length": 120,
@@ -73,7 +85,13 @@
       "lanes": 1,
       "oneWay": true,
       "scenery": "oldcity",
-      "hazards": [{ "kind": "cow", "offset": 12, "t": 1.2 }]
+      "hazards": [
+        {
+          "kind": "cow",
+          "offset": 12,
+          "t": 1.2
+        }
+      ]
     },
     {
       "length": 115.06212926500872,
@@ -116,7 +134,13 @@
           "lanes": 1,
           "oneWay": true,
           "scenery": "oldcity",
-          "hazards": [{ "kind": "dog", "offset": 15, "t": 0.5 }]
+          "hazards": [
+            {
+              "kind": "dog",
+              "offset": 15,
+              "t": 0.5
+            }
+          ]
         },
         {
           "length": 30,
@@ -154,7 +178,8 @@
           "scenery": "oldcity",
           "hazards": []
         }
-      ]
+      ],
+      "entryT": 0
     }
   ]
 }

@@ -1,0 +1,259 @@
+{
+  "id": "yamuna-bank-t1",
+  "name": "Yamuna Bank — Tier 1",
+  "scenery": "yamuna",
+  "segments": [
+    {
+      "length": 1100,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 700,
+      "curvature": -0.0016666666666666668,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": [
+        {
+          "kind": "sand",
+          "offset": 300,
+          "t": 4
+        }
+      ]
+    },
+    {
+      "length": 1300,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 520,
+      "curvature": 0.0029411764705882353,
+      "gradient": 0,
+      "bank": 0.06,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 900,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": [
+        {
+          "kind": "sand",
+          "offset": 500,
+          "t": -5
+        }
+      ]
+    },
+    {
+      "length": 397.5041102749894,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 1200,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 314.00983936820836,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 1400,
+      "curvature": -0.0014285714285714286,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 568.486,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 3,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    }
+  ],
+  "branches": [
+    {
+      "id": "sandbar-loop",
+      "forkS": 4520,
+      "rejoinS": 4917.504110274989,
+      "entryT": -5,
+      "segments": [
+        {
+          "length": 104,
+          "curvature": -0.005,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "yamuna",
+          "hazards": [
+            {
+              "kind": "sand",
+              "offset": 60,
+              "t": 0
+            }
+          ]
+        },
+        {
+          "length": 104,
+          "curvature": 0.005,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "yamuna",
+          "hazards": []
+        },
+        {
+          "length": 104,
+          "curvature": 0.005,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "yamuna",
+          "hazards": []
+        },
+        {
+          "length": 104,
+          "curvature": -0.005,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 2,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "yamuna",
+          "hazards": []
+        }
+      ]
+    },
+    {
+      "id": "barrage-road",
+      "forkS": 6117.504110274989,
+      "rejoinS": 6431.5139496431975,
+      "entryT": 5,
+      "segments": [
+        {
+          "length": 81.6,
+          "curvature": 0.0058823529411764705,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5.5,
+          "shoulder": 1.5,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "yamuna",
+          "hazards": []
+        },
+        {
+          "length": 81.6,
+          "curvature": -0.0058823529411764705,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5.5,
+          "shoulder": 1.5,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "yamuna",
+          "hazards": []
+        },
+        {
+          "length": 81.6,
+          "curvature": -0.0058823529411764705,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5.5,
+          "shoulder": 1.5,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "yamuna",
+          "hazards": []
+        },
+        {
+          "length": 81.6,
+          "curvature": 0.0058823529411764705,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5.5,
+          "shoulder": 1.5,
+          "lanes": 2,
+          "oneWay": true,
+          "scenery": "yamuna",
+          "hazards": []
+        }
+      ]
+    }
+  ]
+}
