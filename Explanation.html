@@ -645,6 +645,13 @@
           <span class="stone-label">Phase</span>
         </span>
       </button>
+      <button class="stone" data-goto="phase-03" type="button">
+        <span class="stone-band" aria-hidden="true"></span>
+        <span class="stone-body">
+          <span class="stone-num">03</span>
+          <span class="stone-label">Phase</span>
+        </span>
+      </button>
       <button class="stone" data-goto="ninety-seconds" type="button">
         <span class="stone-band" aria-hidden="true"></span>
         <span class="stone-body">
@@ -666,6 +673,7 @@
         <a href="#phase-00">00 · Skeleton</a>
         <a href="#phase-01">01 · Track space</a>
         <a href="#phase-02">02 · The feel gate</a>
+        <a href="#phase-03">03 · Real tracks</a>
         <a href="#ninety-seconds">90 seconds</a>
       </nav>
 
@@ -2411,13 +2419,491 @@
           </section>
         </section>
 
+        <!-- ================= PHASE 03 ================= -->
+        <section class="page" id="phase-03" aria-labelledby="h-03" hidden>
+          <header class="page-head">
+            <p class="eyebrow">Phase 03</p>
+            <h2 id="h-03">Real tracks</h2>
+            <p class="standfirst">
+              Five Delhi routes, each five times over, with roads that split in
+              two and rejoin — and five districts that look nothing like each
+              other.
+            </p>
+          </header>
+
+          <section class="s-goal" aria-labelledby="g-03">
+            <p class="eyebrow" id="g-03">What we were trying to do</p>
+            <p>
+              Until now there was one road, and it was a straight line twenty
+              kilometres long. This was the piece of work that replaced it with
+              actual places.
+            </p>
+            <p>
+              Five routes across Delhi, each with its own character: a dark
+              forested ridge, a wide riverside road, a busy multi-lane ring
+              road, a cramped old-city warren, and an elevated expressway with
+              nothing at all on one side. Each of those exists at five
+              difficulty levels, where each level is the previous one carried
+              further rather than a different road — so twenty-five races in
+              total.
+            </p>
+            <p>
+              Two harder things came with them. Each route splits in two at
+              least twice, so you can choose a way round and neither choice is
+              simply better. And each district had to actually look different —
+              how far you can see, what colour the light is, how close the fog
+              sits.
+            </p>
+          </section>
+
+          <section class="s-hard" aria-labelledby="hd-03">
+            <p class="eyebrow" id="hd-03">Why this was hard</p>
+            <p>
+              A road that splits and rejoins has to satisfy two demands that
+              pull against each other, and both are absolute.
+            </p>
+            <p>
+              The first is that the detour must arrive back <em>exactly</em>
+              where it left. Not nearly — the two roads join, so if the loop
+              comes back three metres sideways of where it claims to, riders
+              merge into thin air and there is nothing on screen to explain why.
+            </p>
+            <p>
+              The second is that the two ways round must be close to the same
+              length. If one is meaningfully shorter, it isn't a choice — it's
+              an arithmetic problem with one right answer, and every rider takes
+              the same road every time. The design brief allows five percent.
+            </p>
+            <p>
+              Those two together are a real constraint. Any curved detour that
+              returns to its own starting line is automatically longer than the
+              straight it replaced, because a curve is longer than its chord.
+              How much longer depends on how sharply it bends. So the shape
+              can't be drawn by eye and adjusted until it looks right — the bend
+              angle and the distance have to be solved together, ten times over.
+            </p>
+            <p>
+              And then a separate problem hiding underneath: what does it even
+              mean to be "ahead" of someone taking the other road?
+            </p>
+          </section>
+
+          <section class="s-deadends" aria-labelledby="de-03">
+            <p class="eyebrow" id="de-03">What we tried that didn't work</p>
+
+            <article class="deadend">
+              <h4>The slip road came off the middle of the carriageway</h4>
+              <p class="plain">
+                The rule for taking a fork is: drift toward the side the road
+                peels off, and you're on it. The first test held the bike hard
+                right down the Ring Road, straight past a right-hand slip road,
+                and it never took it.
+              </p>
+              <p class="why">
+                Both roads of a split were being built from the same centre
+                line, so the slip road's mouth was in the <em>middle</em> of a
+                twenty-six-metre carriageway rather than at its edge. A rider
+                pinned to the right-hand kerb was thirteen metres from a road
+                only seven metres wide — and a check added moments earlier,
+                correctly stopping riders from being yanked sideways as they
+                entered, refused them. Two things wrong in the same way: a slip
+                road leaves from the <em>edge</em> of the road it leaves. Once
+                branches knew how far to the side they start, entry became a
+                shift of viewpoint rather than a jump, and a rider on the
+                outside edge of a wide road is exactly on the outside edge of
+                the slip road beside them.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>Two and a half metres of missing road that wasn't missing</h4>
+              <p class="plain">
+                Straight after that fix, the check that every detour returns to
+                where it claims started failing by about two and a half metres —
+                on every fork, on every route.
+              </p>
+              <p class="why">
+                The roads were fine. The <em>test</em> was measuring to the
+                centre line while the roads had just been taught to rejoin at
+                the edge, so it was reporting exactly the offset it had failed
+                to account for. Measured properly, all ten forks close to within
+                a ten-thousandth of a metre. Worth the note because the instinct
+                on a failing check is to go looking in the thing being tested,
+                and here the newer, less-examined code was the test itself.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>
+                A generator that produced routes that didn't match their own
+                spec
+              </h4>
+              <p class="plain">
+                The design brief says a first-level route runs about eight
+                kilometres and each level adds four to six. The first batch put
+                the Old City at 2.3 km growing by 2.7, and the flyway at 9.8.
+              </p>
+              <p class="why">
+                The lengths were an accident of adding up hand-written segment
+                lists, so nobody was ever checking them against the brief. Now
+                each level is written for character and then padded to an
+                explicit target — and the tool refuses outright if what's been
+                written already overshoots. It refused immediately on the
+                flyway: 8036 metres of road against an 8000 metre target. A
+                generator that argues with you is better than one that quietly
+                produces something out of spec.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>A fourth memory test that measured the wrong thing</h4>
+              <p class="plain">
+                Another check that "this creates no litter" failed — passing on
+                its own, failing when run after others. The third one of these,
+                across two stages of work.
+              </p>
+              <p class="why">
+                Three of the same failure is a pattern, not luck. All of them
+                worked by watching total memory rise, which measures a
+                <em>consequence</em>, through a channel every other test shares,
+                against a threshold that was a guess. Replaced with the actual
+                claim: that the same objects and the same storage survive the
+                loop, checked by identity, plus a scan of the code itself for
+                the constructs that create things. Both are exact, and both fail
+                on the change that breaks them rather than on whichever unlucky
+                run notices.
+              </p>
+            </article>
+          </section>
+
+          <section class="s-decision" aria-labelledby="dc-03">
+            <p class="eyebrow" id="dc-03">What we went with, and why</p>
+            <p>
+              Every detour is the same shape: four equal arcs, bending right,
+              left, left, right. Because it's symmetrical, the turns cancel — it
+              ends up pointing the way it started and exactly back on the line
+              it left, having bulged out to one side and returned. It is longer
+              than the straight it replaced by a ratio that depends
+              <em>only</em> on how sharply it bends, not on how big it is. So
+              you pick the bend angle to get the length ratio you want, then
+              pick the size to fit the space. That is what turns "draw a
+              plausible loop and hope" into two numbers you solve for. All ten
+              close to within a fraction of a millimetre.
+            </p>
+            <p>
+              For "who is ahead", the answer is that distance travelled and race
+              position are two different quantities that had been sharing one
+              number. A rider on the long way round covers more ground for the
+              same amount of race. So a separate reading maps each route onto
+              the stretch of main road it replaces — that's called
+              <dfn class="term">normalisation</dfn> — and standings are sorted
+              on that, never on raw distance. Both routes reach the join at
+              precisely equal progress, by construction.
+            </p>
+            <p>
+              Difficulty levels are stored as <dfn class="term">deltas</dfn>: a
+              level names the one below it and lists only what it adds. Level
+              five of a route is five short files, not one long one, and fixing
+              a corner in level one fixes it in all five.
+            </p>
+            <p class="tradeoff">
+              What this costs: every fork in the game is the same shape. A road
+              network with genuinely irregular junctions is not expressible this
+              way, and the honest reason it's this shape is that this shape can
+              be solved. It also means both roads of a split are drawn at once,
+              which is more to draw at exactly the moment there is most to look
+              at.
+            </p>
+            <p class="rejected">
+              We didn't let the tool that solves the geometry run as part of the
+              game, because then the tracks would only exist while the tool did.
+              It writes the files, the files are checked in, and the game
+              validates them on load like any other data — so a track can be
+              edited by hand later without the tool being involved at all.
+            </p>
+          </section>
+
+          <section class="s-words" aria-labelledby="wd-03">
+            <p class="eyebrow" id="wd-03">Words to know</p>
+            <dl>
+              <dt>Arc</dt>
+              <dd class="plain">A piece of the edge of a circle.</dd>
+              <dd class="precise">
+                A curve of constant radius. Every bend here is one, and a fork's
+                detour is four of them.
+              </dd>
+
+              <dt>Chord</dt>
+              <dd class="plain">
+                The straight shortcut between two points on a curve.
+              </dd>
+              <dd class="precise">
+                The straight segment joining an arc's endpoints. Always shorter
+                than the arc, which is the whole difficulty of the fork
+                geometry.
+              </dd>
+
+              <dt>Chunk</dt>
+              <dd class="plain">
+                A section of road handled as one piece, so the ones behind you
+                can be ignored.
+              </dd>
+              <dd class="precise">
+                A 200 m span of road geometry with its own draw call, shown or
+                hidden by comparing its span against the rider's position.
+              </dd>
+
+              <dt>Culling</dt>
+              <dd class="plain">Not drawing the things you can't see.</dd>
+              <dd class="precise">
+                Excluding geometry from rendering. Here it is a numeric
+                comparison of track positions rather than a view-frustum test,
+                because positions are stored along the road.
+              </dd>
+
+              <dt>Curvature</dt>
+              <dd class="plain">How tight a bend is.</dd>
+              <dd class="precise">
+                One divided by the radius, signed so it also says which way it
+                turns. A branch's opening curvature is what decides which side
+                of the road it leaves from.
+              </dd>
+
+              <dt>Delta</dt>
+              <dd class="plain">
+                Storing only what changed, instead of a whole new copy.
+              </dd>
+              <dd class="precise">
+                A difference against a base. Each difficulty level names the one
+                below it and lists only appended road.
+              </dd>
+
+              <dt>Fog</dt>
+              <dd class="plain">
+                Fading distant things into the background colour so the world
+                doesn't just stop.
+              </dd>
+              <dd class="precise">
+                Distance-based blending toward the sky colour. Its near and far
+                distances are the strongest single lever on how a district feels
+                — 25 m in the Old City, 700 m on the flyway.
+              </dd>
+
+              <dt>Fork (branch)</dt>
+              <dd class="plain">
+                A place the road splits in two and joins up again later.
+              </dd>
+              <dd class="precise">
+                An alternative run of segments with a declared departure point,
+                rejoin point, and lateral offset, carried on an entity as an
+                extra identifier alongside its position.
+              </dd>
+
+              <dt>Instancing</dt>
+              <dd class="plain">
+                Telling the graphics chip "draw this shape many times, here are
+                the positions", instead of asking once per copy.
+              </dd>
+              <dd class="precise">
+                Rendering many copies of one geometry in a single draw call with
+                per-instance transforms.
+              </dd>
+
+              <dt>JSON</dt>
+              <dd class="plain">
+                A plain-text way of writing structured data that people and
+                programs can both read.
+              </dd>
+              <dd class="precise">
+                JavaScript Object Notation. All twenty-five routes are JSON,
+                validated on load with errors naming the file and the field.
+              </dd>
+
+              <dt>Level of detail (LOD)</dt>
+              <dd class="plain">
+                Drawing distant things more cheaply, because nobody can tell.
+              </dd>
+              <dd class="precise">
+                Reducing or omitting geometry with distance. Here it is the
+                crudest form — small roadside objects are hidden past 220 m,
+                while streetlights are exempt because a receding line of lamps
+                is most of what conveys distance.
+              </dd>
+
+              <dt>Normalisation</dt>
+              <dd class="plain">
+                Putting two things on the same scale so they can be compared.
+              </dd>
+              <dd class="precise">
+                Mapping each branch's own distance onto the span of main road it
+                replaces, so race position is comparable across routes of
+                different length.
+              </dd>
+
+              <dt>Object pool</dt>
+              <dd class="plain">
+                Keeping a box of spare parts and reusing them, instead of buying
+                a new one each time.
+              </dd>
+              <dd class="precise">
+                A fixed set of preallocated instances handed out and recycled,
+                to avoid allocation inside a per-frame loop.
+              </dd>
+
+              <dt>Sagitta</dt>
+              <dd class="plain">
+                How far a straight shortcut sags away from the curve it cuts
+                across.
+              </dd>
+              <dd class="precise">
+                The maximum distance between a chord and its arc. Used to derive
+                how finely the road is sampled from a stated error tolerance.
+              </dd>
+
+              <dt>Track space</dt>
+              <dd class="plain">
+                Describing where you are by how far along the road you are and
+                how far to the side.
+              </dd>
+              <dd class="precise">
+                A curvilinear coordinate system with the road centreline as its
+                axis. On a branch, the sideways measure is from that branch's
+                own centreline.
+              </dd>
+
+              <dt>Validation</dt>
+              <dd class="plain">
+                Checking data is sensible before trusting it, and complaining
+                loudly if not.
+              </dd>
+              <dd class="precise">
+                Schema and semantic checks on load. Here they include the fork's
+                closure tolerance and its five-percent length rule, so a route
+                that breaks the design brief cannot load at all.
+              </dd>
+
+              <dt>Vitest</dt>
+              <dd class="plain">The program that runs the tests.</dd>
+              <dd class="precise">
+                A test runner built on the Vite toolchain. 256 tests here,
+                including one that rides all twenty-five routes to the finish.
+              </dd>
+            </dl>
+          </section>
+
+          <section class="s-code" aria-labelledby="cd-03">
+            <p class="eyebrow" id="cd-03">Show me in the code</p>
+            <p class="file-ref">
+              src/core/sim/step.ts → <code>stepRoute()</code>
+            </p>
+            <p>
+              Deciding which road you took, and putting you back on the main one
+              afterwards.
+            </p>
+            <pre><code>function stepRoute(rider: Rider, track: Track, previousS: number): void {
+  if (rider.pos.branchId === MAIN_BRANCH) {
+    for (let i = 0; i &lt; track.branches.length; i += 1) {
+      const branch = track.branches[i];
+      if (!branch) continue;
+      // Only at the tick the rider crosses the split, never after.
+      if (previousS &gt;= branch.forkS || rider.pos.s &lt; branch.forkS) continue;
+
+      const first = branch.path.segments[0];
+      if (!first || first.curvature === 0) continue;
+      const side = first.curvature &gt; 0 ? 1 : -1;
+
+      // Committed to that side of the road at all?
+      if (rider.pos.t * side &lt; FORK_CAPTURE_T) continue;
+
+      // And actually alongside the branch's mouth. `t` on a branch is measured
+      // from the branch's own centreline, so entering is a translation, not a
+      // snap — a rider hugging the outside edge of a wide road is exactly on
+      // the outside edge of the slip road leaving it.
+      const local = rider.pos.t - branch.entryT;
+      if (Math.abs(local) &gt; first.halfWidth + first.shoulder) continue;
+
+      rider.pos.t = local;
+      rider.pos.branchId = i + 1;
+      return;
+    }
+    return;
+  }
+
+  const branch = track.branchById(rider.pos.branchId);
+  const end = branch.forkS + branch.path.length;
+  if (rider.pos.s &gt;= end) {
+    rider.pos.s = branch.rejoinS + (rider.pos.s - end);
+    rider.pos.t += branch.entryT;
+    rider.pos.branchId = MAIN_BRANCH;
+  }
+}</code></pre>
+            <ol class="annotations">
+              <li data-line="7">
+                The choice is made once, on the single tick you cross the split,
+                and never revisited. A fork you can wander back onto fifty
+                metres later is not a fork.
+              </li>
+              <li data-line="10">
+                Which side the branch leaves from is read from the branch's own
+                first bend rather than stored as a separate field. Nothing to
+                keep in sync, and the rule matches what the split looks like on
+                screen.
+              </li>
+              <li data-line="14">
+                Two conditions, not one. This is "did you commit to that side of
+                the road at all" — a rider drifting a few centimetres off centre
+                has not chosen anything.
+              </li>
+              <li data-line="20">
+                And this is "are you actually beside the opening". Together they
+                are what the earlier version got wrong by asking only the first.
+              </li>
+              <li data-line="23">
+                The line that turns a jump into a change of viewpoint. Sideways
+                position on a branch is measured from that branch's own centre,
+                so entering subtracts the offset instead of dragging the rider
+                to a new place.
+              </li>
+              <li data-line="33">
+                Rejoining carries the overshoot across rather than discarding
+                it, so a rider who crossed the end mid-tick keeps the ground
+                they covered. Dropping it would cost a few centimetres per fork
+                — invisible once, and a real bias over a career.
+              </li>
+            </ol>
+          </section>
+
+          <section class="s-spoken" aria-labelledby="sp-03">
+            <p class="eyebrow" id="sp-03">Say it out loud</p>
+            <blockquote>
+              Twenty-five tracks — five routes, five tiers — stored as deltas,
+              so a tier names the one below it and lists only appended segments,
+              and the extends chain resolves at load. The interesting constraint
+              is the forks: a branch has to close geometrically within half a
+              metre and be within five percent of the span it replaces, and
+              those fight, because any curve is longer than its chord. The shape
+              that solves it is four equal arcs — right, left, left, right —
+              which is symmetric, so it returns to the line it left facing the
+              same way, and its length ratio is phi over sine phi, independent
+              of radius. So you solve phi for the ratio and pick the radius for
+              the space. All ten close to under a millimetre. The other half is
+              that distance travelled and race position had been sharing one
+              number, so progress normalises each branch onto the main span it
+              replaces and standings sort on that — both routes hit the rejoin
+              at exactly equal progress. Fork rendering needed almost nothing,
+              because branch chunks carry their span in main-path terms and the
+              existing numeric cull just works on them.
+            </blockquote>
+          </section>
+        </section>
+
         <!-- ================= 90 SECONDS ================= -->
         <section class="page" id="ninety-seconds" aria-labelledby="h-90" hidden>
           <header class="page-head">
             <p class="eyebrow">The whole thing</p>
             <h2 id="h-90">In 90 seconds</h2>
             <p class="standfirst">
-              Where the project stands after Phase 2, and the decisions carrying
+              Where the project stands after Phase 3, and the decisions carrying
               the most weight.
             </p>
           </header>
@@ -2430,15 +2916,16 @@
               idea it is built on is that nothing in the simulation knows where
               it is in the world. Every rider is two numbers: how far along the
               road, and how far sideways. Who is winning becomes a comparison
-              instead of a geometry problem, and a whole race replays exactly
-              from one starting number. Positions in real space are worked out
-              only when something is drawn. That replay promise has teeth —
-              computers disagree about sine and cosine in the last digit, so the
-              simulation is banned from using them, and the road's geometry is
-              solved once at load and looked up thereafter. Right now there is a
-              road, a bike that accelerates exactly as fast as its data file
-              promises, and a camera behind it. The next question is not
-              technical: is riding it any good?
+              instead of a geometry problem, whole races replay exactly from one
+              starting number, and even "which bits of road are worth drawing"
+              stays arithmetic. That replay promise has teeth — computers
+              disagree about sine and cosine in the last digit, so the
+              simulation is forbidden them, and the road's geometry is solved
+              once at load and looked up thereafter. There are now twenty-five
+              races across five Delhi districts, roads that split and rejoin
+              without either way round being the obvious one, and a bike that
+              hits its stated top speed in its stated time. Next: everything
+              else on the road.
             </p>
           </section>
 
@@ -2448,37 +2935,42 @@
 <b>src/core/</b>      the simulation. Pure TypeScript.
               <i>No Three.js. No DOM. No clock. No Math.random.</i>
               <i>No sin/cos/pow — asserted by test, not hoped for.</i>
-  rng.ts        mulberry32, seeded, state saveable   <b>·done</b>
-  vec.ts        minimal Vec3, allocation-free        <b>·done</b>
-  track/        sample · trackDistance · progress    <b>·done</b>
+              <i>No allocation in the hot path — also asserted.</i>
+  rng.ts        mulberry32, seeded, state saveable    <b>·done</b>
+  vec.ts        minimal Vec3, allocation-free         <b>·done</b>
+  track/        <b>·done</b>
+    geometry    the ONLY trig. Load time only.
+    path        precomputed node table → sample(s, out)
+    distance    trackDistance() · progress()
+    library     `extends` chains → 25 tracks
+    validate    throws naming file + field
   sim/          <b>·done</b>
     bike        solves K = vmax·I/T per bike at load
-    step        speed · lateral · grip · lean, fixed dt
-    world       create + allocation-free copy
-  ai/ combat/ economy/ reputation/        <i>Phases 5–9</i>
+    step        speed · lateral · grip · forks · lean
+  ai/ combat/ economy/ reputation/         <i>Phases 5–9</i>
 
 <b>src/app/</b>       FixedStepDriver — the accumulator. Never sees a clock.
 <b>src/input/</b>     keyboard + gamepad, rebindable; resolve() is pure
 <b>src/render/</b>    all Three.js. Reads core, never writes to it.
-  RoadMeshBuilder  chunked; culled by s, not by frustum
-  Scenery          440 instanced objects, pooled and recycled
+  RoadMeshBuilder  chunked, main + branches; culled by s
+  environments     5 districts: sky · fog · light · surface
+  Scenery          pooled, instanced, LOD past 220 m
   ChaseCamera      FOV · drop · pull-back · lateral lag
-<b>src/ui/</b>        HUD + dev overlay (` toggles)
-<b>src/data/</b>      tracks · bikes · tuning — JSON, validated on load
+<b>src/data/</b>      25 tracks · bikes · tuning — JSON, validated
 
-<i>position</i> = (s, t, branchId)         <i>s along, t sideways</i>
-<i>world</i>    = sample(s).position + right × t    <i>render time only</i>
-<i>ranking</i>  = progress(pos)             <i>never raw s — forks differ</i>
-<i>range</i>    = trackDistance(a, b)       <i>metres, curvature-corrected</i>
+<i>position</i> = (s, t, branchId)          <i>s along, t sideways</i>
+<i>world</i>    = sample(s).position + right × t     <i>render time only</i>
+<i>ranking</i>  = progress(pos)              <i>never raw s — forks differ</i>
+<i>range</i>    = trackDistance(a, b)        <i>metres, curvature-corrected</i>
 <i>loop</i>     = 60 Hz sim · render interpolates by alpha
 
 <b>npm run check</b>  typecheck · lint · test+coverage · size
-              <i>208 tests · 100% lines in core · 129 KB of 500</i>
-              <i>sim step 0.21 µs against a 1 ms budget</i></pre>
+              <i>256 tests · 100% lines in core · 135 KB of 500</i>
+              <i>sim step 0.006 ms in-browser against a 1 ms budget</i></pre>
             <p class="cost">
-              Built so far: the road, the bike, the loop, and enough renderer to
-              see them. Traffic, rivals, combat, police, career and reputation
-              are Phases 4–9.
+              Built so far: the road, the bike, the loop, twenty-five routes and
+              enough renderer to ride them. Traffic, rivals, combat, police,
+              career and reputation are Phases 4–9.
             </p>
           </section>
 
@@ -2498,16 +2990,18 @@
                   Why: it turns the hard questions into arithmetic. Who is
                   ahead, am I on the road, spawn a bus 300 m up, which chunks of
                   road are worth drawing — each is a comparison rather than a
-                  geometry query. It is also what makes the simulation pure,
-                  testable, and cheap to replay.
+                  geometry query. Phase 3 paid the clearest dividend yet:
+                  rendering a road that splits in two needed almost no new
+                  machinery, because a branch carries its span in the same terms
+                  and the existing numeric cull simply worked on it.
                 </p>
                 <p class="cost">
                   <b>Cost:</b> the road can never cross itself, fold back, or
-                  branch freely, and free-roam is impossible. And track space is
-                  not metric — a rectangle in it is a curved wedge in the world
-                  — so every question genuinely about metres needs a correction
-                  that world space would have given away free. For a
-                  point-to-point racer, still an easy trade.
+                  branch freely, and free-roam is impossible. Track space is not
+                  metric, so every question genuinely about metres needs a
+                  correction world space would have given away. And the sideways
+                  measure is per-road, so a fork is a change of frame — which is
+                  precisely where this phase's worst bug lived.
                 </p>
               </li>
               <li>
@@ -2528,47 +3022,43 @@
                   single cosine downgrades "the same everywhere" to "the same
                   here". The same logic applies to time: the accumulator is
                   handed elapsed seconds rather than reading them, so a replay
-                  test can jitter the wall clock from 240 Hz to 12 Hz and still
-                  produce a bit-identical world.
+                  can be driven at 240 Hz or 12 Hz and come out identical.
                 </p>
                 <p class="cost">
                   <b>Cost:</b> real work, permanently. Angles must be
                   precomputed into tables and interpolated, which costs memory
-                  and load time. But twice now the constraint has improved the
-                  result rather than compromising it — writing the distance
-                  formula out algebraically instead of reaching for a cosine
-                  produced a version a thousand times more accurate, and the
-                  same discipline is what makes replays trustworthy enough to
-                  debug balance with.
+                  and load time. But twice the constraint has improved the
+                  result rather than compromising it — being denied a cosine is
+                  what produced a distance formula a thousand times more
+                  accurate than the obvious one.
                 </p>
               </li>
               <li>
                 <p>
                   <b
-                    >Data files own the truth, and which field owns what is
-                    fixed in writing.</b
+                    >Data files own the truth, and the rules that make data
+                    valid are executable.</b
                   >
                   Tracks, bikes and tuning are JSON, validated on load with
-                  errors that name the file and the field. Where several numbers
+                  errors naming the file and the field. Where several numbers
                   could each define a quantity, one is named authoritative and
-                  the simulation is forbidden the others — a bike's engine power
-                  is display text the sim may never read.
+                  the simulation is forbidden the others. And where the design
+                  brief states a rule, the loader enforces it.
                 </p>
                 <p>
-                  Why: speed, power, mass and acceleration over-determine a
-                  vehicle. Two sources of truth that disagree do not announce
-                  themselves; they surface as a bike that misses its own stat
-                  sheet and a tuning session spent on the wrong number. Naming
-                  the authority up front turns that from a judgement call into a
-                  solve — every bike now hits its stated time to top speed by
-                  construction.
+                  Why: prose in a design document does not survive contact with
+                  a deadline. "Neither branch should be strictly better" became
+                  a five-percent length check that refuses to load a track
+                  breaking it; "a road cannot be wider than its own corner
+                  radius" became a validation error naming the segment. The
+                  brief and the build cannot drift, because one of them throws.
                 </p>
                 <p class="cost">
-                  <b>Cost:</b> the derived constants have to be computed rather
-                  than written down, so the data file no longer reads like a
-                  spec sheet you can eyeball. And validation is real code with
-                  real tests behind it — about a third of the loading code
-                  exists only to reject bad input.
+                  <b>Cost:</b> the constraints are now genuinely binding, and
+                  satisfying them takes solving rather than eyeballing — every
+                  fork in the game is the same four-arc shape because that shape
+                  is the one that can be solved. Roughly a third of the loading
+                  code exists only to reject bad input.
                 </p>
               </li>
             </ol>
