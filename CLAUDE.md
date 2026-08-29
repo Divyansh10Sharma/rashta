@@ -180,6 +180,31 @@ npm run tauri dev # desktop app in dev mode (Phase 10 onward)
 npm run tauri build
 ```
 
+## Working economically
+
+Context is resent in full on every tool call, so the cost of a phase is roughly
+context size multiplied by number of turns. These four rules cut that without
+cutting corners.
+
+1. **Read narrowly.** Grep for the symbol, then read the range around it. Do
+   not read a file over ~100 lines end to end unless you are about to rewrite
+   it wholesale. If the range proves too small, widen it — guessing at what a
+   file contains costs more than reading it did.
+2. **Truncate output on success, never on failure.** `npm run check 2>&1 | tail -25`
+   when you expect it to pass. The moment something fails, read the whole
+   failure. A truncated stack trace costs far more than the tokens it saved.
+3. **One phase per session.** Stop at each phase boundary and report. Do not
+   carry a session across phases: a context full of abandoned hypotheses and
+   stale diagnostics reasons worse than a fresh one reading a clean devlog.
+   The devlog is what makes this handoff free — write it well enough that it is.
+4. **Report short.** Ten lines: what was built, what the acceptance criteria
+   measured, what the devlog records, what the next phase needs. The devlog
+   holds the detail and the report should not repeat it.
+
+None of this licenses thinking less about a hard problem, or deferring
+verification to the end of a phase. Both cost more than they save. A wrong fix
+confidently applied is the most expensive thing that can happen here.
+
 ## Scope discipline
 
 Do only what the current phase asks. If you spot something worth doing that
