@@ -631,6 +631,13 @@
           <span class="stone-label">Phase</span>
         </span>
       </button>
+      <button class="stone" data-goto="phase-01" type="button">
+        <span class="stone-band" aria-hidden="true"></span>
+        <span class="stone-body">
+          <span class="stone-num">01</span>
+          <span class="stone-label">Phase</span>
+        </span>
+      </button>
       <button class="stone" data-goto="ninety-seconds" type="button">
         <span class="stone-band" aria-hidden="true"></span>
         <span class="stone-body">
@@ -650,6 +657,7 @@
 
       <nav class="jump" aria-label="Jump to page">
         <a href="#phase-00">00 · Skeleton</a>
+        <a href="#phase-01">01 · Track space</a>
         <a href="#ninety-seconds">90 seconds</a>
       </nav>
 
@@ -1257,13 +1265,590 @@
           </section>
         </section>
 
+        <!-- ================= PHASE 01 ================= -->
+        <section class="page" id="phase-01" aria-labelledby="h-01" hidden>
+          <header class="page-head">
+            <p class="eyebrow">Phase 01</p>
+            <h2 id="h-01">Track space</h2>
+            <p class="standfirst">
+              The road, as pure arithmetic. No graphics at all — if this is
+              wrong, everything built on top of it is wrong, and a screen would
+              never tell you.
+            </p>
+          </header>
+
+          <section class="s-goal" aria-labelledby="g-01">
+            <p class="eyebrow" id="g-01">What we were trying to do</p>
+            <p>
+              Think about how you'd describe where you are on a motorway. You
+              wouldn't give someone a map reference. You'd say "eleven miles
+              along, in the middle lane". Two numbers, both about the road
+              rather than about the world.
+            </p>
+            <p>
+              That is exactly how this game stores every rider, every bus, every
+              stray dog: how far along the road they are, and how far sideways
+              from the middle. Their actual place in space is worked out only at
+              the last moment, when something has to be drawn on screen.
+            </p>
+            <p>
+              This piece of work built that idea and nothing else. Describe a
+              road as a list of pieces — this much straight, then a bend of this
+              tightness, then a slope. Work out, for any distance along it,
+              where that point sits, which way the road faces there, how wide it
+              is. Check that two riders can be compared even when the road
+              splits in two and rejoins. There is nothing to look at when it is
+              finished, which is the point: a wrong road would look perfectly
+              convincing.
+            </p>
+          </section>
+
+          <section class="s-hard" aria-labelledby="hd-01">
+            <p class="eyebrow" id="hd-01">Why this was hard</p>
+            <p>Two rules pulled against each other, and both were fixed.</p>
+            <p>
+              The first is that a replay must come out identical on every
+              machine. Same starting number, same button presses, same race — on
+              your laptop, on someone's phone, in five years. That is what makes
+              a bug reproducible instead of a story someone tells you.
+            </p>
+            <p>
+              The second is geometry. Working out where you are on a bend is a
+              question about circles, and questions about circles are answered
+              with sine and cosine — the two functions every schoolchild meets
+              in trigonometry.
+            </p>
+            <p>
+              Here is the collision. Computers agree exactly on what
+              <em>plus</em>, <em>minus</em>, <em>times</em>, <em>divide</em> and
+              <em>square root</em> produce, down to the last digit — there is an
+              international standard that says so. Sine and cosine are
+              <em>not</em> on that list. Two browsers can return answers that
+              differ in the sixteenth decimal place, and neither is wrong. Feed
+              that into a race sixty times a second for eight minutes and the
+              two machines are watching different events.
+            </p>
+            <p>
+              So the geometry needed trigonometry and the guarantee forbade it.
+              That is the whole phase.
+            </p>
+          </section>
+
+          <section class="s-deadends" aria-labelledby="de-01">
+            <p class="eyebrow" id="de-01">What we tried that didn't work</p>
+
+            <article class="deadend">
+              <h4>
+                Measuring distance the obvious way, and only testing it in one
+                direction
+              </h4>
+              <p class="plain">
+                Riders need to know how far apart they are — to throw a punch,
+                to avoid a bus. On a bend that is not as simple as it sounds,
+                because the inside of a bend is shorter than the outside, so
+                "two metres along the road" means different real distances
+                depending which side you are on. We had a correction for that,
+                and it was tested carefully across the full width of the road.
+                It passed.
+              </p>
+              <p class="why">
+                Then the same correction was tested with the riders further
+                apart <em>along</em> the road rather than across it, and the
+                error was nine times over budget. The testing had swept one
+                direction thoroughly and quietly held the other one fixed at a
+                single value — so a whole axis of the problem had never been
+                looked at. The same mistake had been made once already earlier
+                in the project, on the same function, in the other direction.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>A test that said the road was broken, and was right</h4>
+              <p class="plain">
+                A test checked that the road never jumps — that walking a
+                millimetre forward moves you a millimetre, with no sudden skips.
+                Position passed. But the direction the road
+                <em>faces</em> failed, jumping abruptly at one join.
+              </p>
+              <p class="why">
+                The number in the failure was 0.04995, and the slope of the hill
+                in the test road was 0.05. Not a coincidence. Tightness of a
+                bend and steepness of a hill look like the same kind of setting
+                in a road description, sitting side by side in the file, but
+                they behave completely differently: bend tightness gets added up
+                gradually into a direction, so it smooths itself out, while
+                steepness <em>is</em> the direction, so changing it is a sudden
+                kink — a hilltop with no rounding at all. Real roads solve this
+                with a gradual crest. We kept the kink, wrote a test that pins
+                it in place, and left a note explaining why, so that anyone who
+                later decides to "fix" it has to argue with a test first.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>A safety check that was mostly for show</h4>
+              <p class="plain">
+                One test scans the simulation's code looking for the forbidden
+                functions, so the rule is enforced by machine rather than by
+                memory. It failed, reporting that the random number generator
+                used a mathematical operator it does not contain.
+              </p>
+              <p class="why">
+                The scan was reading the explanatory notes written above the
+                code as though they were code. The symbol that opens a comment
+                block happens to look like the symbol for "raise to the power
+                of". Which meant the whole check was inspecting English prose
+                alongside instructions — and it had been passing partly by luck,
+                since one file contains a note that literally names a banned
+                function while explaining that it is banned. Now it strips the
+                notes out before looking.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>A tidy-looking function that nothing used</h4>
+              <p class="plain">
+                Everything passed, but the requirement that every line of this
+                code be exercised by a test came up one line short. The
+                uncovered line was a small function reporting the length of a
+                stretch of road.
+              </p>
+              <p class="why">
+                Nothing called it. Not the tests, not the rest of the code, and
+                no part of the plan had asked for it — it had been written
+                because it seemed like something a road ought to offer. Rather
+                than write a test to justify it, we deleted it. Worth noticing
+                that a strict requirement is what surfaced it; a looser one
+                would have let it sit there for years.
+              </p>
+            </article>
+          </section>
+
+          <section class="s-decision" aria-labelledby="dc-01">
+            <p class="eyebrow" id="dc-01">What we went with, and why</p>
+            <p>
+              The trigonometry happens exactly once, when the road is first
+              loaded, and never again. Loading walks the road and works out
+              several thousand fixed reference points along it — position,
+              facing, width — and stores them in a flat table. Afterwards,
+              asking about any point on the road is a fast lookup of the two
+              nearest stored points and a blend between them. That is only
+              adding, multiplying and dividing, so it is identical on every
+              machine.
+            </p>
+            <p>
+              That's called a <dfn class="term">lookup table</dfn> with
+              <dfn class="term">linear interpolation</dfn>: precomputing an
+              expensive function at fixed intervals and approximating
+              intermediate values from the neighbouring samples. The spacing
+              between samples is not a guess — it is derived from how far a
+              straight line can stray from a curve, so tight corners get samples
+              every 25 cm and gentle ones every 2 metres.
+            </p>
+            <p>
+              For measuring distance between riders, we did something better
+              than approximating. Writing the exact answer out algebraically,
+              most of it collapses into ordinary arithmetic, and exactly one
+              sine remains. That single sine is replaced with a
+              <dfn class="term">Maclaurin series</dfn> — a way of rewriting a
+              curved function as a short sum of powers, which is pure
+              multiplication. Four terms of it, and the answer matches the true
+              geometry to about one part in ten million.
+            </p>
+            <p class="tradeoff">
+              What this costs: memory and load time. A long track holds tens of
+              thousands of stored numbers that a live calculation would not
+              need, and building them is work done before the race can start.
+              For a 28 km road that is under a megabyte and imperceptible, but
+              it is a real cost, paid to buy the guarantee.
+            </p>
+            <p class="rejected">
+              We didn't use the obvious alternative — just calling sine and
+              cosine whenever we need them, and accepting that replays only hold
+              on one machine — because the entire reason the simulation is built
+              the way it is, separate from the graphics and driven by a fixed
+              clock, is so that a race can be reproduced exactly. Give up
+              cross-machine reproducibility and most of that structure stops
+              earning its keep.
+            </p>
+            <p>
+              The constraint turned out to improve the result rather than
+              compromise it. Being forbidden the easy tool forced the distance
+              formula to be written out properly, which is where a
+              simplification appeared that nobody was looking for. With sine
+              available we would have shipped the rougher version and never
+              found it.
+            </p>
+          </section>
+
+          <section class="s-words" aria-labelledby="wd-01">
+            <p class="eyebrow" id="wd-01">Words to know</p>
+            <dl>
+              <dt>Arc</dt>
+              <dd class="plain">A piece of the edge of a circle.</dd>
+              <dd class="precise">
+                A curve of constant radius. Every bend in this project is one,
+                which is what makes the position along it solvable directly
+                rather than by stepping through it.
+              </dd>
+
+              <dt>Bank (camber)</dt>
+              <dd class="plain">
+                The sideways tilt of a road, so a bend leans you into it.
+              </dd>
+              <dd class="precise">
+                The roll angle of the road surface about the direction of
+                travel, held constant within a piece of road here.
+              </dd>
+
+              <dt>Chord</dt>
+              <dd class="plain">
+                The straight shortcut between two points on a curve.
+              </dd>
+              <dd class="precise">
+                The straight-line segment joining the endpoints of an arc. The
+                real distance between two riders is a chord; the distance along
+                the road is the arc, and on a tight bend they differ enough to
+                matter.
+              </dd>
+
+              <dt>Coverage</dt>
+              <dd class="plain">
+                How much of the code the tests actually run.
+              </dd>
+              <dd class="precise">
+                The proportion of lines executed during a test run. This project
+                requires 100% on the road code and fails the build below it.
+              </dd>
+
+              <dt>Curvature</dt>
+              <dd class="plain">How tight a bend is.</dd>
+              <dd class="precise">
+                One divided by the radius. Zero is straight; larger means
+                tighter. Signed, so the number also says which way it turns.
+              </dd>
+
+              <dt>Derivative</dt>
+              <dd class="plain">How fast something is changing right now.</dd>
+              <dd class="precise">
+                The rate of change of a quantity. Gradient is the first
+                derivative of height, so a jump in it is a visible kink;
+                curvature acts on the second derivative, so it smooths out.
+              </dd>
+
+              <dt>Determinism</dt>
+              <dd class="plain">
+                Same inputs, same result, every time, everywhere.
+              </dd>
+              <dd class="precise">
+                A guarantee that a simulation's state is a pure function of its
+                seed and its input sequence, with no dependence on timing,
+                hardware, or platform.
+              </dd>
+
+              <dt>Floating point</dt>
+              <dd class="plain">
+                How computers store numbers with decimal places — accurately,
+                but not infinitely so.
+              </dd>
+              <dd class="precise">
+                A representation holding a fixed number of significant digits
+                and a separate exponent. Its finite precision is why "identical
+                on every machine" is a claim that has to be earned rather than
+                assumed.
+              </dd>
+
+              <dt>Fork (branch)</dt>
+              <dd class="plain">
+                A place the road splits in two and joins up again later.
+              </dd>
+              <dd class="precise">
+                An alternative run of road segments with a declared departure
+                and rejoin point on the main route, carried on an entity as an
+                extra identifier alongside its position.
+              </dd>
+
+              <dt>Gradient</dt>
+              <dd class="plain">How steep a hill is.</dd>
+              <dd class="precise">
+                Metres of rise per metre travelled along the road. Unlike
+                curvature it is a first derivative, which is why a change in it
+                produces a visible kink.
+              </dd>
+
+              <dt>IEEE-754</dt>
+              <dd class="plain">
+                The worldwide agreement on how computers handle decimal numbers.
+              </dd>
+              <dd class="precise">
+                The floating-point standard. It pins add, subtract, multiply,
+                divide and square root to a single correctly-rounded result, and
+                deliberately does not pin the trigonometric and exponential
+                functions.
+              </dd>
+
+              <dt>JSON</dt>
+              <dd class="plain">
+                A plain-text way of writing down structured data that both
+                people and programs can read.
+              </dd>
+              <dd class="precise">
+                JavaScript Object Notation. Every track, bike and tuning value
+                in this project is JSON, validated on load rather than
+                hardcoded.
+              </dd>
+
+              <dt>Linear interpolation</dt>
+              <dd class="plain">
+                Guessing what's between two known points by drawing a straight
+                line between them.
+              </dd>
+              <dd class="precise">
+                Estimating a value between two samples as a weighted average of
+                them. Accurate here because sample spacing is chosen from the
+                curve's own geometry.
+              </dd>
+
+              <dt>Lookup table</dt>
+              <dd class="plain">
+                Working out the answers in advance and writing them down, so you
+                only ever have to look them up.
+              </dd>
+              <dd class="precise">
+                Precomputed results stored at fixed intervals, trading memory
+                for runtime cost — and here, for determinism.
+              </dd>
+
+              <dt>Maclaurin series</dt>
+              <dd class="plain">
+                Rewriting an awkward curved function as a short sum of simple
+                multiplications.
+              </dd>
+              <dd class="precise">
+                A Taylor expansion about zero. Truncated to four terms it
+                reproduces the sine ratio needed here to about one part in ten
+                million, using only arithmetic the floating-point standard pins
+                exactly.
+              </dd>
+
+              <dt>Orthonormal frame</dt>
+              <dd class="plain">
+                Three arrows at right angles — forwards, sideways, up — all the
+                same length.
+              </dd>
+              <dd class="precise">
+                A set of three mutually perpendicular unit vectors. Sampling the
+                road returns one, and it is what converts a road position into a
+                world position.
+              </dd>
+
+              <dt>PRNG</dt>
+              <dd class="plain">
+                A machine for producing numbers that look random but can be
+                replayed exactly.
+              </dd>
+              <dd class="precise">
+                Pseudo-random number generator. This project uses mulberry32,
+                whose entire state is one 32-bit integer, so a saved game
+                resumes the same race rather than a similar one.
+              </dd>
+
+              <dt>Sagitta</dt>
+              <dd class="plain">
+                How far a straight shortcut sags away from the curve it cuts
+                across.
+              </dd>
+              <dd class="precise">
+                The maximum distance between a chord and its arc. Used here to
+                derive sample spacing from a stated error tolerance instead of
+                guessing.
+              </dd>
+
+              <dt>Schema</dt>
+              <dd class="plain">
+                A written-down description of what shape data is allowed to be.
+              </dd>
+              <dd class="precise">
+                A specification of required fields and their types, checked on
+                load here rather than trusted.
+              </dd>
+
+              <dt>Seed</dt>
+              <dd class="plain">
+                The starting number that decides everything "random" that
+                follows.
+              </dd>
+              <dd class="precise">
+                The initial state of a pseudo-random generator. Same seed and
+                same inputs reproduce a race exactly, which is what makes a
+                balance bug reproducible instead of anecdotal.
+              </dd>
+
+              <dt>Taylor series</dt>
+              <dd class="plain">
+                Rebuilding a curved function out of simple multiplications,
+                accurate near a chosen point.
+              </dd>
+              <dd class="precise">
+                An expansion of a function as an infinite sum of powers. A
+                Maclaurin series is the case expanded about zero.
+              </dd>
+
+              <dt>Track space</dt>
+              <dd class="plain">
+                Describing where you are by how far along the road you are and
+                how far to the side.
+              </dd>
+              <dd class="precise">
+                A curvilinear coordinate system with the road centreline as its
+                axis. The only positional representation stored anywhere in this
+                project's simulation.
+              </dd>
+
+              <dt>Transcendental function</dt>
+              <dd class="plain">
+                Maths like sine and cosine, which can't be worked out with just
+                arithmetic.
+              </dd>
+              <dd class="precise">
+                A function not expressible as a finite sequence of algebraic
+                operations. Not pinned by the floating-point standard, which is
+                why they are banned from the simulation here.
+              </dd>
+
+              <dt>Unit vector</dt>
+              <dd class="plain">An arrow exactly one long, used to point.</dd>
+              <dd class="precise">
+                A vector of magnitude one, carrying direction without magnitude.
+              </dd>
+
+              <dt>Validation</dt>
+              <dd class="plain">
+                Checking data is sensible before trusting it, and complaining
+                loudly if not.
+              </dd>
+              <dd class="precise">
+                Schema and semantic checks on load. Every failure here names the
+                file and the exact field, including rules like rejecting a road
+                wider than its own corner radius.
+              </dd>
+
+              <dt>Vitest</dt>
+              <dd class="plain">The program that runs the tests.</dd>
+              <dd class="precise">
+                A test runner built on the Vite toolchain. 121 tests run in
+                about a second here, and coverage thresholds fail the build.
+              </dd>
+            </dl>
+          </section>
+
+          <section class="s-code" aria-labelledby="cd-01">
+            <p class="eyebrow" id="cd-01">Show me in the code</p>
+            <p class="file-ref">
+              src/core/track/distance.ts → <code>trackDistance()</code>
+            </p>
+            <p>
+              How far apart two riders really are, in metres, on a bending road
+              — without a single forbidden function.
+            </p>
+            <pre><code>export function trackDistance(a: TrackPos, b: TrackPos, track: Track): number {
+  if (a.branchId !== b.branchId) return Number.POSITIVE_INFINITY;
+
+  const ds = b.s - a.s;
+  const dt = b.t - a.t;
+
+  const midS = (a.s + b.s) / 2;
+  const curvature = track.curvatureAt(midS, a.branchId);
+  if (curvature === 0) return Math.sqrt(ds * ds + dt * dt);
+
+  // Clamp to the road before correcting. Validation guarantees `1 - t * k`
+  // stays positive within halfWidth + shoulder; a rider who has left the road
+  // entirely is off the geometry this describes and should get a sane
+  // distance rather than a negative radius.
+  const limit = track.driveableHalfWidthAt(midS, a.branchId);
+  const ta = clamp(a.t, -limit, limit);
+  const tb = clamp(b.t, -limit, limit);
+
+  const radius = 1 / Math.abs(curvature);
+  const ra = radius * (1 - ta * curvature);
+  const rb = radius * (1 - tb * curvature);
+
+  const sweep = Math.abs(ds) * Math.abs(curvature);
+  const along = Math.sqrt(ra * rb) * sweep * chordOverArc(sweep);
+
+  return Math.sqrt(along * along + dt * dt);
+}</code></pre>
+            <ol class="annotations">
+              <li data-line="2">
+                Riders on different sides of a fork can never touch, so they are
+                infinitely far apart. That is the answer combat and collision
+                actually want, and it falls out of the road model rather than
+                needing a special case.
+              </li>
+              <li data-line="9">
+                On a straight, this is the flat-earth answer — the one everyone
+                expects. Everything below only matters because roads bend.
+              </li>
+              <li data-line="15">
+                A rider who has flown off the road entirely is outside the
+                geometry this formula describes. Clamping keeps them at the
+                road's edge, so the answer stays sensible instead of going
+                negative.
+              </li>
+              <li data-line="20">
+                The heart of it: a point sitting <code>t</code> metres to the
+                side of a bend of tightness <code>k</code> is riding a circle of
+                a different size to the one down the middle. The inside of the
+                bend is a smaller circle, so the same distance along the road
+                covers less ground.
+              </li>
+              <li data-line="24">
+                Multiplying the two radii and taking the square root — rather
+                than averaging them — is not a nicety. It is what the exact
+                algebra produces, and it is where the naive version lost most of
+                its accuracy.
+              </li>
+              <li data-line="24">
+                <code>chordOverArc</code> is the banned sine, rewritten as four
+                multiplications. This one line is the difference between a
+                replay that holds on every machine and one that holds only on
+                the machine that recorded it.
+              </li>
+            </ol>
+          </section>
+
+          <section class="s-spoken" aria-labelledby="sp-01">
+            <p class="eyebrow" id="sp-01">Say it out loud</p>
+            <blockquote>
+              Everything in the simulation lives in track space — distance along
+              the centreline and lateral offset — so world coordinates only
+              exist at render time. The hard constraint was that the simulation
+              has to be bit-exactly deterministic across machines, and IEEE-754
+              doesn't pin the transcendentals, so sine and cosine are banned
+              from anything the step function reaches. Track sampling solves
+              that by doing all the trigonometry once at load into a table whose
+              spacing is derived from the arc's sagitta, then interpolating
+              linearly between nodes. For distance between riders I wrote the
+              exact chord out algebraically, which collapses to
+              <em>dt</em> squared plus four r-one r-two sine-squared of half the
+              sweep, and replaced just the sine with a four-term Maclaurin
+              series. That reads to about one part in ten million against the
+              exact geometry, and the whole thing is arithmetic the standard
+              pins exactly. The road code sits at a hundred percent line
+              coverage, and a test asserts no transcendental is reachable from
+              the simulation, because that rule is the one nothing else can
+              enforce.
+            </blockquote>
+          </section>
+        </section>
+
         <!-- ================= 90 SECONDS ================= -->
         <section class="page" id="ninety-seconds" aria-labelledby="h-90" hidden>
           <header class="page-head">
             <p class="eyebrow">The whole thing</p>
             <h2 id="h-90">In 90 seconds</h2>
             <p class="standfirst">
-              Where the project stands after Phase 0, and the decisions carrying
+              Where the project stands after Phase 1, and the decisions carrying
               the most weight.
             </p>
           </header>
@@ -1277,11 +1862,14 @@
               is in the world. Every rider stores two numbers: how far along the
               road they are, and how far sideways. Who's winning becomes a
               comparison of two numbers instead of a geometry problem, and the
-              whole race can be replayed exactly from a seed. Positions in
-              actual space are worked out only when something has to be drawn.
-              Right now the workshop is built and proven — the build, the tests,
-              the rules that stop the architecture eroding — and the road itself
-              arrives next.
+              whole race replays exactly from a single starting number. Actual
+              positions in space are worked out only when something has to be
+              drawn. That replay guarantee has teeth: because computers don't
+              agree on sine and cosine to the last digit, the simulation is
+              banned from using them at all, so the road's geometry is worked
+              out once when it loads and looked up thereafter. The road now
+              exists and is proven correct — bends, hills, camber, and a fork
+              that splits and rejoins. Nothing is drawn yet. Riding it is next.
             </p>
           </section>
 
@@ -1290,25 +1878,32 @@
             <pre class="arch">
 <b>src/core/</b>      the simulation. Pure TypeScript.
               <i>No Three.js. No DOM. No clock. No Math.random.</i>
-              <i>Enforced by lint, not by good intentions.</i>
-  rng.ts        seeded randomness — the only source
-  track/        the road: sample(s), trackDistance, progress
-  sim/ ai/ combat/ economy/ reputation/
+              <i>No sin/cos/pow — asserted by test, not hoped for.</i>
+  rng.ts        mulberry32, seeded, state saveable  <b>·done</b>
+  vec.ts        minimal Vec3, allocation-free       <b>·done</b>
+  track/        <b>·done</b>
+    geometry    the ONLY trig. Load time only.
+    path        precomputed node table → sample(s, out)
+    distance    trackDistance() · progress()
+    validate    throws naming file + field
+  sim/ ai/ combat/ economy/ reputation/   <i>Phases 2–9</i>
 
 <b>src/render/</b>    all Three.js. Reads core, never writes to it.
-<b>src/input/</b>     keyboard and gamepad
-<b>src/audio/</b> <b>src/ui/</b> <b>src/app/</b>
+<b>src/input/</b> <b>src/audio/</b> <b>src/ui/</b> <b>src/app/</b>
 <b>src/data/</b>      tracks, bikes, riders, tuning — JSON, validated
 
-<i>position</i>   = (s, t) + branchId       <i>s along, t sideways</i>
-<i>world</i>      = track.sample(s) + right × t   <i>render time only</i>
-<i>the loop</i>   = fixed 60 Hz sim · render interpolates between states
+<i>position</i>  = (s, t, branchId)          <i>s along, t sideways</i>
+<i>world</i>     = sample(s).position + right × t   <i>render time only</i>
+<i>ranking</i>   = progress(pos)             <i>never raw s — forks differ</i>
+<i>range</i>     = trackDistance(a, b)       <i>metres, curvature-corrected</i>
+<i>the loop</i>  = fixed 60 Hz sim · render interpolates between states
 
 <b>npm run check</b>  typecheck · lint · test+coverage · size
-              <i>the gate. same command locally and in CI.</i></pre>
+              <i>121 tests · 100% lines on track/ · 117 KB of 500</i></pre>
             <p class="cost">
-              Built so far: everything on the bottom line, plus an empty lit
-              scene and the frame meter. Everything above it is Phases 1–10.
+              Built so far: the road and the arithmetic under it, plus the
+              workshop and an empty lit scene. Everything from
+              <i>sim/</i> down is Phases 2–10.
             </p>
           </section>
 
@@ -1333,8 +1928,11 @@
                 <p class="cost">
                   <b>Cost:</b> the road can never cross itself, fold back, or
                   branch freely, and free-roam is impossible. Forks are explicit
-                  machinery rather than something the geometry gives us. For a
-                  point-to-point racer, an easy trade.
+                  machinery rather than something the geometry gives us. And
+                  track space is not metric — a rectangle in it is a curved
+                  wedge in the world — so every question genuinely about metres
+                  needs a correction that world space would have given away
+                  free. For a point-to-point racer, still an easy trade.
                 </p>
               </li>
               <li>
@@ -1346,7 +1944,7 @@
                   Same seed plus same inputs gives the same race on any machine.
                   All randomness goes through one seeded generator — and, less
                   obviously, no sine, cosine, or power function is allowed
-                  anywhere in the simulation.
+                  anywhere the simulation can reach.
                 </p>
                 <p>
                   Why: the floating-point standard pins add, subtract, multiply,
@@ -1358,10 +1956,14 @@
                 </p>
                 <p class="cost">
                   <b>Cost:</b> real work, permanently. Anything needing angles
-                  has to be precomputed into tables and interpolated, and the
-                  distance function had to be built as an approximation rather
-                  than the exact formula. It bought reproducible races, which is
-                  the difference between debugging balance and guessing at it.
+                  has to be precomputed into tables and interpolated, which
+                  costs memory and load time. But Phase 1 changed the shape of
+                  this trade: forced to write the distance formula out
+                  algebraically instead of reaching for a cosine, most of it
+                  collapsed into exact arithmetic, and the version that avoids
+                  the transcendental turned out to be a thousand times more
+                  accurate than the one that would have used it carelessly. The
+                  constraint improved the result.
                 </p>
               </li>
               <li>

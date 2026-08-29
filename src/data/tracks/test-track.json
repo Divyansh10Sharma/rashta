@@ -1,0 +1,160 @@
+{
+  "id": "test-track",
+  "name": "Test Track",
+  "scenery": "ringroad",
+  "segments": [
+    {
+      "length": 200,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 8,
+      "shoulder": 2,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 150,
+      "curvature": 0.006666666666666667,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 8,
+      "shoulder": 2,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": [{ "kind": "pothole", "offset": 60, "t": -2.5 }]
+    },
+    {
+      "length": 200,
+      "curvature": -0.005,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 8,
+      "shoulder": 2,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 100,
+      "curvature": 0,
+      "gradient": 0.05,
+      "bank": 0,
+      "halfWidth": 7,
+      "shoulder": 2,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": [{ "kind": "sand", "offset": 40, "t": 3 }]
+    },
+    {
+      "length": 120,
+      "curvature": 0.008333333333333333,
+      "gradient": 0,
+      "bank": 0.15,
+      "halfWidth": 7,
+      "shoulder": 2,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "yamuna",
+      "hazards": []
+    },
+    {
+      "length": 20,
+      "curvature": -0.04,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 4,
+      "shoulder": 0.5,
+      "lanes": 1,
+      "oneWay": true,
+      "scenery": "oldcity",
+      "hazards": [{ "kind": "cow", "offset": 12, "t": 1.2 }]
+    },
+    {
+      "length": 115.06212926500872,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 6,
+      "shoulder": 1.5,
+      "lanes": 2,
+      "oneWay": false,
+      "scenery": "oldcity",
+      "hazards": []
+    },
+    {
+      "length": 150,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 8,
+      "shoulder": 2,
+      "lanes": 3,
+      "oneWay": false,
+      "scenery": "ringroad",
+      "hazards": []
+    }
+  ],
+  "branches": [
+    {
+      "id": "back-lanes",
+      "forkS": 790,
+      "rejoinS": 905.0621292650087,
+      "segments": [
+        {
+          "length": 30,
+          "curvature": 0.016666666666666666,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": [{ "kind": "dog", "offset": 15, "t": 0.5 }]
+        },
+        {
+          "length": 30,
+          "curvature": -0.016666666666666666,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": []
+        },
+        {
+          "length": 30,
+          "curvature": -0.016666666666666666,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": []
+        },
+        {
+          "length": 30,
+          "curvature": 0.016666666666666666,
+          "gradient": 0,
+          "bank": 0,
+          "halfWidth": 5,
+          "shoulder": 1,
+          "lanes": 1,
+          "oneWay": true,
+          "scenery": "oldcity",
+          "hazards": []
+        }
+      ]
+    }
+  ]
+}

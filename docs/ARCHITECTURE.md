@@ -121,10 +121,25 @@ So core exports:
 function trackDistance(a: TrackPos, b: TrackPos, track: Track): number;
 ```
 
-implemented by scaling `ds` by `(1 - tMean * k)` and taking the hypotenuse
-with `dt`. That approximation tracks the exact chord to within 0.08% across
-the full width of the road, and — importantly — it uses no trigonometry, so it
-is legal inside `step()` under rule 4.
+The exact separation on a constant-curvature arc decomposes as
+
+```
+d^2 = dt^2 + 4 * r1 * r2 * sin(dPhi / 2)^2
+```
+
+where a point at lateral offset `t` sits at polar radius `r = R * (1 - t * k)`
+and `dPhi = |ds| * |k|`. That identity is exact, so the only thing standing
+between it and rule 4 is the sine — and a Maclaurin series for
+`2 * sin(u/2) / u` is pure multiplication and addition, identical on every
+engine. Four terms hold to about 3e-6 out to `u = 2`, far past any range this
+game asks about.
+
+The result agrees with the exact chord to roughly **1e-5** across the full
+width of the road at every along-track gap tested. A first-order version —
+scaling `ds` by `(1 - tMean * k)` and taking the hypotenuse with `dt` — is
+tempting and much simpler, but it is only good to about 0.9% on a 25 m corner
+once riders are several metres apart in `s`, because it approximates the
+geometry as well as the transcendental. See `docs/devlog/phase-01.md`.
 
 Use `trackDistance` for every question that is really about metres: combat
 range, the police arrest radius, and traffic occupancy. Keep using raw `s` and
