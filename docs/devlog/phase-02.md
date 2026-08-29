@@ -1,0 +1,202 @@
+# Phase 02 — The feel gate
+
+An endless straight road, one bike, a chase camera. Not a features phase. The
+question is whether riding is enjoyable before anything is at stake, and the
+roadmap is explicit that I do not get to answer that one myself.
+
+## Decisions taken before writing anything
+
+### 1. How `accelCurve` gets rescaled to `timeToTopSpeed`
+
+This is the interesting piece of arithmetic in the phase, and it follows
+directly from the authority split Divyansh set: `topSpeed` owns the ceiling,
+`timeToTopSpeed` owns the magnitude, and `accelCurve` carries shape only, with
+no magnitude of its own. Doubling every entry in the curve must change the
+character of the acceleration and *not* the time to top speed.
+
+So the curve cannot be read as acceleration directly. It has to be scaled by
+a constant the sim solves for at load.
+
+Let `u = v / topSpeed`, and `f(u)` be the curve interpolated linearly between
+its five control points. Under full throttle, acceleration is `K · f(u)` for
+some constant `K`. The time from rest to `topSpeed` is then
+
+```
+T = integral(0..vmax) dv / (K·f(v/vmax))
+  = (vmax / K) · integral(0..1) du / f(u)
+```
+
+so, writing `I` for that dimensionless integral,
+
+```
+K = vmax · I / T
+```
+
+`I` depends only on the curve's shape, so a bike's `K` is solved once at load
+and the acceleration is exact by construction rather than tuned until it looks
+about right. Doubling the curve halves `I` and doubles `K`, leaving `T`
+untouched — which is precisely the property the authority split asks for.
+
+Two consequences worth writing down:
+
+- **`I` is computed with Simpson's rule at load**, over a few hundred slices.
+  Arithmetic only, so it would be legal in `step()` anyway, but there is no
+  reason to do it more than once per bike.
+- **Every entry in `accelCurve` must be strictly positive**, and validation
+  enforces it. If the curve reaches zero at the top, `1/f(u)` diverges and the
+  bike never actually arrives at `topSpeed` — the honest physical answer, and
+  a useless one for a criterion that says "reaches top speed in
+  `timeToTopSpeed`, within 5%". Keeping the last control point small but
+  positive means acceleration tails off hard near the ceiling, which feels
+  right, and the speed clamps at `topSpeed` exactly.
+
+### 2. Three bikes now, fifteen in Phase 8
+
+`GAME_DESIGN.md` calls for fifteen bikes across three classes, but that is
+Phase 8's shop. Phase 2's criterion is "for every bike in the data file", which
+bites just as hard with three as with fifteen. Authoring one Street, one Sport
+and one Super covers the full speed range the test needs and leaves the
+remaining twelve to the phase that actually asks for them. Deferred, noted
+below.
+
+### 3. Input is sampled per tick, not per frame
+
+The determinism criterion now includes replaying under a jittered wall clock.
+That is only achievable if the simulation never sees a real timestamp — so
+input is latched into an `InputFrame` and the loop hands the same frame to
+`step()` for every fixed tick it runs in a given render frame. The renderer may
+run at 144 Hz or 30; the simulation cannot tell.
+
+## What happened
+
+### Attempt 1 — a test that read a field off the wrong object
+
+The time-to-top-speed test returned `NaN` for every bike, and the failure read
+`expected NaN to be less than NaN`, which says nothing about where it came
+from.
+
+Instrumented the loop and printed the state every few hundred ticks. Speed was
+fine — climbing smoothly and settling exactly on `topSpeedMs`. So the
+simulation was right and the measurement was wrong: the helper was reading
+`world.player.tick`, and `tick` lives on `WorldState`, not on the rider.
+`undefined * (1/60)` is `NaN`.
+
+Worth noting because `tsc` would have caught it instantly — `Rider` has no
+`tick` — but Vitest does not typecheck, so a plain `vitest run` sailed past it.
+The type error only surfaces in `npm run check`. The lesson is not "write
+better tests", it is that running the test file alone is a weaker signal than
+it feels like.
+
+### Attempt 2 — a frame-rate assertion that was too precise to be true
+
+`FixedStepDriver` fed 1440 frames at 144 Hz should produce exactly 600 ticks.
+It produced 599.
+
+Not a bug. Ten seconds of 144 Hz frames is 600 ticks in exact arithmetic, but
+`1/144` is not representable in binary, so 1440 of them sum to a hair under ten
+seconds and the last tick has genuinely not fallen due yet. The remainder stays
+in the accumulator rather than being discarded, so this does not accumulate —
+added a second test that runs ten minutes of 144 Hz frames and asserts the
+total is within one tick of ideal, which is the property actually worth
+holding.
+
+The first assertion was wrong in an interesting way: it was asserting a
+property of exact arithmetic against a system deliberately built out of
+inexact arithmetic.
+
+### Attempt 3 — the scenery pool recycled by the wrong number, twice
+
+Two separate bugs in the same expression, found by the same test.
+
+**First**: the recycle shift used `spacing * slotS.length`. For a pool with
+instances on both sides of the road there are two instances per position, so
+that is twice the distance the pattern actually repeats over. Objects shifted
+too far and left gaps — visible as half the kerb line missing. Fixed by storing
+the real cycle length, `perSide * spacing`, on the pool.
+
+**Second**, and more interesting: with that fixed, an instance still sat
+outside the visible window at some values of `s`. The recycle clamped into
+`[s - behind, s + ahead]`, but a pool holds `ceil(span / spacing) + 1`
+positions — the `+ 1` being a deliberate spare so nothing pops into existence
+at the far edge. That makes the cycle *longer* than the visible span, so one
+slot has nowhere legal to sit and oscillates back out of view every frame.
+
+The fix is to treat it as what it is: a modulo. Normalise into the half-open
+interval `[lo, lo + window)` rather than into the visible range. Every slot
+then lands somewhere legal, and the spare sits just past the far edge doing its
+job. Sitting the two constants next to each other and noticing `window > span`
+is what made it obvious; the failing assertion only said "646 is not less than
+637".
+
+### Attempt 4 — three allocations a frame in the chase camera
+
+No test caught this one; I caught it reading back what I had just written.
+`ChaseCamera.update` built three `new THREE.Vector3()` per call to convert the
+core frame's vectors into Three.js ones. That is 180 allocations a second at 60
+fps, in the one function guaranteed to run every single frame, in a file whose
+whole job is the thing CLAUDE.md's performance rule exists to protect.
+
+Replaced with two reused scratch vectors. Worth recording precisely because
+nothing failed — the game would have run, the garbage collector would have
+absorbed it, and it would have shown up in Phase 10's soak test as an
+unexplained sawtooth.
+
+### Attempt 5 — two more pieces of speculative code, caught the same way as last phase
+
+The coverage gate flagged `world.ts` at 93%. The uncovered line was
+`neutralInput()`, which nothing calls. Same category as Phase 1's `lengthOf()`
+— written because it looked like something the module ought to offer.
+
+Then, checking for others of the same kind, `revsPerGear` in `tuning.json` was
+being validated and loaded and never read: the tachometer derives its gear from
+`gearCount` alone. A tuning constant that does nothing is worse than an unused
+function, because someone will eventually change it to fix a feel problem and
+conclude the value does not matter.
+
+Both deleted. Third phase running, third time a strict gate has found dead code
+rather than a bug — which is a better argument for the 100% threshold than the
+threshold itself.
+
+## Measurements
+
+- **Sim step: 0.21 µs/tick** (300,000 ticks on the test track, after JIT warmup).
+  The budget is 1 ms. That is roughly 4,700x of headroom, and even under 4x CPU
+  throttling it is about 0.8 µs.
+- **World copy: well under 0.01 ms**, and it happens once per tick.
+- **Scenery: 440 instances** — 30 masts, 30 lamp heads, 262 kerb stones, 118
+  bollards, across four instanced draws. Above the 400 the criterion asks for.
+- **Bundle: 128.7 KB gzipped**, 25.7% of the 500 KB budget. Up from 117 KB in
+  Phase 1; the road mesh, scenery and HUD cost about 12 KB between them.
+- **Determinism**: 3,600 ticks of twitchy recorded input replay bit-identically,
+  and produce the same fingerprint again when driven through the real
+  accumulator on a wall clock jittered between 240 Hz and 12 Hz.
+- **Time to top speed**, against what `bikes.json` promises:
+  Gully 19.5 s, Nagin 15.0 s, Shaitan 11.0 s — all inside 5%.
+
+## Surprises
+
+- **The render layer is far more testable than expected.** Three.js builds
+  geometry and scene graphs on the CPU and only needs a WebGL context to draw,
+  so chunk coverage, culling, pooling and the track-space-to-world conversion
+  are all provable headlessly. Thirteen render tests run with no browser. What
+  remains untestable is exactly what a human has to judge anyway.
+- **The accelCurve rescaling is exact, not fitted.** Solving
+  `K = vmax·I/T` means every bike hits its stated time to top speed by
+  construction. I had assumed this would need a tuning pass and it needed none.
+- **Vitest not typechecking is a real gap.** Attempt 1 was a type error that a
+  targeted `vitest run` cannot see. Running the single relevant test file is
+  the fast loop, and it is strictly weaker than `npm run check`.
+
+## Deferred
+
+- **Twelve more bikes.** `GAME_DESIGN.md` calls for fifteen; three cover the
+  speed range the acceptance criterion needs. Phase 8 owns the shop.
+- **Nitro.** The `Shaitan` carries three charges and nothing reads them.
+- **Engine audio.** The tachometer derives a fake gearbox from speed precisely
+  so an engine note can hang off it later. Phase 10.
+- **The gearbox is a lie and should stay one.** There is no gearbox in the
+  simulation — the arcade model has one continuous speed. If the fake gears
+  ever stop matching what the ear expects, the fix is in the HUD, not the sim.
+- **Grip scrub is untested against a real corner at speed**, because Phase 2's
+  road is deliberately straight. The unit tests cover it on synthetic curves;
+  Phase 3 is where it gets ridden.

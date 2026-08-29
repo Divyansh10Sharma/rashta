@@ -17,7 +17,8 @@ body {
 }
 
 /* Sodium-vapour orange, the colour every Delhi street is lit in at night. */
-.fps {
+.dev {
+  margin: 0;
   position: fixed;
   top: 12px;
   left: 14px;
@@ -32,4 +33,74 @@ body {
   text-shadow: 0 1px 2px #000;
   white-space: pre;
   pointer-events: none;
+}
+
+.hud {
+  position: fixed;
+  right: 26px;
+  bottom: 22px;
+  text-align: right;
+  color: #f6e7d2;
+  pointer-events: none;
+  user-select: none;
+  font:
+    13px/1.2 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+}
+
+.hud-speed {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 8px;
+  text-shadow: 0 2px 6px #000;
+}
+
+.hud-speed-value {
+  font-size: 62px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.95;
+}
+
+.hud-speed-unit {
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.hud-gear {
+  min-width: 1.4em;
+  padding: 2px 8px;
+  border: 1px solid #f2a24a66;
+  border-radius: 3px;
+  color: #f2a24a;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The tachometer. Fills left to right, then resets as the fake gearbox
+   changes up — see Hud.ts on why a gearbox the simulation does not have is
+   still worth drawing. */
+.hud-tacho {
+  width: 260px;
+  height: 5px;
+  margin: 0 0 10px auto;
+  background: #ffffff14;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.hud-tacho-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, #f2a24a, #ff6a3d 78%, #ff3b2f);
 }

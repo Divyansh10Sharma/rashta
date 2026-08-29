@@ -1,0 +1,22 @@
+{
+  "accelIntegralSlices": 400,
+
+  "brakeDecel": 11.0,
+  "coastDecel": 2.4,
+
+  "maxLateralSpeed": 9.0,
+  "lateralResponse": 7.5,
+  "lateralSpeedFalloff": 42.0,
+
+  "gripLateralLimit": 8.4,
+  "gripScrub": 0.55,
+
+  "leanFromLateral": 0.115,
+  "leanFromCurvature": 5.2,
+  "leanMax": 0.62,
+  "leanResponse": 9.0,
+
+  "wheelRadius": 0.31,
+  "revsIdle": 0.08,
+  "gearCount": 6
+}

@@ -1,0 +1,52 @@
+{
+  "bikes": [
+    {
+      "id": "marwar-gully",
+      "make": "Marwar",
+      "model": "Gully 160",
+      "class": "street",
+      "price": 42000,
+      "power": 11,
+      "mass": 138,
+      "topSpeed": 162,
+      "timeToTopSpeed": 19.5,
+      "accelCurve": [1.0, 0.92, 0.74, 0.48, 0.16],
+      "handling": 0.62,
+      "stability": 0.44,
+      "nitro": 0,
+      "blurb": "Three owners, two of them honest. Starts every time, which is more than most."
+    },
+    {
+      "id": "sethi-nagin",
+      "make": "Sethi",
+      "model": "Nagin 400",
+      "class": "sport",
+      "price": 168000,
+      "power": 32,
+      "mass": 164,
+      "topSpeed": 214,
+      "timeToTopSpeed": 15.0,
+      "accelCurve": [0.86, 1.0, 0.88, 0.6, 0.2],
+      "handling": 0.74,
+      "stability": 0.61,
+      "nitro": 0,
+      "blurb": "Mid-range that arrives all at once. The bike everyone learns the Ring Road on."
+    },
+    {
+      "id": "ambar-shaitan",
+      "make": "Ambar",
+      "model": "Shaitan 1000",
+      "class": "super",
+      "price": 640000,
+      "power": 96,
+      "mass": 197,
+      "topSpeed": 268,
+      "timeToTopSpeed": 11.0,
+      "accelCurve": [0.7, 0.95, 1.0, 0.82, 0.3],
+      "handling": 0.83,
+      "stability": 0.78,
+      "nitro": 3,
+      "blurb": "Faster than the road deserves. The flyway is the only place it makes sense, and the flyway has no barrier."
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "id": "straight",
+  "name": "Ring Road Straight",
+  "scenery": "ringroad",
+  "segments": [
+    {
+      "length": 2000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 2.5,
+      "lanes": 4,
+      "oneWay": true,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 2000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 2.5,
+      "lanes": 4,
+      "oneWay": true,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 2000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 2.5,
+      "lanes": 4,
+      "oneWay": true,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 2000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 2.5,
+      "lanes": 4,
+      "oneWay": true,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 2000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 2.5,
+      "lanes": 4,
+      "oneWay": true,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 2000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 2.5,
+      "lanes": 4,
+      "oneWay": true,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 2000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 2.5,
+      "lanes": 4,
+      "oneWay": true,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 2000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 2.5,
+      "lanes": 4,
+      "oneWay": true,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 2000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 2.5,
+      "lanes": 4,
+      "oneWay": true,
+      "scenery": "ringroad",
+      "hazards": []
+    },
+    {
+      "length": 2000,
+      "curvature": 0,
+      "gradient": 0,
+      "bank": 0,
+      "halfWidth": 9,
+      "shoulder": 2.5,
+      "lanes": 4,
+      "oneWay": true,
+      "scenery": "ringroad",
+      "hazards": []
+    }
+  ],
+  "branches": []
+}
