@@ -57,7 +57,7 @@ function run(canvas: HTMLCanvasElement): void {
   const input = new Input();
   input.attach();
 
-  const stage = createStage(canvas, track);
+  const stage = createStage(canvas, track, current.traffic.length);
   stage.chase.reset(0);
 
   const hud = createHud(document.body);
@@ -96,6 +96,10 @@ function run(canvas: HTMLCanvasElement): void {
     const lean = a.lean + (b.lean - a.lean) * alpha;
     const wheel = a.wheelAngle + (b.wheelAngle - a.wheelAngle) * alpha;
     const speed = a.speed + (b.speed - a.speed) * alpha;
+
+    // Traffic is interpolated from the same pair of states the rider is, so a
+    // bus and the bike it is about to hit move in the same time.
+    stage.traffic.update(previous.traffic, current.traffic, alpha);
 
     visibleChunks = stage.sync(
       s,

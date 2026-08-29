@@ -652,6 +652,13 @@
           <span class="stone-label">Phase</span>
         </span>
       </button>
+      <button class="stone" data-goto="phase-04" type="button">
+        <span class="stone-band" aria-hidden="true"></span>
+        <span class="stone-body">
+          <span class="stone-num">04</span>
+          <span class="stone-label">Phase</span>
+        </span>
+      </button>
       <button class="stone" data-goto="ninety-seconds" type="button">
         <span class="stone-band" aria-hidden="true"></span>
         <span class="stone-body">
@@ -674,6 +681,7 @@
         <a href="#phase-01">01 · Track space</a>
         <a href="#phase-02">02 · The feel gate</a>
         <a href="#phase-03">03 · Real tracks</a>
+        <a href="#phase-04">04 · Traffic and hazards</a>
         <a href="#ninety-seconds">90 seconds</a>
       </nav>
 
@@ -2897,35 +2905,459 @@
           </section>
         </section>
 
+        <!-- ================= PHASE 04 ================= -->
+        <section class="page" id="phase-04" aria-labelledby="h-04" hidden>
+          <header class="page-head">
+            <p class="eyebrow">Phase 04</p>
+            <h2 id="h-04">Traffic and hazards</h2>
+            <p class="standfirst">
+              The road stops being empty: buses, autos, cars and trucks that
+              drive themselves, oil and potholes and cows that don't move, and a
+              crash you have to get up from.
+            </p>
+          </header>
+
+          <section class="s-goal">
+            <p class="eyebrow">What we were trying to do</p>
+            <p>
+              Up to this point the roads were real but deserted. You could ride
+              five Delhi routes at five difficulty levels and never meet another
+              vehicle. This phase fills them.
+            </p>
+            <p>
+              Three things had to arrive together. Moving traffic: city buses,
+              autos, cars and trucks that pick a lane, hold a speed, slow down
+              behind something slower, and occasionally change lane. Things
+              lying in the road that don't move: oil, sand, potholes, road
+              works, barricades, stray dogs, cows. And what happens when you hit
+              any of it — the rider comes off, the bike slides, and after a few
+              seconds you are back on it, having lost time.
+            </p>
+            <p>
+              The bar was not "there are vehicles on screen". It was that the
+              traffic had to behave like traffic for ten minutes without a
+              single vehicle ever occupying the same piece of road as another
+              one, and without the game slowly eating memory while it did.
+            </p>
+          </section>
+
+          <section class="s-hard">
+            <p class="eyebrow">Why this was hard</p>
+            <p>
+              The difficulty was not writing traffic. It was one line in the
+              acceptance criteria: no two vehicles are ever closer than their
+              combined size, measured properly along the curve of the road
+              rather than by subtracting two numbers.
+            </p>
+            <p>
+              "Never" is a much stronger word than it looks. Traffic that
+              usually keeps its distance is easy. Traffic where the guarantee
+              cannot be broken means every single thing that can move a vehicle
+              sideways has to ask permission first — and the last one we found
+              was not a decision the traffic made at all.
+            </p>
+            <p>
+              Roads in this game change width. The Ring Road goes from three
+              lanes to four. When it does, the middle of lane two moves: it was
+              6.67 metres right of the centreline, now it is 2.75. Nothing
+              decided anything. The road changed shape underneath the vehicle
+              and the code obediently dragged it four metres sideways, straight
+              through whatever was there. The rule we had written was "ask
+              before you change lane", and this was not a lane change.
+            </p>
+          </section>
+
+          <section class="s-deadends">
+            <p class="eyebrow">What we tried that didn't work</p>
+
+            <article class="deadend">
+              <h4>Pushing overlapping vehicles apart</h4>
+              <p class="plain">
+                The first instinct when two vehicles are too close is to move
+                them apart. It works for one pair and creates the next one: the
+                car you pushed backwards is now inside the car behind it, which
+                gets pushed into the one behind that. On a busy stretch a single
+                correction rippled down a queue of eleven vehicles, and the
+                queue visibly shunted.
+              </p>
+              <p class="why">
+                Position is the wrong thing to correct, because correcting it is
+                a change nothing else has agreed to. The fix was to limit speed
+                instead: a vehicle is not allowed to go fast enough to close the
+                gap below the minimum. Nothing is ever moved, so nothing is ever
+                shoved, and the guarantee holds by construction rather than by
+                repair.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>Diagnosing the last overlap from the wrong cause</h4>
+              <p class="plain">
+                Four attempts in, vehicles still overlapped by up to 79
+                centimetres, and the working notes confidently blamed lane
+                changes crossing through each other. A fifth fix for that cause
+                was already half-written. Dumping every offending pair at the
+                moment it happened showed something else entirely: neither
+                vehicle was changing lane, and a third of the cases were
+                oncoming traffic sitting exactly on the centreline of a road
+                that had narrowed to a single lane.
+              </p>
+              <p class="why">
+                The lane-change theory explained a plausible failure that was
+                not the failure occurring. Two real causes were hiding behind it
+                — lane centres jumping when the road changes width, and new
+                vehicles being placed before the code knew which side of the
+                road they belonged on. Writing the fifth fix would have added
+                complexity to the wrong function and left the number at 79
+                centimetres.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>A complete hazard system that nothing could ever hit</h4>
+              <p class="plain">
+                Hazards were built, tested, and correct: seven kinds, collision
+                resolution, crash and remount. Then a test that rode the actual
+                routes looking for actual hazards found zero. Not a bug in the
+                code — the twenty-five route data files simply contained no
+                hazards. The entire feature was unreachable and every test of it
+                had passed.
+              </p>
+              <p class="why">
+                Every test used a hand-built track with hazards placed in it, so
+                every test proved the machinery worked and none proved the game
+                used it. Two hundred and four hazards went into the route files,
+                and the missing test — ride the real routes, count what you meet
+                — now exists so the gap cannot reopen quietly.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>Three timing tests that were measuring the computer</h4>
+              <p class="plain">
+                Tests that check something is fast enough kept failing when the
+                whole suite ran and passing when run alone. The most recent one
+                timed out only when coverage measurement was switched on.
+              </p>
+              <p class="why">
+                They were reading how busy the machine was, not how fast the
+                code was. Two now take the fastest of three attempts —
+                interference can only ever make a timing look worse, never
+                better, so the best sample is the least contaminated one. The
+                third was genuinely slow work being held to a five-second
+                default, so the limit moved rather than the work.
+              </p>
+            </article>
+          </section>
+
+          <section class="s-decision">
+            <p class="eyebrow">What we went with, and why</p>
+            <p>
+              Every sideways movement now goes through one function that answers
+              a single question: where across the road does this vehicle want to
+              be? It starts from the middle of its lane, and on a two-way road
+              it refuses to return anything that would put the vehicle's body
+              over the centreline — half its own width plus twenty centimetres
+              of clearance, on its own side. Spawning uses it, lane changes use
+              it, and drifting towards the lane centre uses it, so there is one
+              place where the rule lives instead of three.
+            </p>
+            <p>
+              Two supporting changes make that hold. A vehicle only counts as
+              "in front of me" if it shares my lane <em>or</em> physically
+              overlaps me sideways — a bus straddling two lanes is now visible
+              to both. And drifting towards a lane centre is checked for space
+              first; a vehicle that cannot get there stays where it is, and one
+              that has been squeezed off the road entirely is recycled rather
+              than fudged back on.
+            </p>
+            <p class="tradeoff">
+              What this costs: traffic is slightly more timid than real traffic.
+              A vehicle that wants to move over and cannot simply waits, so on a
+              genuinely packed road you see a little more patience than a Delhi
+              driver would ever show. The overlap distance went from 79
+              centimetres of interpenetration to at least 61 centimetres of
+              clear air on every route tested, which is the trade we wanted.
+            </p>
+            <p class="rejected">
+              We didn't use a physics engine, which would have solved
+              vehicle-versus-vehicle overlap for free. It would also have made
+              the simulation depend on floating-point behaviour we do not
+              control, and this game guarantees that the same seed and the same
+              inputs produce the same race on every machine. That guarantee is
+              worth more than the convenience.
+            </p>
+          </section>
+
+          <section class="s-words">
+            <p class="eyebrow">Words to know</p>
+            <dl>
+              <dt>Acceptance criteria</dt>
+              <dd class="plain">
+                The list of things that must be true before a piece of work
+                counts as finished.
+              </dd>
+              <dd class="precise">
+                Pre-agreed, testable conditions defined before implementation,
+                each of which must be demonstrated rather than asserted before
+                the work is accepted.
+              </dd>
+
+              <dt>Branch</dt>
+              <dd class="plain">
+                A place where the road splits in two and joins up again later.
+              </dd>
+              <dd class="precise">
+                An alternate path with its own distance measurement, identified
+                by a branch id carried alongside every position, so two points
+                on different paths are never compared as if they were on one.
+              </dd>
+
+              <dt>Centreline</dt>
+              <dd class="plain">
+                The imaginary line down the middle of the road.
+              </dd>
+              <dd class="precise">
+                The reference curve from which all track-space positions are
+                measured; distance along it is <em>s</em> and offset across it
+                is <em>t</em>.
+              </dd>
+
+              <dt>Code coverage</dt>
+              <dd class="plain">
+                How much of the code the tests actually run.
+              </dd>
+              <dd class="precise">
+                The proportion of lines, branches or functions executed during a
+                test run; high coverage proves code was exercised, not that it
+                was exercised correctly.
+              </dd>
+
+              <dt>Determinism</dt>
+              <dd class="plain">
+                Same start, same actions, same result — every time, on every
+                computer.
+              </dd>
+              <dd class="precise">
+                The property that a simulation's entire state is a pure function
+                of its seed and input sequence, which requires avoiding
+                operations whose results are permitted to differ between
+                platforms.
+              </dd>
+
+              <dt>Float32 / single precision</dt>
+              <dd class="plain">
+                A way of storing numbers that trades accuracy for space.
+              </dd>
+              <dd class="precise">
+                A 32-bit IEEE-754 floating-point value carrying roughly seven
+                significant decimal digits, so a coordinate a kilometre from the
+                origin is representable only to about a tenth of a millimetre.
+              </dd>
+
+              <dt>Frustum culling</dt>
+              <dd class="plain">
+                Not bothering to draw things that are behind you.
+              </dd>
+              <dd class="precise">
+                Testing each object's bounds against the camera's visible volume
+                and skipping the draw call for anything entirely outside it.
+              </dd>
+
+              <dt>Instanced mesh</dt>
+              <dd class="plain">
+                Drawing two hundred copies of the same shape in one go instead
+                of two hundred times.
+              </dd>
+              <dd class="precise">
+                A single geometry and material submitted once with a per-copy
+                transform array, so the number of draw calls stays at one
+                regardless of the number of copies.
+              </dd>
+
+              <dt>Interpolation</dt>
+              <dd class="plain">
+                Working out where something is partway between two known
+                positions.
+              </dd>
+              <dd class="precise">
+                Blending between the two most recent simulation states by the
+                fraction of a tick elapsed, so rendering at any refresh rate
+                stays smooth over a fixed-rate simulation.
+              </dd>
+
+              <dt>JSON</dt>
+              <dd class="plain">
+                A plain-text way of writing down structured data.
+              </dd>
+              <dd class="precise">
+                JavaScript Object Notation; the text format the track, bike and
+                tuning data files use, validated on load rather than trusted.
+              </dd>
+
+              <dt>Object pool</dt>
+              <dd class="plain">
+                Keeping a box of spare parts instead of buying a new one every
+                time you need one.
+              </dd>
+              <dd class="precise">
+                A fixed set of pre-allocated instances handed out and returned
+                rather than constructed and garbage-collected, used to avoid
+                allocation inside a per-frame loop.
+              </dd>
+
+              <dt>Spawn ring</dt>
+              <dd class="plain">
+                Traffic appears ahead of you and is quietly reused once it is
+                far enough behind.
+              </dd>
+              <dd class="precise">
+                A recycling window around the player: pool slots outside the
+                window are deactivated and reissued ahead, keeping entity count
+                constant regardless of distance travelled.
+              </dd>
+
+              <dt>Three.js</dt>
+              <dd class="plain">The library that does the actual drawing.</dd>
+              <dd class="precise">
+                A JavaScript 3D library over WebGL, used here only in the render
+                layer, which is forbidden from being imported by the simulation.
+              </dd>
+
+              <dt>Tick</dt>
+              <dd class="plain">One step of the game's clock.</dd>
+              <dd class="precise">
+                A single fixed-duration simulation step; this game runs exactly
+                sixty per second with a constant time delta, independent of
+                frame rate.
+              </dd>
+
+              <dt>Track space</dt>
+              <dd class="plain">
+                Describing a position as "how far along the road, and how far
+                left or right".
+              </dd>
+              <dd class="precise">
+                The curvilinear coordinate system <em>(s, t, branch)</em> in
+                which the entire simulation operates; world coordinates are
+                derived only at render time.
+              </dd>
+
+              <dt>Vitest</dt>
+              <dd class="plain">The tool that runs the tests.</dd>
+              <dd class="precise">
+                A Vite-native test runner used for the project's suite,
+                including the coverage measurement that exposed the third timing
+                test.
+              </dd>
+            </dl>
+          </section>
+
+          <section class="s-code">
+            <p class="eyebrow">Show me in the code</p>
+            <p class="file-ref">
+              src/core/sim/traffic.ts → <code>targetT()</code>
+            </p>
+            <p>
+              Fourteen lines, and the only answer in the codebase to "where
+              across the road should this vehicle be". Spawning, lane changing
+              and lateral drift all call it, which is why the road-widening bug
+              could be fixed once rather than three times.
+            </p>
+            <pre><code>function targetT(
+  track: Track,
+  vehicle: TrafficVehicle,
+  lane: number,
+  lanes: number,
+  halfWidth: number,
+): number {
+  const want = laneCentre(lanes, lane, halfWidth);
+  if (track.segmentAt(vehicle.pos.s, vehicle.pos.branchId).oneWay) return want;
+
+  const clear = TRAFFIC_SIZES[vehicle.kind].width / 2 + CENTRELINE_MARGIN;
+  return vehicle.oncoming ? Math.min(want, -clear) : Math.max(want, clear);
+}</code></pre>
+            <ol class="annotations">
+              <li data-line="4">
+                The lane is passed in rather than read from the vehicle, so the
+                same function can answer "where would I be if I moved to lane
+                three" without building a copy of the vehicle. Copying an object
+                inside the simulation loop would allocate memory sixty times a
+                second, which the project forbids.
+              </li>
+              <li data-line="8">
+                The starting point: the middle of the requested lane. This is
+                the value the old code used directly, and it is correct — it is
+                just not always reachable.
+              </li>
+              <li data-line="9">
+                On a one-way road there is no oncoming traffic and no centreline
+                to respect, so the lane centre is the final answer. The flyway
+                is one-way, which is most of why it is the fastest route in the
+                game.
+              </li>
+              <li data-line="11">
+                Clearance is measured from the edge of the vehicle, not its
+                middle, because a bus and an auto need different amounts of room
+                to sit legally in the same lane.
+              </li>
+              <li data-line="12">
+                The clamp. Oncoming traffic may never be further right than its
+                own clearance, ordinary traffic never further left. Because
+                every caller goes through here, a road that changes width
+                mid-corner can no longer drag a vehicle across the divider — the
+                lane centre may jump, but the returned value cannot.
+              </li>
+            </ol>
+          </section>
+
+          <section class="s-spoken">
+            <p class="eyebrow">Say it out loud</p>
+            <blockquote>
+              The traffic was straightforward until the non-overlap guarantee.
+              I'd written it as a constraint on lane changes, and it still
+              failed by seventy-nine centimetres, so I dumped every offending
+              pair at the moment of contact — and neither vehicle was changing
+              lane. Roads in this game change width, and when the Ring Road goes
+              from three lanes to four the centre of lane two moves four metres.
+              The vehicle wasn't making a decision at all; the road moved
+              underneath it. So every lateral movement now goes through one
+              function that clamps to the correct side of the centreline, and
+              drifting is gated on there being room to drift into. It went from
+              seventy-nine centimetres of overlap to sixty-one centimetres of
+              clear air, and the fix is structural — there's no tuning constant
+              holding it up.
+            </blockquote>
+          </section>
+        </section>
+
         <!-- ================= 90 SECONDS ================= -->
         <section class="page" id="ninety-seconds" aria-labelledby="h-90" hidden>
           <header class="page-head">
-            <p class="eyebrow">The whole thing</p>
+            <p class="eyebrow">All of it</p>
             <h2 id="h-90">In 90 seconds</h2>
             <p class="standfirst">
-              Where the project stands after Phase 3, and the decisions carrying
-              the most weight.
+              The whole project on one page: what it is, how it is put together,
+              and the three choices everything else follows from.
             </p>
           </header>
 
           <section aria-labelledby="ev-90">
             <p class="eyebrow" id="ev-90">The elevator version</p>
             <p>
-              Rashta is an arcade motorcycle combat racer set on Delhi's ring
-              roads at night — fourteen riders, point-to-point, no rules. The
-              idea it is built on is that nothing in the simulation knows where
-              it is in the world. Every rider is two numbers: how far along the
-              road, and how far sideways. Who is winning becomes a comparison
-              instead of a geometry problem, whole races replay exactly from one
-              starting number, and even "which bits of road are worth drawing"
-              stays arithmetic. That replay promise has teeth — computers
-              disagree about sine and cosine in the last digit, so the
-              simulation is forbidden them, and the road's geometry is solved
-              once at load and looked up thereafter. There are now twenty-five
-              races across five Delhi districts, roads that split and rejoin
-              without either way round being the obvious one, and a bike that
-              hits its stated top speed in its stated time. Next: everything
-              else on the road.
+              Rashta is an arcade motorcycle combat racer set in Delhi at night,
+              written from scratch in TypeScript with no game engine, no physics
+              engine and no UI framework. It ships as a web page of about a
+              hundred and forty kilobytes. The interesting part is a constraint
+              I set at the start: the simulation is bit-exactly deterministic,
+              so the same seed and the same inputs produce the same race on
+              every machine. That rules out a physics engine, and it rules out
+              sine and cosine anywhere the simulation can reach, because the
+              standard does not require two browsers to agree on them. So the
+              game holds every position as distance along the road rather than a
+              point in space, does all its trigonometry once when a track loads,
+              and the simulation reads tables. Five routes, five tiers, city
+              traffic, hazards, and a crash you have to get up from.
             </p>
           </section>
 
@@ -2947,6 +3379,8 @@
   sim/          <b>·done</b>
     bike        solves K = vmax·I/T per bike at load
     step        speed · lateral · grip · forks · lean
+    traffic     pooled cars/autos/buses/trucks, spawn ring
+    collide     rider vs traffic · hazard · cliff → crash, remount
   ai/ combat/ economy/ reputation/         <i>Phases 5–9</i>
 
 <b>src/app/</b>       FixedStepDriver — the accumulator. Never sees a clock.
@@ -2955,8 +3389,10 @@
   RoadMeshBuilder  chunked, main + branches; culled by s
   environments     5 districts: sky · fog · light · surface
   Scenery          pooled, instanced, LOD past 220 m
+  TrafficView      instanced per kind; head/tail lamps separate
+  HazardView       static — every matrix written once at build
   ChaseCamera      FOV · drop · pull-back · lateral lag
-<b>src/data/</b>      25 tracks · bikes · tuning — JSON, validated
+<b>src/data/</b>      25 tracks · 204 hazards · bikes · tuning — JSON, validated
 
 <i>position</i> = (s, t, branchId)          <i>s along, t sideways</i>
 <i>world</i>    = sample(s).position + right × t     <i>render time only</i>
@@ -2965,12 +3401,13 @@
 <i>loop</i>     = 60 Hz sim · render interpolates by alpha
 
 <b>npm run check</b>  typecheck · lint · test+coverage · size
-              <i>256 tests · 100% lines in core · 135 KB of 500</i>
+              <i>297 tests · core/track 100% lines, core/sim 96% · 141 KB of 500</i>
               <i>sim step 0.006 ms in-browser against a 1 ms budget</i></pre>
             <p class="cost">
-              Built so far: the road, the bike, the loop, twenty-five routes and
-              enough renderer to ride them. Traffic, rivals, combat, police,
-              career and reputation are Phases 4–9.
+              Built so far: the road, the bike, the loop, twenty-five routes,
+              city traffic, hazards, crashes, and enough renderer to ride
+              through all of it. Rivals, combat, police, career and reputation
+              are Phases 5–9; the desktop build is Phase 10.
             </p>
           </section>
 
@@ -2981,84 +3418,75 @@
             <ol class="decisions">
               <li>
                 <p>
-                  <b>Everything positional lives in track space.</b> A rider is
-                  two numbers — metres along the centreline, metres sideways
-                  from it — never an x, y, z. World position is derived at
-                  render time and stored nowhere.
+                  <b
+                    >Positions are distances along the road, not points in
+                    space.</b
+                  >
                 </p>
                 <p>
-                  Why: it turns the hard questions into arithmetic. Who is
-                  ahead, am I on the road, spawn a bus 300 m up, which chunks of
-                  road are worth drawing — each is a comparison rather than a
-                  geometry query. Phase 3 paid the clearest dividend yet:
-                  rendering a road that splits in two needed almost no new
-                  machinery, because a branch carries its span in the same terms
-                  and the existing numeric cull simply worked on it.
+                  Everything in the simulation is held as <em>s</em>, metres
+                  travelled along the centreline, and <em>t</em>, metres left or
+                  right of it. World coordinates are computed at render time and
+                  never stored. This is why "who is winning" is a comparison of
+                  two numbers, why the road can bend without anything in the
+                  simulation knowing, and why a track that forks in two can be
+                  ranked at all.
                 </p>
                 <p class="cost">
-                  <b>Cost:</b> the road can never cross itself, fold back, or
-                  branch freely, and free-roam is impossible. Track space is not
-                  metric, so every question genuinely about metres needs a
-                  correction world space would have given away. And the sideways
-                  measure is per-road, so a fork is a change of frame — which is
-                  precisely where this phase's worst bug lived.
+                  What it costs: distance between two points is no longer
+                  subtraction. Two vehicles a metre apart on the inside of a
+                  bend are not a metre apart, so there is a dedicated function
+                  that corrects for curvature, and every piece of code that
+                  wants a real distance has to remember to call it.
                 </p>
               </li>
               <li>
                 <p>
                   <b
-                    >The simulation is bit-exactly deterministic, and that
-                    constrains the arithmetic it may use.</b
+                    >The simulation is bit-exactly deterministic, which means no
+                    sine and no cosine.</b
                   >
-                  Same seed plus same inputs gives the same race on any machine.
-                  All randomness goes through one seeded generator; no sine,
-                  cosine or power function is allowed anywhere the simulation
-                  reaches; and the simulation cannot read a clock at all.
                 </p>
                 <p>
-                  Why: the floating-point standard pins add, subtract, multiply,
-                  divide and square root to identical results everywhere, and
-                  deliberately does not pin the trigonometric functions. A
-                  single cosine downgrades "the same everywhere" to "the same
-                  here". The same logic applies to time: the accumulator is
-                  handed elapsed seconds rather than reading them, so a replay
-                  can be driven at 240 Hz or 12 Hz and come out identical.
+                  Addition, multiplication and square root are guaranteed by
+                  IEEE-754 to give identical answers on every conforming engine.
+                  The trigonometric functions are explicitly not. One cosine
+                  inside the simulation downgrades "the same on every machine"
+                  to "the same on this browser build", so all trigonometry
+                  happens once when a track loads, and the simulation reads
+                  precomputed tables and interpolates between them.
                 </p>
                 <p class="cost">
-                  <b>Cost:</b> real work, permanently. Angles must be
-                  precomputed into tables and interpolated, which costs memory
-                  and load time. But twice the constraint has improved the
-                  result rather than compromising it — being denied a cosine is
-                  what produced a distance formula a thousand times more
-                  accurate than the obvious one.
+                  What it costs: real work. Measuring distance along a curve
+                  needs a sine, so it uses a four-term series expansion instead,
+                  with a defined fallback past the range where the series is
+                  trustworthy. A physics engine was never an option, which means
+                  vehicle-versus-vehicle separation had to be built by hand and
+                  took five attempts to get right.
                 </p>
               </li>
               <li>
                 <p>
                   <b
-                    >Data files own the truth, and the rules that make data
-                    valid are executable.</b
+                    >The simulation is forbidden from importing the renderer.</b
                   >
-                  Tracks, bikes and tuning are JSON, validated on load with
-                  errors naming the file and the field. Where several numbers
-                  could each define a quantity, one is named authoritative and
-                  the simulation is forbidden the others. And where the design
-                  brief states a rule, the loader enforces it.
                 </p>
                 <p>
-                  Why: prose in a design document does not survive contact with
-                  a deadline. "Neither branch should be strictly better" became
-                  a five-percent length check that refuses to load a track
-                  breaking it; "a road cannot be wider than its own corner
-                  radius" became a validation error naming the segment. The
-                  brief and the build cannot drift, because one of them throws.
+                  <code>src/core/</code> cannot import Three.js, the DOM, the
+                  input layer or the audio layer — not by convention but as a
+                  rule the build enforces. The consequence is that the entire
+                  game is testable without a graphics card: two hundred and
+                  ninety-seven tests run in under a minute, including ten
+                  simulated minutes of tier-five traffic checked pair by pair
+                  for overlap.
                 </p>
                 <p class="cost">
-                  <b>Cost:</b> the constraints are now genuinely binding, and
-                  satisfying them takes solving rather than eyeballing — every
-                  fork in the game is the same four-arc shape because that shape
-                  is the one that can be solved. Roughly a third of the loading
-                  code exists only to reject bad input.
+                  What it costs: duplication and discipline. There is a small
+                  hand-written vector type in core because importing Three.js's
+                  would break the rule, and every value the renderer needs has
+                  to be read out of core rather than reached for. Anything that
+                  wants to be in both places has to be designed to be in
+                  neither.
                 </p>
               </li>
             </ol>

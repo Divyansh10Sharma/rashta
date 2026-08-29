@@ -145,7 +145,9 @@ describe('no two vehicles ever overlap', () => {
       );
       expect(worst).toBeGreaterThan(0);
     }
-  });
+    // Three 90-second rides at tier-5 density, every pair checked: slow by
+    // construction, and slower again under coverage instrumentation.
+  }, 30_000);
 
   it('bunches vehicles behind a slow one rather than driving through it', () => {
     // Car following is what makes the guarantee hold rather than be likely,

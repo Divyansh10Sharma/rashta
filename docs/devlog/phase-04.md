@@ -248,3 +248,69 @@ the ride.
 track — had no test. Also `TrackLibrary.ids`, which nothing has ever called.
 Deleted rather than tested: it is an API invented for a caller that does not
 exist.
+
+### Drawing it: two new render modules
+
+`HazardView` and `TrafficView`. They divide on one fact: hazards never move.
+So hazards are not a pool — every matrix is written once at build time and
+never touched again, one instanced draw per kind, and Three.js frustum-culls
+what is behind you. Traffic needs the full pool treatment: one `InstancedMesh`
+per kind sized to the *whole* pool, because any slot can be recycled into any
+kind.
+
+Two things fell out of writing it that I had not planned.
+
+Livery colour is per *slot*, not per tick. The obvious implementation picks a
+colour from the kind's palette when the vehicle is drawn, and the result is a
+bus that changes colour the moment the pool recycles it. Assigning at build
+time by slot index fixes it and costs nothing.
+
+Headlights and tail lights are separate instanced pools rather than paint. At
+night, whether a pair of lights is coming at you or going away from you is the
+single most useful thing on the road, and it is the one piece of information a
+box in sodium light does not carry. The lamps sit at the end of the vehicle
+facing the rider, offset along `frame.forward` by `length * 0.46`, so one lamp
+mesh serves all four kinds.
+
+Interpolation needed a guard I did not anticipate. `update()` reads the same
+pool at two ticks, index `i` being the same slot in both — which is exactly
+what makes a recycled slot dangerous: a vehicle that respawned this tick is
+100 m behind in one state and 900 m ahead in the other, and interpolating that
+fires a car across the whole visible road in one frame. A slot is only drawn
+when both states agree it is active, on the same branch, and within 5 m.
+
+### The tolerance that was measuring the storage
+
+Two of the nine new render tests failed on first run, both by about 2e-6 m
+against a 1e-6 bound. Not a geometry bug: `InstancedMesh` keeps its matrices
+in a `Float32Array`, so a point a kilometre down the road is only good to
+roughly a tenth of a millimetre. The bound was tighter than the storage can
+represent, so it was testing float32, not the renderer. Tolerances are now
+millimetres, which is still three orders of magnitude below anything visible
+and still catches a real mistake — a lane is three metres wide.
+
+### A third timing test that was measuring the machine
+
+`keeps every pair apart by their combined footprint` timed out at Vitest's 5 s
+default, but only in `npm run check`, never on its own. `check` runs the tests
+under v8 coverage instrumentation; the test rides three tier-5 routes for 90
+simulated seconds each and checks every pair. It is slow by construction and
+slower again when instrumented. Same call as the two ten-minute rides: the
+ride is the acceptance criterion, so the timeout moved.
+
+### Still not measured
+
+Frame rate under 4× CPU throttling. This has been open since Phase 2 and it
+needs someone with DevTools in front of the running game — a headless proxy is
+not the criterion and would not be honest to write down as one. Phase 4 has
+just added the two heaviest draw paths in the game so far, which makes this
+the phase where the number stops being a formality.
+
+## Deferred
+
+- Traffic and hazards have no audio. Phase 6.
+- Hazards are static boxes; a cow that moves is a Phase 7 problem at the
+  earliest and possibly never.
+- Tier-5 races still run 6.4–11.6 minutes flat out. Raised in Phase 3 with
+  numbers, unchanged here, and it starts to bite in Phase 5 where every route
+  is simulated to completion.
