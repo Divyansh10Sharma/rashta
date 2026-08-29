@@ -1,6 +1,6 @@
 {
   "id": "yamuna-bank-t3",
-  "name": "Yamuna Bank \u2014 Tier 3",
+  "name": "Yamuna Bank — Tier 3",
   "scenery": "yamuna",
   "trafficDensity": 18.9,
   "extends": "yamuna-bank-t2",
@@ -15,7 +15,28 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "cow",
+          "offset": 231.32,
+          "t": 4.5
+        },
+        {
+          "kind": "cow",
+          "offset": 705.49,
+          "t": 4.5
+        },
+        {
+          "kind": "sand",
+          "offset": 1433.28,
+          "t": -2.7
+        },
+        {
+          "kind": "pothole",
+          "offset": 1954.66,
+          "t": 1.21
+        }
+      ]
     },
     {
       "length": 1300,
@@ -27,7 +48,18 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 387.54,
+          "t": -3.79
+        },
+        {
+          "kind": "dog",
+          "offset": 1269.92,
+          "t": 2.95
+        }
+      ]
     },
     {
       "length": 1850,
@@ -39,7 +71,18 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "cow",
+          "offset": 828.99,
+          "t": -4.5
+        },
+        {
+          "kind": "pothole",
+          "offset": 1008.11,
+          "t": -2.16
+        }
+      ]
     }
   ],
   "branches": []

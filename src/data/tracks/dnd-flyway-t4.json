@@ -1,6 +1,6 @@
 {
   "id": "dnd-flyway-t4",
-  "name": "DND Flyway \u2014 Tier 4",
+  "name": "DND Flyway — Tier 4",
   "scenery": "flyway",
   "trafficDensity": 19.6,
   "extends": "dnd-flyway-t3",
@@ -15,7 +15,23 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 835.06,
+          "t": 4.39
+        },
+        {
+          "kind": "pothole",
+          "offset": 1027.26,
+          "t": 2.33
+        },
+        {
+          "kind": "pothole",
+          "offset": 1300.97,
+          "t": 0.63
+        }
+      ]
     },
     {
       "length": 1200,
@@ -27,7 +43,13 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 816.56,
+          "t": -3
+        }
+      ]
     },
     {
       "length": 1900,
@@ -39,7 +61,38 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 17.38,
+          "t": 3
+        },
+        {
+          "kind": "pothole",
+          "offset": 163.47,
+          "t": -0.31
+        },
+        {
+          "kind": "oil",
+          "offset": 857.64,
+          "t": 3
+        },
+        {
+          "kind": "pothole",
+          "offset": 958.21,
+          "t": -2.53
+        },
+        {
+          "kind": "roadworks",
+          "offset": 1286.22,
+          "t": -5
+        },
+        {
+          "kind": "oil",
+          "offset": 1565.26,
+          "t": 3
+        }
+      ]
     }
   ],
   "branches": []

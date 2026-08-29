@@ -433,3 +433,79 @@ describe('the library rejects bad data, naming the file', () => {
     ).toThrow(/branches\[0\]\.forkS must be within \[0, 200\)/);
   });
 });
+
+describe('the routes actually carry hazards', () => {
+  /** Ends your race rather than merely costing you. Mirrors collide.ts. */
+  const CRASHING = new Set(['barricade', 'roadworks', 'cow']);
+  /** How close the rider must be to a hazard to be affected. See collide.ts. */
+  const REACH = 1.6;
+
+  function trackFor(id: string): Track {
+    const track = library.get(id);
+    if (!track) throw new Error(`missing ${id}`);
+    return track;
+  }
+
+  it('puts some on every route, and more on every tier', () => {
+    // A hazard system nothing ever meets is a system that does not exist.
+    for (const route of ROUTES) {
+      const counts = TIERS.map(
+        (t) => trackFor(`${route}-t${t}`).hazards.length,
+      );
+      expect(`${route} t1 hazards`).toBe(`${route} t1 hazards`);
+      expect(counts[0] ?? 0).toBeGreaterThan(0);
+      for (let i = 1; i < counts.length; i += 1) {
+        // Tiers inherit the road below them, so they inherit its hazards too.
+        expect(counts[i] ?? 0).toBeGreaterThan(counts[i - 1] ?? 0);
+      }
+    }
+  });
+
+  it('never blocks the whole road with something that ends your race', () => {
+    // A barricade you cannot get round is not a hazard, it is a wall. Oil and
+    // potholes are exempt: riding through them is meant to be an option.
+    for (const route of ROUTES) {
+      const track = trackFor(`${route}-t5`);
+      let tightest = Infinity;
+      let where = '';
+
+      for (const hazard of track.hazards) {
+        if (!CRASHING.has(hazard.kind)) continue;
+        const limit = track.driveableHalfWidthAt(hazard.s, hazard.branchId);
+        const left = hazard.t - REACH - -limit;
+        const right = limit - (hazard.t + REACH);
+        const gap = Math.max(left, right);
+        if (gap < tightest) {
+          tightest = gap;
+          where = `${hazard.kind} at s=${hazard.s.toFixed(0)}`;
+        }
+      }
+      if (tightest === Infinity) continue;
+
+      expect(`${route}: tightest way past is ${tightest.toFixed(2)} m`).toBe(
+        `${route}: tightest way past is ${tightest.toFixed(2)} m`,
+      );
+      expect(`${route} ${where}: ${tightest > 1 ? 'passable' : 'walled'}`).toBe(
+        `${route} ${where}: passable`,
+      );
+    }
+  });
+
+  it('spaces them, so you never meet two at once', () => {
+    for (const route of ROUTES) {
+      const track = trackFor(`${route}-t5`);
+      const hazards = track.hazards;
+      let closest = Infinity;
+      for (let i = 1; i < hazards.length; i += 1) {
+        const a = hazards[i - 1];
+        const b = hazards[i];
+        if (!a || !b || a.branchId !== b.branchId) continue;
+        closest = Math.min(closest, b.s - a.s);
+      }
+      expect(`${route} closest pair ${closest.toFixed(1)} m`).toBe(
+        `${route} closest pair ${closest.toFixed(1)} m`,
+      );
+      expect(closest).toBeGreaterThan(2 * REACH);
+    }
+  });
+});

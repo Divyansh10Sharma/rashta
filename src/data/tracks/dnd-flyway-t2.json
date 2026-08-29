@@ -1,6 +1,6 @@
 {
   "id": "dnd-flyway-t2",
-  "name": "DND Flyway \u2014 Tier 2",
+  "name": "DND Flyway — Tier 2",
   "scenery": "flyway",
   "trafficDensity": 10.5,
   "extends": "dnd-flyway-t1",
@@ -15,7 +15,18 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 343.32,
+          "t": -3
+        },
+        {
+          "kind": "oil",
+          "offset": 690.73,
+          "t": -3
+        }
+      ]
     },
     {
       "length": 1000,
@@ -27,7 +38,13 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "roadworks",
+          "offset": 826.18,
+          "t": -5
+        }
+      ]
     },
     {
       "length": 2000,
@@ -39,7 +56,23 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 170.83,
+          "t": 3
+        },
+        {
+          "kind": "oil",
+          "offset": 387.87,
+          "t": 3
+        },
+        {
+          "kind": "oil",
+          "offset": 830.06,
+          "t": 3
+        }
+      ]
     }
   ],
   "branches": []

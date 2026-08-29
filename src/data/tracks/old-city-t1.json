@@ -1,8 +1,8 @@
 {
   "id": "old-city-t1",
-  "name": "Old City \u2014 Tier 1",
+  "name": "Old City — Tier 1",
   "scenery": "oldcity",
-  "trafficDensity": 14.0,
+  "trafficDensity": 14,
   "segments": [
     {
       "length": 800,
@@ -26,7 +26,13 @@
       "lanes": 1,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "dog",
+          "offset": 2.38,
+          "t": 0.4
+        }
+      ]
     },
     {
       "length": 340,
@@ -40,9 +46,9 @@
       "scenery": "oldcity",
       "hazards": [
         {
-          "kind": "cow",
-          "offset": 120,
-          "t": 1.1
+          "kind": "dog",
+          "offset": 239.43,
+          "t": -0.02
         }
       ]
     },
@@ -92,13 +98,7 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": [
-        {
-          "kind": "roadworks",
-          "offset": 150,
-          "t": -1.4
-        }
-      ]
+      "hazards": []
     },
     {
       "length": 95,
@@ -122,7 +122,13 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "cow",
+          "offset": 168.99,
+          "t": -2
+        }
+      ]
     },
     {
       "length": 105,
@@ -158,7 +164,13 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "dog",
+          "offset": 40.66,
+          "t": 0.87
+        }
+      ]
     },
     {
       "length": 900,
@@ -170,7 +182,13 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "dog",
+          "offset": 229.81,
+          "t": -0.79
+        }
+      ]
     },
     {
       "length": 85,
@@ -218,7 +236,13 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 415.69,
+          "t": 2.33
+        }
+      ]
     }
   ],
   "branches": [

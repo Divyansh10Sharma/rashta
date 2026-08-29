@@ -1,8 +1,8 @@
 {
   "id": "dnd-flyway-t1",
-  "name": "DND Flyway \u2014 Tier 1",
+  "name": "DND Flyway — Tier 1",
   "scenery": "flyway",
-  "trafficDensity": 7.0,
+  "trafficDensity": 7,
   "segments": [
     {
       "length": 900,
@@ -14,7 +14,13 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 317.35,
+          "t": -3
+        }
+      ]
     },
     {
       "length": 1400,
@@ -26,7 +32,13 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "roadworks",
+          "offset": 869.66,
+          "t": 5
+        }
+      ]
     },
     {
       "length": 800,
@@ -38,7 +50,18 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "roadworks",
+          "offset": 448.2,
+          "t": -5
+        },
+        {
+          "kind": "oil",
+          "offset": 697.92,
+          "t": -3
+        }
+      ]
     },
     {
       "length": 1400,
@@ -50,7 +73,18 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 732.98,
+          "t": 3.83
+        },
+        {
+          "kind": "oil",
+          "offset": 1140.85,
+          "t": 3
+        }
+      ]
     },
     {
       "length": 600,
@@ -62,7 +96,13 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 295.64,
+          "t": 1.69
+        }
+      ]
     },
     {
       "length": 498.60256014837114,
@@ -110,7 +150,13 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 513.35,
+          "t": -3
+        }
+      ]
     },
     {
       "length": 913.997,

@@ -1,6 +1,6 @@
 {
   "id": "old-city-t3",
-  "name": "Old City \u2014 Tier 3",
+  "name": "Old City — Tier 3",
   "scenery": "oldcity",
   "trafficDensity": 29.4,
   "extends": "old-city-t2",
@@ -15,7 +15,18 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 215.38,
+          "t": 2.11
+        },
+        {
+          "kind": "pothole",
+          "offset": 795.04,
+          "t": -1.64
+        }
+      ]
     },
     {
       "length": 95,
@@ -51,7 +62,13 @@
       "lanes": 1,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "cow",
+          "offset": 100.84,
+          "t": -1.75
+        }
+      ]
     },
     {
       "length": 1645,
@@ -63,7 +80,28 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 62.58,
+          "t": 0.62
+        },
+        {
+          "kind": "barricade",
+          "offset": 1063.36,
+          "t": 2
+        },
+        {
+          "kind": "dog",
+          "offset": 1121.41,
+          "t": 1.82
+        },
+        {
+          "kind": "dog",
+          "offset": 1206.75,
+          "t": -0.69
+        }
+      ]
     }
   ],
   "branches": []

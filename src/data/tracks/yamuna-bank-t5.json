@@ -1,6 +1,6 @@
 {
   "id": "yamuna-bank-t5",
-  "name": "Yamuna Bank \u2014 Tier 5",
+  "name": "Yamuna Bank — Tier 5",
   "scenery": "yamuna",
   "trafficDensity": 32.4,
   "extends": "yamuna-bank-t4",
@@ -15,7 +15,28 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "sand",
+          "offset": 115.01,
+          "t": -2.7
+        },
+        {
+          "kind": "cow",
+          "offset": 842.39,
+          "t": -4.5
+        },
+        {
+          "kind": "dog",
+          "offset": 1788.62,
+          "t": -5.13
+        },
+        {
+          "kind": "dog",
+          "offset": 2360.5,
+          "t": 4.88
+        }
+      ]
     },
     {
       "length": 1500,
@@ -27,7 +48,33 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "sand",
+          "offset": 210.36,
+          "t": 2.7
+        },
+        {
+          "kind": "sand",
+          "offset": 325.63,
+          "t": 2.7
+        },
+        {
+          "kind": "pothole",
+          "offset": 1028.97,
+          "t": 0.31
+        },
+        {
+          "kind": "dog",
+          "offset": 1251.3,
+          "t": 2.47
+        },
+        {
+          "kind": "dog",
+          "offset": 1352.12,
+          "t": -4.7
+        }
+      ]
     },
     {
       "length": 1850,
@@ -39,7 +86,23 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 363.77,
+          "t": -3.22
+        },
+        {
+          "kind": "pothole",
+          "offset": 786.38,
+          "t": -1.34
+        },
+        {
+          "kind": "sand",
+          "offset": 1557.59,
+          "t": 2.7
+        }
+      ]
     }
   ],
   "branches": []

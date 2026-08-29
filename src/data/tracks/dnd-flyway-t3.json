@@ -1,6 +1,6 @@
 {
   "id": "dnd-flyway-t3",
-  "name": "DND Flyway \u2014 Tier 3",
+  "name": "DND Flyway — Tier 3",
   "scenery": "flyway",
   "trafficDensity": 14.7,
   "extends": "dnd-flyway-t2",
@@ -27,7 +27,18 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 508.9,
+          "t": 3
+        },
+        {
+          "kind": "pothole",
+          "offset": 767,
+          "t": 4.74
+        }
+      ]
     },
     {
       "length": 1950,
@@ -39,7 +50,38 @@
       "lanes": 3,
       "oneWay": true,
       "scenery": "flyway",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 487.19,
+          "t": -3
+        },
+        {
+          "kind": "pothole",
+          "offset": 846.14,
+          "t": 4.71
+        },
+        {
+          "kind": "pothole",
+          "offset": 1066.62,
+          "t": 2.14
+        },
+        {
+          "kind": "pothole",
+          "offset": 1275.63,
+          "t": -3.09
+        },
+        {
+          "kind": "pothole",
+          "offset": 1636.34,
+          "t": -0.97
+        },
+        {
+          "kind": "oil",
+          "offset": 1748.48,
+          "t": 3
+        }
+      ]
     }
   ],
   "branches": []

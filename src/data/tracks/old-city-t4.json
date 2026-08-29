@@ -1,6 +1,6 @@
 {
   "id": "old-city-t4",
-  "name": "Old City \u2014 Tier 4",
+  "name": "Old City — Tier 4",
   "scenery": "oldcity",
   "trafficDensity": 39.2,
   "extends": "old-city-t3",
@@ -15,7 +15,18 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "dog",
+          "offset": 595.95,
+          "t": 0.06
+        },
+        {
+          "kind": "dog",
+          "offset": 717.28,
+          "t": -0.52
+        }
+      ]
     },
     {
       "length": 85,
@@ -39,7 +50,18 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "dog",
+          "offset": 329.54,
+          "t": -0.3
+        },
+        {
+          "kind": "barricade",
+          "offset": 1215.72,
+          "t": 2
+        }
+      ]
     },
     {
       "length": 105,
@@ -51,7 +73,13 @@
       "lanes": 1,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "cow",
+          "offset": 103.72,
+          "t": -1.75
+        }
+      ]
     },
     {
       "length": 1710,
@@ -63,7 +91,23 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 609.81,
+          "t": -0.43
+        },
+        {
+          "kind": "pothole",
+          "offset": 1419.6,
+          "t": -2.14
+        },
+        {
+          "kind": "pothole",
+          "offset": 1612.8,
+          "t": 1.36
+        }
+      ]
     }
   ],
   "branches": []

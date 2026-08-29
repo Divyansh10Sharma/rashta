@@ -1,6 +1,6 @@
 {
   "id": "ridge-run-t3",
-  "name": "Ridge Run \u2014 Tier 3",
+  "name": "Ridge Run — Tier 3",
   "scenery": "ridge",
   "trafficDensity": 8.4,
   "extends": "ridge-run-t2",
@@ -15,7 +15,23 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 425.28,
+          "t": 1.96
+        },
+        {
+          "kind": "sand",
+          "offset": 563.58,
+          "t": 1.95
+        },
+        {
+          "kind": "oil",
+          "offset": 1135.68,
+          "t": -1.95
+        }
+      ]
     },
     {
       "length": 1600,
@@ -27,7 +43,13 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 162.15,
+          "t": 1.95
+        }
+      ]
     },
     {
       "length": 1400,
@@ -39,7 +61,18 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 273.67,
+          "t": 2.12
+        },
+        {
+          "kind": "oil",
+          "offset": 546.53,
+          "t": -1.95
+        }
+      ]
     },
     {
       "length": 750,
@@ -51,7 +84,13 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 580.22,
+          "t": -2.52
+        }
+      ]
     }
   ],
   "branches": []

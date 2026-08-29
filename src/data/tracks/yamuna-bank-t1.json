@@ -1,8 +1,8 @@
 {
   "id": "yamuna-bank-t1",
-  "name": "Yamuna Bank \u2014 Tier 1",
+  "name": "Yamuna Bank — Tier 1",
   "scenery": "yamuna",
-  "trafficDensity": 9.0,
+  "trafficDensity": 9,
   "segments": [
     {
       "length": 1100,
@@ -14,7 +14,18 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "sand",
+          "offset": 812.48,
+          "t": 2.7
+        },
+        {
+          "kind": "dog",
+          "offset": 1024.74,
+          "t": 0.7
+        }
+      ]
     },
     {
       "length": 700,
@@ -26,13 +37,7 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": [
-        {
-          "kind": "sand",
-          "offset": 300,
-          "t": 4
-        }
-      ]
+      "hazards": []
     },
     {
       "length": 1300,
@@ -44,7 +49,13 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 304.36,
+          "t": 1.16
+        }
+      ]
     },
     {
       "length": 520,
@@ -56,7 +67,13 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 64.36,
+          "t": 3.28
+        }
+      ]
     },
     {
       "length": 900,
@@ -71,8 +88,8 @@
       "hazards": [
         {
           "kind": "sand",
-          "offset": 500,
-          "t": -5
+          "offset": 401.76,
+          "t": 2.7
         }
       ]
     },
@@ -98,7 +115,18 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "dog",
+          "offset": 780.78,
+          "t": 5.35
+        },
+        {
+          "kind": "dog",
+          "offset": 858.32,
+          "t": 3.78
+        }
+      ]
     },
     {
       "length": 314.00983936820836,
@@ -110,7 +138,13 @@
       "lanes": 3,
       "oneWay": false,
       "scenery": "yamuna",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "sand",
+          "offset": 84.92,
+          "t": -2.7
+        }
+      ]
     },
     {
       "length": 1400,

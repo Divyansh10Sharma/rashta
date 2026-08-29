@@ -1,8 +1,8 @@
 {
   "id": "ridge-run-t1",
-  "name": "Ridge Run \u2014 Tier 1",
+  "name": "Ridge Run — Tier 1",
   "scenery": "ridge",
-  "trafficDensity": 4.0,
+  "trafficDensity": 4,
   "segments": [
     {
       "length": 620,
@@ -38,13 +38,7 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": [
-        {
-          "kind": "dog",
-          "offset": 180,
-          "t": 1.2
-        }
-      ]
+      "hazards": []
     },
     {
       "length": 260,
@@ -80,7 +74,13 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 243.25,
+          "t": 1.95
+        }
+      ]
     },
     {
       "length": 420,
@@ -116,7 +116,18 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 488.14,
+          "t": 2.23
+        },
+        {
+          "kind": "pothole",
+          "offset": 902.12,
+          "t": -0.94
+        }
+      ]
     },
     {
       "length": 800,
@@ -152,7 +163,13 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "dog",
+          "offset": 210.91,
+          "t": 3.45
+        }
+      ]
     },
     {
       "length": 1579.25,
@@ -164,7 +181,23 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 529,
+          "t": 0.78
+        },
+        {
+          "kind": "pothole",
+          "offset": 1096.64,
+          "t": -2.85
+        },
+        {
+          "kind": "oil",
+          "offset": 1153.58,
+          "t": -1.95
+        }
+      ]
     }
   ],
   "branches": [

@@ -1,8 +1,8 @@
 {
   "id": "ring-road-t2",
-  "name": "Ring Road \u2014 Tier 2",
+  "name": "Ring Road — Tier 2",
   "scenery": "ringroad",
-  "trafficDensity": 33.0,
+  "trafficDensity": 33,
   "extends": "ring-road-t1",
   "segments": [
     {
@@ -15,7 +15,18 @@
       "lanes": 4,
       "oneWay": false,
       "scenery": "ringroad",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "barricade",
+          "offset": 128.95,
+          "t": 5.5
+        },
+        {
+          "kind": "roadworks",
+          "offset": 1390.81,
+          "t": -5.5
+        }
+      ]
     },
     {
       "length": 1100,
@@ -27,7 +38,13 @@
       "lanes": 4,
       "oneWay": false,
       "scenery": "ringroad",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "roadworks",
+          "offset": 886.53,
+          "t": -5.5
+        }
+      ]
     },
     {
       "length": 2000,
@@ -39,7 +56,23 @@
       "lanes": 4,
       "oneWay": false,
       "scenery": "ringroad",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "barricade",
+          "offset": 160.23,
+          "t": 5.5
+        },
+        {
+          "kind": "pothole",
+          "offset": 747.3,
+          "t": -4.85
+        },
+        {
+          "kind": "roadworks",
+          "offset": 1005.81,
+          "t": 5.5
+        }
+      ]
     }
   ],
   "branches": []

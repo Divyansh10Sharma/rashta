@@ -1,6 +1,6 @@
 {
   "id": "old-city-t5",
-  "name": "Old City \u2014 Tier 5",
+  "name": "Old City — Tier 5",
   "scenery": "oldcity",
   "trafficDensity": 50.4,
   "extends": "old-city-t4",
@@ -15,7 +15,23 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "dog",
+          "offset": 75.86,
+          "t": 0.36
+        },
+        {
+          "kind": "cow",
+          "offset": 600.6,
+          "t": -2
+        },
+        {
+          "kind": "cow",
+          "offset": 1234.01,
+          "t": -2
+        }
+      ]
     },
     {
       "length": 80,
@@ -39,7 +55,28 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "cow",
+          "offset": 91.35,
+          "t": 2
+        },
+        {
+          "kind": "pothole",
+          "offset": 945.12,
+          "t": -1.73
+        },
+        {
+          "kind": "cow",
+          "offset": 1323.43,
+          "t": 2
+        },
+        {
+          "kind": "dog",
+          "offset": 1486.45,
+          "t": -0.46
+        }
+      ]
     },
     {
       "length": 100,
@@ -51,7 +88,13 @@
       "lanes": 1,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "barricade",
+          "offset": 89.26,
+          "t": 1.7
+        }
+      ]
     },
     {
       "length": 1770,
@@ -63,7 +106,18 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "oldcity",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "barricade",
+          "offset": 780.29,
+          "t": -2
+        },
+        {
+          "kind": "dog",
+          "offset": 1490.59,
+          "t": 0.39
+        }
+      ]
     }
   ],
   "branches": []

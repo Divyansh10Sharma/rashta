@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { loadTrackLibrary } from '../../src/core/track/library.ts';
 import { loadBikes, loadTuning } from '../../src/core/sim/load.ts';
 import { FIXED_DT, step } from '../../src/core/sim/step.ts';
 import { createWorld } from '../../src/core/sim/world.ts';
@@ -322,4 +323,44 @@ describe('leaving the road', () => {
       6,
     );
   });
+});
+
+describe('riding a real route meets real hazards', () => {
+  it('costs the rider something on every district', () => {
+    // The synthetic tracks above prove the mechanism. This proves the data:
+    // 25 route files shipped with empty hazard arrays for most of this phase,
+    // and every unit test still passed, because nothing asserted that a rider
+    // ever meets one.
+    const files: Record<string, unknown> = {};
+    for (const name of readdirSync('src/data/tracks')) {
+      if (!/-t\d\.json$/.test(name)) continue;
+      files[name] = JSON.parse(readFileSync(`src/data/tracks/${name}`, 'utf8'));
+    }
+    const library = loadTrackLibrary(files);
+
+    for (const route of ['ridge-run', 'old-city', 'ring-road']) {
+      const track = library.get(`${route}-t3`);
+      if (!track) throw new Error(`missing ${route}-t3`);
+      expect(track.hazards.length).toBeGreaterThan(0);
+
+      // Ride the centreline flat out. No steering, so anything it meets is
+      // something the road put in front of it.
+      const world = createWorld(bike, track, 3);
+      world.traffic.length = 0;
+      let met = 0;
+      let previous = world.player.state;
+      let previousSlip = 0;
+      for (let i = 0; i < 60 * 400; i += 1) {
+        step(world, GO, track, tuning);
+        if (previous !== 'crashing' && world.player.state === 'crashing') met++;
+        if (previousSlip <= 0 && world.player.slipTimer > 0) met++;
+        previous = world.player.state;
+        previousSlip = world.player.slipTimer;
+        if (world.player.pos.s > track.totalLength - 50) break;
+      }
+      expect(`${route}: met ${met > 0 ? 'something' : 'nothing'}`).toBe(
+        `${route}: met something`,
+      );
+    }
+  }, 30_000);
 });

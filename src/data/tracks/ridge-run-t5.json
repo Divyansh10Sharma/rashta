@@ -1,6 +1,6 @@
 {
   "id": "ridge-run-t5",
-  "name": "Ridge Run \u2014 Tier 5",
+  "name": "Ridge Run — Tier 5",
   "scenery": "ridge",
   "trafficDensity": 14.4,
   "extends": "ridge-run-t4",
@@ -15,7 +15,38 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "sand",
+          "offset": 58.96,
+          "t": 1.95
+        },
+        {
+          "kind": "pothole",
+          "offset": 128.9,
+          "t": -1.09
+        },
+        {
+          "kind": "sand",
+          "offset": 408.37,
+          "t": -1.95
+        },
+        {
+          "kind": "pothole",
+          "offset": 808.97,
+          "t": -0.59
+        },
+        {
+          "kind": "sand",
+          "offset": 1086.37,
+          "t": 1.95
+        },
+        {
+          "kind": "pothole",
+          "offset": 1369.43,
+          "t": -1.76
+        }
+      ]
     },
     {
       "length": 1800,
@@ -39,7 +70,23 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 162.1,
+          "t": 1.95
+        },
+        {
+          "kind": "pothole",
+          "offset": 226.97,
+          "t": 0.71
+        },
+        {
+          "kind": "sand",
+          "offset": 418.6,
+          "t": -1.95
+        }
+      ]
     },
     {
       "length": 650,
@@ -51,7 +98,18 @@
       "lanes": 2,
       "oneWay": false,
       "scenery": "ridge",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "sand",
+          "offset": 93.15,
+          "t": 1.95
+        },
+        {
+          "kind": "dog",
+          "offset": 216.99,
+          "t": 0.96
+        }
+      ]
     }
   ],
   "branches": []

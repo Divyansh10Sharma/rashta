@@ -1,6 +1,6 @@
 {
   "id": "ring-road-t5",
-  "name": "Ring Road \u2014 Tier 5",
+  "name": "Ring Road — Tier 5",
   "scenery": "ringroad",
   "trafficDensity": 79.2,
   "extends": "ring-road-t4",
@@ -15,7 +15,28 @@
       "lanes": 4,
       "oneWay": false,
       "scenery": "ringroad",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "roadworks",
+          "offset": 105.65,
+          "t": -5.5
+        },
+        {
+          "kind": "roadworks",
+          "offset": 714.08,
+          "t": -5.5
+        },
+        {
+          "kind": "oil",
+          "offset": 907.35,
+          "t": -3.3
+        },
+        {
+          "kind": "pothole",
+          "offset": 1538.85,
+          "t": -4.15
+        }
+      ]
     },
     {
       "length": 1400,
@@ -27,7 +48,28 @@
       "lanes": 4,
       "oneWay": false,
       "scenery": "ringroad",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "pothole",
+          "offset": 724.6,
+          "t": 0.09
+        },
+        {
+          "kind": "barricade",
+          "offset": 782.2,
+          "t": 5
+        },
+        {
+          "kind": "oil",
+          "offset": 895.07,
+          "t": 3
+        },
+        {
+          "kind": "pothole",
+          "offset": 1382.01,
+          "t": -1.4
+        }
+      ]
     },
     {
       "length": 1950,
@@ -39,7 +81,23 @@
       "lanes": 4,
       "oneWay": false,
       "scenery": "ringroad",
-      "hazards": []
+      "hazards": [
+        {
+          "kind": "oil",
+          "offset": 260.68,
+          "t": -3.3
+        },
+        {
+          "kind": "pothole",
+          "offset": 1474.49,
+          "t": -4.74
+        },
+        {
+          "kind": "barricade",
+          "offset": 1654.24,
+          "t": 5.5
+        }
+      ]
     }
   ],
   "branches": []
