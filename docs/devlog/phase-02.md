@@ -283,3 +283,49 @@ hair over the threshold rather than dropped frames.
 
 Still outstanding: whether that reading was taken under 4x CPU throttling, and
 the subjective verdict itself.
+
+### The handedness fix did not resolve it — open defect
+
+Divyansh reported the same symptom after the fix: right leans right, drifts
+left. Reported twice, so not a misread.
+
+What I know:
+
+- The source on disk carries the fix (`geometry.ts` advances `-cos(theta)` in
+  Z, `headingOf` is `atan2(x, -z)`, `path.ts` crosses `forward x up`).
+- An end-to-end test drives the real key binding, the real `step()`, the real
+  `RiderView` and the real `ChaseCamera`, then projects the rider into camera
+  space. Pressing right gives `t > 0`, `lean > 0`, and camera-space `x > 0`.
+  Pressing left mirrors it. Five assertions, all green.
+
+So either the browser is running code older than the fix, or the discrepancy
+lives in a link the test does not cover — `Stage.sync` or the interpolation in
+`main.ts` — or in perception rather than geometry.
+
+That last one is worth taking seriously and I had not considered it properly.
+**The chase camera tracks the rider laterally**, with a lag constant of about
+0.3 s. Hold a direction for a second and the camera has almost caught up, so
+the bike sits near the middle of the frame and it is the *road* that slides.
+A rider who is barely displaced on screen while the world slides underneath
+could easily read as drifting the wrong way — the honest cue for direction is
+mostly the scenery, not the bike's offset. If that is what is happening, the
+geometry is right and the camera tuning is wrong, which is a feel problem
+rather than a handedness one, and belongs to this phase either way.
+
+Rather than ask for another round of manual testing, added a diagnostic line
+to the dev overlay:
+
+```
+steer  t says RIGHT   screen says RIGHT   — agree
+```
+
+It prints which side the simulation thinks the rider is on, which side the
+picture actually puts them on, and whether those agree. `MISMATCH` means the
+handedness is still inverted somewhere; `agree` means the geometry is correct
+and what is wrong is the camera's lateral tracking, i.e. tuning. That splits
+the problem in one glance instead of one exchange.
+
+Deferred at Divyansh's request, with the diagnostic in place to resolve it
+cheaply next time the overlay is open. Recording plainly that this is a defect
+and not intended behaviour: a racer where right goes left is broken, and
+Phase 3 onward would author every track against a mirrored world.

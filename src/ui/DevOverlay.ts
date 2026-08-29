@@ -18,6 +18,8 @@ export interface DevSample {
   simMs: number;
   ticksThisFrame: number;
   droppedTicks: number;
+  /** Rider's horizontal screen position, -1 (left edge) to +1 (right edge). */
+  screenX: number;
   visibleChunks: number;
   sceneryCount: number;
   drawCalls: number;
@@ -70,6 +72,26 @@ export class StepTimer {
 
 const MS_TO_KMH = 3.6;
 
+/** Which side of the centreline a signed value is on. */
+function side(value: number): string {
+  if (value > 0.02) return 'RIGHT';
+  if (value < -0.02) return 'LEFT ';
+  return 'centre';
+}
+
+/**
+ * Whether the simulation and the picture agree about which way is right.
+ *
+ * If this ever reads MISMATCH, the track-space to world-space handedness has
+ * been inverted somewhere and a rider steering right will appear to travel
+ * left. It is here because that bug shipped once and no test caught it.
+ */
+function agree(t: number, screenX: number): string {
+  if (Math.abs(t) < 0.05) return '';
+  if (Math.abs(screenX) < 0.002) return '(centred)';
+  return Math.sign(t) === Math.sign(screenX) ? '— agree' : '— MISMATCH';
+}
+
 export function createDevOverlay(parent: HTMLElement): DevOverlay {
   const root = document.createElement('pre');
   root.className = 'dev';
@@ -87,6 +109,8 @@ export function createDevOverlay(parent: HTMLElement): DevOverlay {
     if (!shown) return;
     root.textContent = [
       `s ${sample.s.toFixed(1).padStart(9)} m   t ${sample.t.toFixed(2).padStart(6)} m   branch ${sample.branchId}`,
+      `steer  t says ${side(sample.t)}   screen says ${side(sample.screenX)}` +
+        `   ${agree(sample.t, sample.screenX)}`,
       `speed ${(sample.speedMs * MS_TO_KMH).toFixed(1).padStart(6)} km/h  (${sample.speedMs.toFixed(2)} m/s)`,
       '',
       FrameMeter.format(stats),

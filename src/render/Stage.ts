@@ -14,6 +14,13 @@ export interface Stage {
   rider: RiderView;
   road: RoadMesh;
   scenery: SceneryField;
+  /**
+   * Where the rider currently is on screen, as -1 (hard left) to +1 (hard
+   * right). Diagnostic: it answers whether the simulation and the picture
+   * agree about which way is right, without anyone having to reason about
+   * cross products.
+   */
+  riderScreenX: () => number;
   /** Repositions everything for the current interpolated state. */
   sync: (
     s: number,
@@ -73,6 +80,12 @@ export function createStage(canvas: HTMLCanvasElement, track: Track): Stage {
   resize();
   window.addEventListener('resize', resize);
 
+  const probe = new THREE.Vector3();
+  const riderScreenX = (): number => {
+    probe.copy(rider.group.position).project(camera);
+    return probe.x;
+  };
+
   const sync = (
     s: number,
     t: number,
@@ -96,6 +109,7 @@ export function createStage(canvas: HTMLCanvasElement, track: Track): Stage {
     rider,
     road,
     scenery,
+    riderScreenX,
     sync,
     dispose: () => {
       window.removeEventListener('resize', resize);

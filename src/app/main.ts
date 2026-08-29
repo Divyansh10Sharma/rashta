@@ -100,6 +100,7 @@ function run(canvas: HTMLCanvasElement): void {
           t,
           speedMs: speed,
           branchId: b.pos.branchId,
+          screenX: stage.riderScreenX(),
           simMs: stepTimer.mean(),
           ticksThisFrame: ticks,
           droppedTicks: driver.droppedTicks,
