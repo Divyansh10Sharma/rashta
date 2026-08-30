@@ -227,7 +227,51 @@ features. It is about whether riding is fun before anything is at stake.
 
 ---
 
-## Phase 8 — Career
+## Phase 8 — The art pass
+
+Everything so far is untextured primitives in flat colours. That was the right
+trade while the simulation was being proven, and it is not what ships. This
+phase makes the game look like the thing it is: Delhi, at night, at speed.
+
+Constraints that do not move: no new runtime dependencies, the 500 KB gzipped
+bundle budget, `src/core/` untouched (this is a render-layer phase and the
+simulation must not notice it happened), and no real manufacturer's marks on
+any mesh or texture.
+
+**Build**
+- Bikes rebuilt as real silhouettes: fairing, forks, spoked wheels, exhaust,
+  a rider who leans off rather than a box that tilts. Three visually distinct
+  classes matching the three bike classes.
+- Traffic rebuilt: an auto with its canopy and three wheels, a bus with window
+  bands and a roof rack, a truck with a cab and a bed. Silhouette first — you
+  should know what is in front of you from its outline alone.
+- Procedural textures generated at load: asphalt, lane markings, kerbs,
+  concrete, dust. Generated into canvases in code rather than shipped as image
+  files, so the bundle cost is the generator and not the pixels.
+- Materials that read under sodium light: roughness and metalness per surface,
+  emissive lamps and signage, wet-road variation on the Yamuna bank.
+- Particles: crash sparks, tyre smoke under braking, dust off the shoulder,
+  an impact flash on a landed hit, exhaust haze on the autos.
+- Damage shown on the bike as it accumulates, so the repair bill is legible
+  before the results screen says it.
+- A quality setting that turns particles and texture resolution down, wired to
+  the same place Phase 11's settings screen will read from.
+
+**Acceptance**
+- **60 fps under 4x CPU throttling, measured in Chrome DevTools with the
+  figure written into the devlog.** This has been open since Phase 2 and this
+  is the phase that closes it — an art pass that cannot hold frame rate is not
+  an art pass, it is a regression.
+- Bundle stays inside the 500 KB gzipped budget, with the number recorded.
+- `src/core/` has no new imports and the determinism replay test still passes
+  unchanged — the simulation must not be able to tell this phase happened.
+- Every vehicle is identifiable by silhouette alone, in a screenshot with
+  colour removed.
+- No wordmarks, logos or reproduced liveries on any mesh or texture.
+
+---
+
+## Phase 9 — Career
 
 **Build**
 - Money, prize tables per tier and finishing position.
@@ -246,7 +290,7 @@ features. It is about whether riding is fun before anything is at stake.
 
 ---
 
-## Phase 9 — Reputation
+## Phase 10 — Reputation
 
 **Build**
 - A relationship graph across all 14 racers: ally, neutral, enemy, with a
@@ -265,7 +309,7 @@ features. It is about whether riding is fun before anything is at stake.
 
 ---
 
-## Phase 10 — Ship it
+## Phase 11 — Ship it
 
 **Build**
 - Audio: engine with RPM-mapped pitch, wind, impacts, ambience, music hooks.

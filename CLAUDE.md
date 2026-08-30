@@ -112,7 +112,7 @@ rashta/
     PROMPTS.md
     DEVLOG_GUIDE.md
     devlog/
-      phase-00.md ... phase-10.md
+      phase-00.md ... phase-11.md
   src-tauri/             added in Phase 10
 ```
 

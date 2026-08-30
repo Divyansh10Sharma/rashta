@@ -25,6 +25,13 @@ export interface Environment {
   ambientIntensity: number;
   road: number;
   roadRoughness: number;
+  /**
+   * How wet the surface looks, 0 to 1.
+   *
+   * Puddles catching the sodium lights are most of what makes a road read as
+   * wet, and the Yamuna bank is the one place in the game it should.
+   */
+  roadWet: number;
   paint: number;
   kerb: number;
   /** How far ahead scenery is placed. Narrow streets need less. */
@@ -48,6 +55,7 @@ export const ENVIRONMENTS: Record<SceneryTag, Environment> = {
     ambientIntensity: 0.85,
     road: 0x1e2024,
     roadRoughness: 0.95,
+    roadWet: 0.05,
     paint: 0xc8c4b0,
     kerb: 0x3d4038,
     sceneryAhead: 340,
@@ -67,6 +75,7 @@ export const ENVIRONMENTS: Record<SceneryTag, Environment> = {
     ambientIntensity: 1.0,
     road: 0x26262c,
     roadRoughness: 0.9,
+    roadWet: 0.55,
     paint: 0xd8d4c4,
     kerb: 0x55525a,
     sceneryAhead: 520,
@@ -86,6 +95,7 @@ export const ENVIRONMENTS: Record<SceneryTag, Environment> = {
     ambientIntensity: 1.1,
     road: 0x24242a,
     roadRoughness: 0.92,
+    roadWet: 0.18,
     paint: 0xd8d4c4,
     kerb: 0x55525a,
     sceneryAhead: 460,
@@ -106,6 +116,7 @@ export const ENVIRONMENTS: Record<SceneryTag, Environment> = {
     ambientIntensity: 1.25,
     road: 0x2c2722,
     roadRoughness: 0.98,
+    roadWet: 0.3,
     paint: 0xb8ae94,
     kerb: 0x5c5044,
     sceneryAhead: 160,
@@ -126,6 +137,7 @@ export const ENVIRONMENTS: Record<SceneryTag, Environment> = {
     ambientIntensity: 0.95,
     road: 0x2a2a30,
     roadRoughness: 0.86,
+    roadWet: 0.1,
     paint: 0xe8e4d4,
     kerb: 0x6b6b73,
     sceneryAhead: 700,

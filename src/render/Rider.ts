@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Track } from '../core/track/Track.ts';
+import { buildBike, type BikeBuild } from './meshes/bike.ts';
 import { createFrame } from '../core/track/path.ts';
 
 /**
@@ -34,73 +35,49 @@ export interface RiderView {
   dispose: () => void;
 }
 
-const WHEEL_RADIUS = 0.31;
-const WHEELBASE = 1.34;
-
-export function createRiderView(colour = 0xc4402c): RiderView {
+export function createRiderView(
+  colour = 0xc4402c,
+  build: BikeBuild = 'street',
+): RiderView {
   const group = new THREE.Group();
   // `lean` rotates this inner node about the direction of travel, so the whole
   // bike banks without disturbing its position on the road.
   const banked = new THREE.Group();
   group.add(banked);
 
+  // Three merged geometries instead of six primitives: the whole machine is
+  // three draw calls, and the shapes come from an extruded side profile rather
+  // than a stack of boxes. See meshes/bike.ts.
+  const shape = buildBike(build);
+
   const bodyMaterial = new THREE.MeshStandardMaterial({
     color: colour,
-    roughness: 0.55,
-    metalness: 0.25,
+    roughness: 0.42,
+    metalness: 0.35,
   });
   const darkMaterial = new THREE.MeshStandardMaterial({
     color: 0x1b1b20,
-    roughness: 0.8,
+    roughness: 0.85,
   });
-  const riderMaterial = new THREE.MeshStandardMaterial({
-    color: 0x2e3340,
-    roughness: 0.9,
+  const chromeMaterial = new THREE.MeshStandardMaterial({
+    color: 0x9aa0a8,
+    roughness: 0.28,
+    metalness: 0.85,
   });
 
-  const tank = new THREE.Mesh(
-    new THREE.BoxGeometry(0.42, 0.34, 1.15),
-    bodyMaterial,
-  );
-  tank.position.set(0, 0.72, 0);
-  banked.add(tank);
+  const body = new THREE.Mesh(shape.body, bodyMaterial);
+  banked.add(body);
+  const dark = new THREE.Mesh(shape.dark, darkMaterial);
+  banked.add(dark);
+  const chrome = new THREE.Mesh(shape.chrome, chromeMaterial);
+  banked.add(chrome);
 
-  const nose = new THREE.Mesh(
-    new THREE.BoxGeometry(0.36, 0.3, 0.5),
-    bodyMaterial,
-  );
-  nose.position.set(0, 0.66, -0.78);
-  banked.add(nose);
-
-  const torso = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.2, 0.5, 4, 8),
-    riderMaterial,
-  );
-  torso.position.set(0, 1.16, 0.16);
-  torso.rotation.x = 0.42;
-  banked.add(torso);
-
-  const helmet = new THREE.Mesh(
-    new THREE.SphereGeometry(0.17, 12, 10),
-    darkMaterial,
-  );
-  helmet.position.set(0, 1.5, -0.06);
-  banked.add(helmet);
-
-  const wheelGeometry = new THREE.CylinderGeometry(
-    WHEEL_RADIUS,
-    WHEEL_RADIUS,
-    0.14,
-    14,
-  );
-  wheelGeometry.rotateZ(Math.PI / 2);
-
-  const front = new THREE.Mesh(wheelGeometry, darkMaterial);
-  front.position.set(0, WHEEL_RADIUS, -WHEELBASE / 2);
+  const front = new THREE.Mesh(shape.wheel, darkMaterial);
+  front.position.set(0, shape.wheelRadius, -shape.wheelbase / 2);
   banked.add(front);
 
-  const rear = new THREE.Mesh(wheelGeometry, darkMaterial);
-  rear.position.set(0, WHEEL_RADIUS, WHEELBASE / 2);
+  const rear = new THREE.Mesh(shape.wheel, darkMaterial);
+  rear.position.set(0, shape.wheelRadius, shape.wheelbase / 2);
   banked.add(rear);
 
   // Scratch — this runs every frame.
@@ -154,14 +131,13 @@ export function createRiderView(colour = 0xc4402c): RiderView {
     update,
     highlight,
     dispose: () => {
-      tank.geometry.dispose();
-      nose.geometry.dispose();
-      torso.geometry.dispose();
-      helmet.geometry.dispose();
-      wheelGeometry.dispose();
+      shape.body.dispose();
+      shape.dark.dispose();
+      shape.chrome.dispose();
+      shape.wheel.dispose();
       bodyMaterial.dispose();
       darkMaterial.dispose();
-      riderMaterial.dispose();
+      chromeMaterial.dispose();
     },
   };
 }

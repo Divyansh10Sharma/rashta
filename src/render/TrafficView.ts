@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Track } from '../core/track/Track.ts';
 import { createFrame } from '../core/track/path.ts';
 import { TRAFFIC_SIZES } from '../core/sim/traffic.ts';
+import { buildVehicle } from './meshes/vehicles.ts';
 import type { TrafficKind, TrafficVehicle } from '../core/sim/types.ts';
 
 /**
@@ -54,15 +55,6 @@ const PALETTE: Record<TrafficKind, number[]> = {
 /** How far a lamp sits from the vehicle's centre, as a fraction of length. */
 const LAMP_ALONG = 0.46;
 
-/** A box of the kind's proportions, sitting on the road. */
-function bodyGeometry(kind: TrafficKind): THREE.BufferGeometry {
-  const { length, width } = TRAFFIC_SIZES[kind];
-  const height = kind === 'bus' ? 3.1 : kind === 'truck' ? 2.9 : 1.5;
-  const body = new THREE.BoxGeometry(width, height, length);
-  body.translate(0, height / 2, 0);
-  return body;
-}
-
 export function createTrafficView(track: Track, poolSize: number): TrafficView {
   const group = new THREE.Group();
   const frame = createFrame();
@@ -87,9 +79,26 @@ export function createTrafficView(track: Track, poolSize: number): TrafficView {
     emissiveIntensity: 1.8,
   });
 
+  // Wheels, glass and grilles: one shared dark material, one instanced mesh per
+  // kind riding along with the painted body at the same transform.
+  const trim = new THREE.MeshStandardMaterial({
+    color: 0x14161a,
+    roughness: 0.45,
+    metalness: 0.3,
+  });
+
   const bodies = new Map<TrafficKind, THREE.InstancedMesh>();
+  const trims = new Map<TrafficKind, THREE.InstancedMesh>();
   for (const kind of KINDS) {
-    const mesh = new THREE.InstancedMesh(bodyGeometry(kind), paint, poolSize);
+    const shape = buildVehicle(kind);
+    const dark = new THREE.InstancedMesh(shape.dark, trim, poolSize);
+    dark.name = `traffic:${kind}:trim`;
+    dark.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    dark.frustumCulled = false;
+    trims.set(kind, dark);
+    group.add(dark);
+
+    const mesh = new THREE.InstancedMesh(shape.body, paint, poolSize);
     mesh.name = `traffic:${kind}`;
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     mesh.frustumCulled = false;
@@ -140,8 +149,11 @@ export function createTrafficView(track: Track, poolSize: number): TrafficView {
         Math.abs(now.pos.s - before.pos.s) < 5;
 
       for (const kind of KINDS) {
+        const spare = !drawable || now.kind !== kind;
         const mesh = bodies.get(kind);
-        if (mesh && (!drawable || now.kind !== kind)) hide(mesh, i);
+        if (mesh && spare) hide(mesh, i);
+        const dark = trims.get(kind);
+        if (dark && spare) hide(dark, i);
       }
       if (!drawable) {
         hide(heads, i);
@@ -163,11 +175,11 @@ export function createTrafficView(track: Track, poolSize: number): TrafficView {
       quaternion.setFromRotationMatrix(matrix);
       if (now.oncoming) quaternion.multiply(FLIP);
 
+      matrix.compose(position, quaternion, scale);
       const body = bodies.get(now.kind);
-      if (body) {
-        matrix.compose(position, quaternion, scale);
-        body.setMatrixAt(i, matrix);
-      }
+      if (body) body.setMatrixAt(i, matrix);
+      const dark = trims.get(now.kind);
+      if (dark) dark.setMatrixAt(i, matrix);
 
       // Lamps sit at the end of the vehicle that faces the rider: a vehicle
       // going your way shows you its tail lights, one coming at you its
@@ -186,16 +198,17 @@ export function createTrafficView(track: Track, poolSize: number): TrafficView {
     }
 
     for (const mesh of bodies.values()) mesh.instanceMatrix.needsUpdate = true;
+    for (const mesh of trims.values()) mesh.instanceMatrix.needsUpdate = true;
     heads.instanceMatrix.needsUpdate = true;
     tails.instanceMatrix.needsUpdate = true;
   };
 
   return {
     group,
-    count: poolSize * (KINDS.length + 2),
+    count: poolSize * (KINDS.length * 2 + 2),
     update,
     dispose: () => {
-      for (const mesh of bodies.values()) {
+      for (const mesh of [...bodies.values(), ...trims.values()]) {
         mesh.geometry.dispose();
         mesh.dispose();
       }
@@ -203,6 +216,7 @@ export function createTrafficView(track: Track, poolSize: number): TrafficView {
       tails.dispose();
       lampGeometry.dispose();
       paint.dispose();
+      trim.dispose();
       headMaterial.dispose();
       tailMaterial.dispose();
     },

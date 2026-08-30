@@ -22,6 +22,7 @@ import { createHud } from '../ui/Hud.ts';
 import { createStaminaBars } from '../ui/StaminaBars.ts';
 import { engagedWith } from '../core/combat/combat.ts';
 import { glowFor } from '../render/FieldView.ts';
+import { createFrame } from '../core/track/path.ts';
 import { createDevOverlay, StepTimer } from '../ui/DevOverlay.ts';
 import { FrameMeter } from '../ui/FrameMeter.ts';
 import { FixedStepDriver } from './FixedStepDriver.ts';
@@ -113,6 +114,22 @@ function run(canvas: HTMLCanvasElement): void {
   const stepTimer = new StepTimer(120);
   const driver = new FixedStepDriver();
 
+  // Scratch for turning a track position into a world one for effects. Reused
+  // rather than allocated: this runs every frame.
+  const effectFrame = createFrame();
+  const world = {
+    x: 0,
+    y: 0,
+    z: 0,
+    set(s: number, t: number, branchId: number) {
+      track.sample(s, effectFrame, branchId);
+      this.x = effectFrame.position.x + effectFrame.right.x * t;
+      this.y = effectFrame.position.y + effectFrame.right.y * t;
+      this.z = effectFrame.position.z + effectFrame.right.z * t;
+    },
+  };
+  const downLast = new Map<string, boolean>();
+
   let lastFrameMs = performance.now();
   let lastReadout = lastFrameMs;
   let visibleChunks = 0;
@@ -185,6 +202,43 @@ function run(canvas: HTMLCanvasElement): void {
       b.weapon === null ? null : combat.weapons[b.weapon].name,
     );
     stage.rider.highlight(glowFor(b, combat), b.staggerTimer > 0);
+
+    // Effects read the simulation and never write to it. A rider going down
+    // throws sparks once, on the tick they go down — the same edge the damage
+    // model uses, so one crash is one shower rather than one a frame.
+    for (const entry of current.entries) {
+      const down = entry.rider.state !== 'riding';
+      const wasDown = downLast.get(entry.profile.id) === true;
+      if (down && !wasDown) {
+        world.set(
+          entry.rider.pos.s,
+          entry.rider.pos.t,
+          entry.rider.pos.branchId,
+        );
+        stage.particles.emit('spark', world.x, world.y + 0.4, world.z, 14);
+        stage.particles.emit('smoke', world.x, world.y + 0.5, world.z, 5);
+      }
+      downLast.set(entry.profile.id, down);
+
+      // Dust off the shoulder: only the player, and only when actually out
+      // near the edge, or every race is a sandstorm.
+      if (entry.isPlayer && entry.rider.state === 'riding') {
+        const edge = track.driveableHalfWidthAt(
+          entry.rider.pos.s,
+          entry.rider.pos.branchId,
+        );
+        const near = Math.abs(entry.rider.pos.t) > edge - 0.9;
+        if (near && entry.rider.speed > 12 && current.tick % 4 === 0) {
+          world.set(
+            entry.rider.pos.s,
+            entry.rider.pos.t,
+            entry.rider.pos.branchId,
+          );
+          stage.particles.emit('dust', world.x, world.y, world.z, 1);
+        }
+      }
+    }
+    stage.particles.update(Math.min(elapsedMs / 1000, 0.05), stage.camera);
 
     if (now - lastReadout >= READOUT_INTERVAL_MS) {
       dev.update(

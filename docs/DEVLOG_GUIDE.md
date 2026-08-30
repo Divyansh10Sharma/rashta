@@ -1,6 +1,6 @@
 # Devlog
 
-One file per phase: `phase-00.md` through `phase-10.md`.
+One file per phase: `phase-00.md` through `phase-11.md`.
 
 Claude Code opens the file **before** starting the phase and appends to it
 while working. It is raw working notes — messy is fine, truthful is required.

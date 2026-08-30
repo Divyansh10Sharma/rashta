@@ -3,6 +3,11 @@ import type { Track } from '../core/track/Track.ts';
 import { createFrame } from '../core/track/path.ts';
 import { MAIN_BRANCH } from '../core/types.ts';
 import { ENVIRONMENTS, type Environment } from './environments.ts';
+import {
+  asphaltRoughness,
+  asphaltTexture,
+  texturesSupported,
+} from './meshes/textures.ts';
 
 /**
  * Builds the road surface as a quad strip walked along the track centreline.
@@ -41,11 +46,21 @@ function buildMaterials(env: Environment): {
   road: THREE.Material;
   paint: THREE.Material;
 } {
+  // Textures are generated into a canvas, which needs a DOM. Headless test
+  // runs get a flat colour instead, which is what they were checking before.
+  const surface = texturesSupported()
+    ? {
+        map: asphaltTexture(env.road, 1 - env.roadRoughness),
+        roughnessMap: asphaltRoughness(env.roadWet),
+      }
+    : null;
+
   return {
     road: new THREE.MeshStandardMaterial({
-      color: env.road,
+      color: texturesSupported() ? 0xffffff : env.road,
       roughness: env.roadRoughness,
       metalness: 0.02,
+      ...surface,
     }),
     paint: new THREE.MeshStandardMaterial({
       color: env.paint,
