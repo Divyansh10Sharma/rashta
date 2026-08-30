@@ -1,6 +1,6 @@
 # Roadmap
 
-Eleven phases. Each one ends with a working, runnable thing and a new page in
+Twelve phases. Each one ends with a working, runnable thing and a new page in
 `Explanation.html`. Do not start a phase until the previous phase's acceptance
 criteria all demonstrably pass.
 
@@ -30,8 +30,8 @@ list. A phase does not close unless all four hold.
 ## Phase 0 — Skeleton
 
 Set up a project that builds, tests, lints, and runs in a browser, with
-nothing in it but an empty lit scene. Web only — no Tauri and no Rust
-toolchain until Phase 10.
+nothing in it but an empty lit scene. Web only — this game ships as a web
+build and nothing else. See Phase 11.
 
 **Build**
 - Vite + TypeScript with `strict: true` and `noUncheckedIndexedAccess: true`.
@@ -148,21 +148,86 @@ features. It is about whether riding is fun before anything is at stake.
 
 ---
 
-## Phase 4 — Traffic and hazards
+## Phase 4 — Traffic, hazards, and the crash
 
 **Build**
-- Traffic entities in track space: cars, autos, DTC buses, trucks. Lane
+- Traffic entities in track space: cars, autos, city buses, trucks. Lane
   assignment, direction, speed profiles, occasional lane changes.
 - A spawn ring: populate ahead of the player, recycle behind.
 - Hazards: oil slicks, potholes, road works, barricades, stray dogs, cows.
 - Collision resolution: rider-vs-traffic, rider-vs-hazard, rider-vs-cliff.
-- Crash sequence: rider thrown, bike slides, remount with a time penalty.
+- The crash sequence, specified below.
+
+### The crash sequence
+
+The crash is the punishment. That is the entire design of it, and it is why
+the time it costs must be **derived from the impact rather than configured**.
+A constant `crashSeconds` makes a 90 km/h tip-over cost exactly what a
+250 km/h highside costs, which turns the worst moment in the game into a
+pause. Everything below exists to make the penalty fall out of the physics.
+
+**State machine.** `RiderState` runs:
+
+```
+riding | attacking | staggered
+      | airborne | sliding | downed | rising | running | remounting
+```
+
+Rider and bike separate on impact and are tracked independently:
+
+- The rider carries `h` — height above the road surface along the track's up
+  vector. **Track space, not world space**; rule 2 holds through a crash.
+- `h` integrates under constant gravity. Quadratic only, no trigonometry, so
+  rule 4's bit-exactness survives. Assert it.
+- The bike carries its own `(s, t, branchId)`, separate from the rider's, so
+  the two come to rest in different places.
+- Rider and bike have different friction coefficients in `tuning.json`, so
+  they slide different distances from the same impact.
+- Launch velocity derives from impact speed and `CrashCause`. Head-on into a
+  bus differs from clipping a kerb differs from a combat knockdown.
+
+**Severity bands**, thresholds in `tuning.json`, selected by impact speed:
+
+| Band | What it looks like |
+|---|---|
+| tip-over | short slide, quick recovery |
+| thrown | airborne, real slide, real recovery |
+| highside | long tumble, bike slides a long way |
+
+**Recovery**, all tunable:
+
+- `downed` — brief fixed pause.
+- `rising` — short, under a second. This is the character beat.
+- `running` — the rider travels to the bike's resting position at a run speed
+  from `tuning.json`. **The time cost equals the distance between them**,
+  which is what makes the penalty scale with severity as a consequence of the
+  physics rather than as a configured number. No input speeds this up.
+- `remounting` — brief, then `riding` at speed zero. Keep the existing grace
+  timer and the remount recentre; both fixed real bugs and both stay.
+
+The rider controls nothing throughout. The race continues — the sim does not
+pause. This applies to all fourteen racers and to police, not only the player.
+
+`copyRider()` in `src/core/sim/world.ts` must be updated for every new field.
+The render loop interpolates between two states and a missed field is a
+teleport.
+
+Render is Phase 8's problem. Placeholder visuals are fine here — but record in
+the devlog exactly which sim fields the art pass will need to read, so Phase 8
+has a contract to animate against.
 
 **Acceptance**
 - Traffic density is a per-tier data value and observably changes with tier.
 - No two traffic entities are ever closer than their combined footprint,
   measured with `trackDistance`, not with a raw `(s, t)` box.
-- Crash and remount round-trips reliably from every crash cause.
+- **Time lost to a crash scales monotonically with impact speed**, proven by a
+  headless test sweeping speeds and asserting the ordering. Print the figures
+  at 80, 140, 200 and 260 km/h into the devlog.
+- Every `CrashCause` produces a completed crash-to-riding round trip. No state
+  can strand a rider, and the rideability test still passes on all 25 tracks.
+- Bit-exact determinism holds through a crash, and no transcendental is
+  reachable from `step()`.
+- Sim step time is unchanged with all fourteen riders down simultaneously.
 - Entity count stays bounded — memory flat over a ten-minute ride.
 
 ---
@@ -238,7 +303,27 @@ bundle budget, `src/core/` untouched (this is a render-layer phase and the
 simulation must not notice it happened), and no real manufacturer's marks on
 any mesh or texture.
 
+**Everything is generated in code.** No `.glb` files, no texture images, no
+asset loader. That constraint is what keeps the game loading in a second and
+working offline, and it is what the whole phase is designed around. If you
+reach a point where you genuinely believe the art pass cannot meet its goals
+inside it, stop and say so — do not quietly add a loader.
+
 **Build**
+- **Night lighting.** This is the primary deliverable of the phase, not an
+  assumed background: it is a night game, and lighting does the work that
+  geometry does in daylight. Sodium-vapour street lamps as emissive geometry
+  plus cheap light pools on the road. Headlight and tail-light cones on every
+  vehicle. A night sky with city glow on the horizon. Per-scenery-tag lighting
+  profiles, so the Ridge is genuinely dark and the Ring Road is genuinely lit.
+- **Post-processing chain:** bloom on emissives, per-tag fog density, colour
+  grading, subtle vignette. Every effect individually toggleable from the same
+  settings object the quality setting reads, so Phase 11's settings screen has
+  something to talk to.
+- **Procedural buildings and skyline.** Modular facades, varied heights and
+  footprints, lit windows on a seeded pattern, per-tag profiles for
+  ringroad / oldcity / yamuna / ridge / flyway. Generated geometry, instanced.
+  Delhi at night without a skyline is not Delhi.
 - Bikes rebuilt as real silhouettes: fairing, forks, spoked wheels, exhaust,
   a rider who leans off rather than a box that tilts. Three visually distinct
   classes matching the three bike classes.
@@ -250,8 +335,13 @@ any mesh or texture.
   files, so the bundle cost is the generator and not the pixels.
 - Materials that read under sodium light: roughness and metalness per surface,
   emissive lamps and signage, wet-road variation on the Yamuna bank.
-- Particles: crash sparks, tyre smoke under braking, dust off the shoulder,
-  an impact flash on a landed hit, exhaust haze on the autos.
+- **Crash visuals**, against the state machine built in Phase 4: rider tumble
+  driven by `h` and slide velocity, the bike sliding with sparks and a scrape,
+  the get-up, the look back down the road, the run to the bike. Keep the
+  get-up short — a long uncancellable animation after a mistake the player has
+  already paid for is where people put the controller down.
+- Particles: crash sparks, tyre smoke under braking, dust off the shoulder, an
+  impact flash on a landed hit, exhaust haze on the autos.
 - Damage shown on the bike as it accumulates, so the repair bill is legible
   before the results screen says it.
 - A quality setting that turns particles and texture resolution down, wired to
@@ -262,11 +352,14 @@ any mesh or texture.
   figure written into the devlog.** This has been open since Phase 2 and this
   is the phase that closes it — an art pass that cannot hold frame rate is not
   an art pass, it is a regression.
+- The post-processing chain costs under 4 ms at 1080p under 4x throttling.
 - Bundle stays inside the 500 KB gzipped budget, with the number recorded.
 - `src/core/` has no new imports and the determinism replay test still passes
   unchanged — the simulation must not be able to tell this phase happened.
 - Every vehicle is identifiable by silhouette alone, in a screenshot with
   colour removed.
+- Every scenery tag is identifiable from a screenshot with no label.
+- Three screenshots per environment, shown before the phase is called done.
 - No wordmarks, logos or reproduced liveries on any mesh or texture.
 
 ---
@@ -277,6 +370,13 @@ any mesh or texture.
 - Money, prize tables per tier and finishing position.
 - Bike shop: three classes, fifteen original bikes, trade-in pricing.
 - Progression: finish top three on all five tracks to unlock the next tier.
+- Character selection at the start of a new career: all 14 profiles, each
+  showing name, bio, starting bike with its class and headline stats,
+  starting cash, starting weapon, and a rendered preview of the bike.
+  Selecting a racer sets the player's bike, cash and weapon, **removes that
+  racer from the rival grid**, and seeds the Phase 10 reputation graph from
+  their row so the player inherits their existing allies and enemies. Quick
+  Race skips this screen and uses a default profile.
 - Menus: garage, shop, track select, results — plain DOM, no framework.
 - Save and load with schema versioning.
 - Quick Race mode alongside Career.
@@ -285,8 +385,15 @@ any mesh or texture.
 - A full career from tier 1 to tier 5 is completable.
 - Economy is balanced: the player can afford a class-appropriate bike at each
   tier without grinding more than about two repeat races.
-- Save survives a browser refresh and an app restart, and a version bump
-  migrates cleanly.
+- All 14 racers are selectable, each produces a materially different first
+  three races, and the selected racer never appears as a rival on any track at
+  any tier.
+- A headless test simulates a plausible career opening from each of the 14
+  starting positions and asserts none is stranded. Character choice sets the
+  economic **opening**, not the ceiling — if any racer is strictly worse than
+  another, adjust `startingCash` and say in the devlog what changed and why.
+- Save survives a browser refresh, and a version bump migrates cleanly —
+  including from a save written before character selection existed.
 
 ---
 
@@ -303,7 +410,8 @@ any mesh or texture.
 **Acceptance**
 - Standing changes are visible in AI behaviour within the next race, and this
   is provable in a headless test.
-- The graph saves and loads.
+- The graph saves and loads, and its starting state differs by chosen racer in
+  a way that is observable in race one.
 - Two careers played with opposite social strategies produce measurably
   different race dynamics.
 
@@ -311,19 +419,24 @@ any mesh or texture.
 
 ## Phase 11 — Ship it
 
+The game ships as a web build. There is no desktop app.
+
 **Build**
 - Audio: engine with RPM-mapped pitch, wind, impacts, ambience, music hooks.
+  Built around the browser's user-gesture requirement from the start — see
+  `ARCHITECTURE.md` §8 — not bolted onto a start screen afterwards.
 - Settings: graphics quality, audio, controls, accessibility (reduced motion,
-  colourblind-safe HUD, remappable everything).
-- Tauri v2 wrappers for Windows and macOS.
-- Web deploy: hashed assets, compression, a loading screen.
+  colourblind-safe HUD, remappable everything). Reads the same settings object
+  Phase 8's quality toggles were wired to.
+- PWA: web manifest, service worker, offline play, installable.
+- Web deploy: hashed assets, gzip and brotli, a loading screen with real
+  progress.
 - Performance pass and a memory-leak soak test.
-- `README.md` finalised with three install paths.
+- `README.md` finalised: two ways to play — the link, or from source.
 
 **Acceptance**
-- Signed-or-not installers build for Windows and macOS from one command.
-- Web build loads to playable in under 5 seconds on a mid-range connection,
-  simulated with DevTools network throttling.
-- A 30-minute soak shows flat memory and holds frame rate under 4x CPU
-  throttling.
-- A person with no dev tools can install and play from the README alone.
+- Loads to playable in under 5 seconds on a throttled Fast 3G profile.
+- Installs as a PWA on Chrome and Edge, and runs with the network off.
+- A 30-minute soak shows flat memory and holds 60 fps under 4x CPU throttling
+  on the densest track.
+- A person with no dev tools can play from the link alone.

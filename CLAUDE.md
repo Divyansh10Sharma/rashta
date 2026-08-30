@@ -31,8 +31,8 @@ California.
 | Bundler        | Vite                             |
 | Tests          | Vitest                           |
 | Lint / format  | ESLint + Prettier                |
-| Desktop        | Tauri v2 (Windows + macOS)       |
-| Web            | Static build, deployable to any static host |
+| Ship           | Static build, deployable to any static host |
+| PWA            | Service worker + web manifest    |
 | Runtime deps   | Keep minimal. Justify every new one in the phase devlog. |
 
 No game engine, no React, no physics engine, no state-management library.
@@ -113,7 +113,6 @@ rashta/
     DEVLOG_GUIDE.md
     devlog/
       phase-00.md ... phase-11.md
-  src-tauri/             added in Phase 10
 ```
 
 ## The phase workflow
@@ -176,28 +175,39 @@ npm run build     # production web build into dist/
 npm run preview   # serve the production build locally
 npm run test      # vitest
 npm run check     # typecheck + lint + test — must pass to close a phase
-npm run tauri dev # desktop app in dev mode (Phase 10 onward)
-npm run tauri build
 ```
 
 ## Working economically
 
-Context is resent in full on every tool call, so the cost of a phase is roughly
-context size multiplied by number of turns. These four rules cut that without
-cutting corners.
+Claude Code caches the conversation prefix, and a cache read costs roughly a
+tenth of a fresh one. So the cost of a phase is **not** context size multiplied
+by turns. What actually costs is invalidating that cache — anything that
+rewrites or re-orders what came before — and the sheer number of turns. Aim at
+those two, not at context size.
 
-1. **Read narrowly.** Grep for the symbol, then read the range around it. Do
-   not read a file over ~100 lines end to end unless you are about to rewrite
-   it wholesale. If the range proves too small, widen it — guessing at what a
-   file contains costs more than reading it did.
-2. **Truncate output on success, never on failure.** `npm run check 2>&1 | tail -25`
+1. **Read narrowly in `src/`.** Grep for the symbol, then read the range around
+   it. Do not read a source file over ~100 lines end to end unless you are
+   about to rewrite it wholesale. If the range proves too small, widen it —
+   guessing at what a file contains costs more than reading it did.
+2. **`docs/` is exempt, and is read end to end, every phase, no exceptions.**
+   `ARCHITECTURE.md`, `ROADMAP.md` and `GAME_DESIGN.md` are the specification.
+   Skimming the one file that must be read whole is how a phase gets built
+   against a rule that changed. Read them completely, at the start of the
+   phase, every time.
+3. **Never re-read a file you have already read this session.** It is already
+   in the context you are paying to keep. Re-reading buys nothing and pushes
+   the useful part further back.
+4. **Never edit `CLAUDE.md` mid-session.** It is loaded once at startup, so the
+   edit does not apply until a restart — you would be working against the old
+   copy while believing otherwise. Propose the change, and let the user restart.
+5. **Truncate output on success, never on failure.** `npm run check 2>&1 | tail -25`
    when you expect it to pass. The moment something fails, read the whole
    failure. A truncated stack trace costs far more than the tokens it saved.
-3. **One phase per session.** Stop at each phase boundary and report. Do not
+6. **One phase per session.** Stop at each phase boundary and report. Do not
    carry a session across phases: a context full of abandoned hypotheses and
    stale diagnostics reasons worse than a fresh one reading a clean devlog.
    The devlog is what makes this handoff free — write it well enough that it is.
-4. **Report short.** Ten lines: what was built, what the acceptance criteria
+7. **Report short.** Ten lines: what was built, what the acceptance criteria
    measured, what the devlog records, what the next phase needs. The devlog
    holds the detail and the report should not repeat it.
 

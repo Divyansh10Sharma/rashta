@@ -50,9 +50,10 @@ const GRID_WIDTH = 2;
 /**
  * Metres of field the traffic window covers, front to back.
  *
- * A leader further ahead than this rides thinner traffic than the pack. Two
- * kilometres covers the spread for most of a race; by the time it does not,
- * the leader is a minute clear and the result is not in question.
+ * A leader further ahead than this rides thinner traffic than the pack. 1.2 km
+ * covers the spread for most of a race; by the time it does not, the leader is
+ * a minute clear and the result is not in question. It was 2 km until Phase 5
+ * measured the cost of the pool that implies — see devlog phase-05.
  */
 const MAX_FIELD_SPAN = 1200;
 
@@ -288,7 +289,7 @@ function gatherInputs(
  * they are sliding — the same "on the edge, not while inside" shape as the
  * hazard fix in Phase 5.
  */
-function accrueDamage(race: RaceState, tuning: Tuning): void {
+function accrueDamage(race: RaceState): void {
   const rates = race.policeData.damage;
   for (const entry of race.entries) {
     if (!racing(entry)) continue;
@@ -303,7 +304,6 @@ function accrueDamage(race: RaceState, tuning: Tuning): void {
     entry.lastStamina = rider.stamina;
     if (rider.damage > rates.wreckAt) rider.damage = rates.wreckAt;
   }
-  void tuning;
 }
 
 function resolveFor(rider: Rider, race: RaceState, track: Track, t: Tuning) {
@@ -389,7 +389,7 @@ export function stepRace(
     }
   }
 
-  accrueDamage(race, tuning);
+  accrueDamage(race);
   updateStandings(race, track);
 
   // A bust ends the race, and it can only happen to the player: nobody is

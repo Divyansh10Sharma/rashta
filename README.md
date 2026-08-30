@@ -14,14 +14,11 @@ in `docs/ROADMAP.md` says what arrives when.
 
 ## Play it
 
-Nothing to play yet. When there is, there will be three ways, easiest first.
+Nothing to play yet. When there is, there will be two ways, easiest first.
 
-**In a browser** — open the live link. Nothing to install.
-`<deploy URL goes here in Phase 10>`
-
-**Desktop app (Windows or macOS)** — download the installer from the releases
-page, run it.
-`<releases URL goes here in Phase 10>`
+**In a browser** — open the live link. Nothing to install, and it works
+offline once it has loaded.
+`<deploy URL goes here in Phase 11>`
 
 **From source** — see below. This one works today.
 

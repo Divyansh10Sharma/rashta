@@ -185,13 +185,55 @@ small number of scalars:
   scaled down as speed rises so the bike feels heavier fast.
 - `lean` — cosmetic angle for rendering, derived from `lateral` and curvature.
 - `stamina` — combat health, 0–100.
-- `state` — `riding | attacking | staggered | crashing | remounting`.
+- `state` — see §3.1.
 
 A well-tuned arcade model beats a physics simulation here on both feel and
 effort. Naming the trade explicitly: you give up emergent behaviour like real
 weight transfer, wheelies, and stoppies. Road Rash never had those either.
 
 Tuning constants live in `src/data/tuning.json` and are hot-reloadable in dev.
+
+### 3.1 The crash
+
+```
+riding | attacking | staggered
+      | airborne | sliding | downed | rising | running | remounting
+```
+
+The crash is the game's punishment, so **its cost is derived, never
+configured**. A constant recovery time makes a 90 km/h tip-over cost what a
+250 km/h highside costs, which turns the worst moment in the game into a
+pause. The structure below exists so that the penalty falls out of the physics
+instead of out of a tuning value.
+
+On impact the rider and the bike separate and are tracked independently:
+
+- The rider carries **`h`**, height above the road surface along the track's
+  up vector. This is still track space — `(s, t, h)` — so rule 2 holds through
+  a crash and nothing acquires a world position.
+- `h` integrates under constant gravity: a quadratic, no trigonometry, so
+  rule 4's bit-exactness survives a crash as well.
+- The bike carries its own `(s, t, branchId)` while it slides.
+- Rider and bike have different friction coefficients, so the same impact
+  leaves them at different `s`.
+- Launch velocity derives from impact speed and `CrashCause`.
+
+Recovery then runs `downed → rising → running → remounting`. The `running`
+stage costs **the distance between the rider and the bike**, at a run speed
+from `tuning.json` — which is the mechanism that makes a fast crash expensive
+without anyone choosing how expensive. Nothing the player presses shortens it.
+
+Two behaviours here were found by testing rather than designed, and both stay:
+a grace timer after remounting, so whatever put you down cannot immediately
+put you down again; and a recentre pull, so a rider who left by the edge does
+not remount against it and go straight off again.
+
+The rider controls nothing throughout, and the sim does not pause. This runs
+for all fourteen racers and for police.
+
+Everything in this section is simulation. The tumble, the sparks, the get-up,
+the look back down the road are rendering, and they read these fields without
+writing to them.
 
 ## 4. Systems
 
@@ -228,6 +270,14 @@ its own slice. Collisions are resolved once, at the end, in `stepRace`.
   `SpeedEffects`: FOV widening, camera drop and pull-back, lateral lag, road
   texture, roadside object density, wind and engine audio. See Phase 2.
 
+**Everything visible is generated in code.** No model files, no texture images,
+no asset loader — geometry is built procedurally and textures are drawn into
+canvases at load. This is what keeps the game inside its 500 KB budget and
+loading in about a second, and it is the constraint Phase 8 is designed
+around. It is a real trade: the ceiling on fidelity is lower than a glTF
+pipeline would give. For a night game, where lighting does the work geometry
+does in daylight, it is the right one.
+
 ## 6. Determinism and the RNG
 
 `src/core/rng.ts` exports a seeded PRNG (mulberry32 or xoshiro128). The world
@@ -251,7 +301,7 @@ places where determinism does not matter: track precompute at load, and
 rendering. Inside the sim, curvature and heading come from precomputed
 per-segment tables read by linear interpolation. `trackDistance` (§1.4) is
 built to respect this, which is why it approximates the chord instead of
-computing it.
+computing it. The crash arc in §3.1 is quadratic for the same reason.
 
 Two things guard this, since lint cannot: a replay test that runs a recorded
 input sequence twice and asserts bit-identical final state, and a second run
@@ -261,7 +311,36 @@ into the simulation.
 
 ## 7. Save format
 
-A single JSON blob in `localStorage` (web) or an app-data file (Tauri), holding
-career progress, money, owned bike, and the reputation graph. Versioned with a
-`schemaVersion` field and a migration function per version bump. Never write a
-save the loader can't identify.
+A single JSON blob in `localStorage`, holding career progress, money, owned
+bike, chosen racer, and the reputation graph. Versioned with a `schemaVersion`
+field and a migration function per version bump. Never write a save the loader
+can't identify.
+
+`localStorage` is synchronous and can be cleared by the browser without
+warning, so treat a missing save as a normal state rather than an error, and
+never write from inside the frame loop — write on meaningful boundaries
+(race finished, purchase made) rather than continuously.
+
+## 8. Browser constraints
+
+The game ships as a web build and nothing else. Three platform rules shape
+code well before Phase 11, and are written here so they are designed around
+rather than discovered.
+
+**Audio cannot start on its own.** An `AudioContext` created before the first
+user gesture starts suspended, and every browser enforces this. The audio
+system must be able to exist, and the game to run, with no context at all —
+then resume on the first click or keypress. Building it the other way round
+produces a start screen that exists only to unlock audio, which is a hack
+standing in for a design.
+
+**Pointer Lock and Fullscreen also need a gesture, and can be revoked.** The
+browser can exit either at any time — Escape, a tab switch, an OS-level
+interruption — and it will not ask. Handle the exit events and recover;
+never assume that holding one of them is a state the game controls.
+
+**The Gamepad API is invisible until a button is pressed.** A connected
+controller does not appear in `navigator.getGamepads()` until the user presses
+something on it. Input detection therefore polls rather than enumerating once
+at startup, and the settings screen must not report "no controller found" for
+a controller that is plugged in and idle.
