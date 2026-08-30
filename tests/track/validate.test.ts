@@ -143,6 +143,13 @@ describe('every error names the file and the field', () => {
       (t) => (t['trafficDensity'] = -3),
       /trafficDensity must not be negative/,
     ],
+    [
+      // Reachable only through `loadTrack`: the library's own check runs first
+      // and shadows this one. Same shape as trafficDensity above.
+      'negative police density',
+      (t) => (t['policeDensity'] = -1),
+      /policeDensity must not be negative/,
+    ],
   ];
 
   for (const [name, mutate, pattern] of cases) {

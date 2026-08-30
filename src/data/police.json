@@ -1,0 +1,24 @@
+{
+  "pursuit": {
+    "triggerSpeed": 33.0,
+    "dropSpeed": 24.0,
+    "dropSeconds": 6.0,
+    "loseDistance": 260.0,
+    "closeGap": 4.5,
+    "blockGap": 22.0,
+    "ramCooldown": 2.6,
+    "reactionSeconds": 0.9
+  },
+  "arrest": {
+    "radius": 15.0,
+    "fineBase": 4000,
+    "fineBikeFraction": 0.06
+  },
+  "damage": {
+    "perCrash": 14.0,
+    "perHit": 1.6,
+    "wreckAt": 100.0,
+    "repairFraction": 0.22,
+    "wreckFraction": 0.55
+  }
+}

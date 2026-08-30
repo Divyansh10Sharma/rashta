@@ -13,6 +13,7 @@ import { MAIN_BRANCH } from '../../src/core/types.ts';
 import {
   bikeFor,
   combat,
+  police,
   raceOn,
   racers,
   trackFor,
@@ -65,7 +66,14 @@ describe('the grid', () => {
 
   it('refuses to build a race for a rider who is not on the roster', () => {
     expect(() =>
-      createRace(racers, 'nobody', bikeFor, trackFor('ridge-run-t1'), combat),
+      createRace(
+        racers,
+        'nobody',
+        bikeFor,
+        trackFor('ridge-run-t1'),
+        combat,
+        police,
+      ),
     ).toThrow(/no racer profile with id "nobody"/);
   });
 });
@@ -97,7 +105,11 @@ describe('the state machine', () => {
   it('finishes when the player crosses, and keeps the field racing', () => {
     const track = trackFor('ridge-run-t1');
     const race = raceOn(track, 5);
-    while (race.phase !== 'finished' && race.tick < 60 * 60 * 20) {
+    while (
+      race.phase !== 'finished' &&
+      race.phase !== 'failed' &&
+      race.tick < 60 * 60 * 20
+    ) {
       stepRace(race, FLAT_OUT, track, tuning);
     }
     expect(race.phase).toBe('finished');
@@ -123,19 +135,36 @@ describe('the state machine', () => {
     expect(race.tick).toBe(settled);
   });
 
-  it('fails when the player retires, and stays failed', () => {
+  it('takes the player out when they retire, and leaves the field racing', () => {
     const track = trackFor('ridge-run-t1');
     const race = raceOn(track);
     for (let i = 0; i < 600; i += 1) stepRace(race, FLAT_OUT, track, tuning);
     retire(race);
     expect(race.phase).toBe('failed');
+    expect(race.failReason).toBe('retired');
 
-    const frozen = race.tick;
-    stepRace(race, FLAT_OUT, track, tuning);
-    expect(race.tick).toBe(frozen);
+    const player = playerEntry(race);
+    expect(player.out).toBe(true);
+
+    // Retiring ends *your* race. The other thirteen are mid-corner and are
+    // still racing each other for the places behind you.
+    const parked = player.rider.pos.s;
+    const others = race.entries
+      .filter((e) => !e.isPlayer)
+      .map((e) => e.rider.pos.s);
+    for (let i = 0; i < 120; i += 1) stepRace(race, FLAT_OUT, track, tuning);
+
+    expect(player.rider.pos.s).toBe(parked);
+    // Not all thirteen: a rider who is mid-crash is legitimately stationary
+    // for a second or so. What matters is that the field is plainly still
+    // going while the retired player is not.
+    const moved = race.entries
+      .filter((e) => !e.isPlayer)
+      .filter((e, i) => e.rider.pos.s > (others[i] ?? 0) + 1);
+    expect(moved.length).toBeGreaterThan(9);
 
     retire(race);
-    expect(race.phase).toBe('failed');
+    expect(race.failReason).toBe('retired');
   });
 });
 

@@ -3,6 +3,7 @@
   "name": "Test Track",
   "scenery": "ringroad",
   "trafficDensity": 0,
+  "policeDensity": 0,
   "segments": [
     {
       "length": 200,

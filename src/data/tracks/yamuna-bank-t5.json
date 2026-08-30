@@ -3,6 +3,7 @@
   "name": "Yamuna Bank — Tier 5",
   "scenery": "yamuna",
   "trafficDensity": 32.4,
+  "policeDensity": 0.201,
   "extends": "yamuna-bank-t4",
   "segments": [
     {

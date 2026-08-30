@@ -3,6 +3,7 @@
   "name": "Ring Road — Tier 3",
   "scenery": "ringroad",
   "trafficDensity": 46.2,
+  "policeDensity": 0.403,
   "extends": "ring-road-t2",
   "segments": [
     {

@@ -12,6 +12,13 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    // Most of this suite is whole races simulated at 60 Hz, which is entirely
+    // CPU-bound. Vitest's default is one worker per core less one, and on an
+    // eight-core machine that saturates it completely — which made every
+    // wall-clock assertion in the suite fail while passing on its own. Leaving
+    // half the machine idle costs some wall time and buys measurements that
+    // mean something. See devlog phase-07.
+    maxWorkers: 4,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

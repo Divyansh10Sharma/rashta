@@ -320,6 +320,18 @@ export function validateTrackData(file: string, raw: unknown): TrackData {
     fail(file, 'trafficDensity', `must not be negative, got ${trafficDensity}`);
   }
 
+  // Zero is not only legal but required at tier 1: GAME_DESIGN's difficulty
+  // curve says tier 1 teaches riding with no police, and the data says it
+  // rather than the code special-casing a tier number.
+  const policeDensity = requireFiniteNumber(
+    file,
+    'policeDensity',
+    t['policeDensity'],
+  );
+  if (policeDensity < 0) {
+    fail(file, 'policeDensity', `must not be negative, got ${policeDensity}`);
+  }
+
   const segments = validateSegmentList(file, 'segments', t['segments']);
   const mainLength = segments.reduce((sum, seg) => sum + seg.length, 0);
 
@@ -332,6 +344,7 @@ export function validateTrackData(file: string, raw: unknown): TrackData {
     name,
     scenery: scenery as SceneryTag,
     trafficDensity,
+    policeDensity,
     segments,
     branches,
   };

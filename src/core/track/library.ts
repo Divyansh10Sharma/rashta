@@ -30,6 +30,7 @@ export interface TrackSource {
   scenery: SceneryTag;
   /** Vehicles per kilometre. A tier may raise it without restating the road. */
   trafficDensity: number;
+  policeDensity: number;
   /** Id of the tier this one appends to, if any. */
   extends?: string;
   /** Only the segments this file adds. */
@@ -86,6 +87,14 @@ export function validateTrackSource(file: string, raw: unknown): TrackSource {
     );
   }
 
+  const police = t['policeDensity'];
+  if (typeof police !== 'number' || !Number.isFinite(police) || police < 0) {
+    fail(
+      file,
+      `policeDensity must be a non-negative number, got ${JSON.stringify(police)}`,
+    );
+  }
+
   const segments = validateSegmentList(file, 'segments', t['segments']);
 
   const rawBranches = t['branches'];
@@ -102,6 +111,7 @@ export function validateTrackSource(file: string, raw: unknown): TrackSource {
     name,
     scenery: scenery as SceneryTag,
     trafficDensity: density,
+    policeDensity: police,
     segments,
     branches,
   };
@@ -127,6 +137,7 @@ function assemble(
       name: source.name,
       scenery: source.scenery,
       trafficDensity: source.trafficDensity,
+      policeDensity: source.policeDensity,
       segments: [...source.segments],
       branches: [...source.branches],
     };
@@ -142,9 +153,11 @@ function assemble(
     id: source.id,
     name: source.name,
     scenery: source.scenery,
-    // A tier states its own density: heavier traffic is how tiers 4 and 5
-    // make route knowledge matter more than top speed.
+    // A tier states its own densities rather than inheriting them: heavier
+    // traffic and more police is how tiers 4 and 5 make route knowledge matter
+    // more than top speed.
     trafficDensity: source.trafficDensity,
+    policeDensity: source.policeDensity,
     segments: [...base.segments, ...source.segments],
     branches: [...base.branches, ...source.branches],
   };

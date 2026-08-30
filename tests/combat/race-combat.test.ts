@@ -52,7 +52,11 @@ describe('weapons circulate and are never created or lost', () => {
     const start = census(race);
 
     let worst = '';
-    while (!allHome(race) && race.tick < 60 * 60 * 45) {
+    while (
+      !allHome(race) &&
+      race.phase !== 'failed' &&
+      race.tick < 60 * 60 * 45
+    ) {
       stepRace(race, FLAT_OUT, track, tuning);
       if (race.tick % 120 !== 0) continue;
       const now = census(race);

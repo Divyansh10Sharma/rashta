@@ -82,6 +82,8 @@ export interface TrackData {
    * docs/devlog/phase-04.md.
    */
   trafficDensity: number;
+  /** Police riders per kilometre. Zero at tier 1, by design. */
+  policeDensity: number;
   segments: TrackSegment[];
   branches: TrackBranch[];
 }

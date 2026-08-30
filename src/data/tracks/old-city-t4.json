@@ -3,6 +3,7 @@
   "name": "Old City — Tier 4",
   "scenery": "oldcity",
   "trafficDensity": 39.2,
+  "policeDensity": 0.243,
   "extends": "old-city-t3",
   "segments": [
     {

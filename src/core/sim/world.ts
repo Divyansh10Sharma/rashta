@@ -20,6 +20,7 @@ export function createRider(bike: TunedBike, s = 0, t = 0): Rider {
     attack: null,
     attackElapsed: 0,
     staggerTimer: 0,
+    damage: 0,
     state: 'riding',
     stateTimer: 0,
     crashCause: null,
@@ -64,6 +65,7 @@ export function copyRider(from: Rider, to: Rider): void {
   to.attack = from.attack;
   to.attackElapsed = from.attackElapsed;
   to.staggerTimer = from.staggerTimer;
+  to.damage = from.damage;
   to.state = from.state;
   to.stateTimer = from.stateTimer;
   to.crashCause = from.crashCause;

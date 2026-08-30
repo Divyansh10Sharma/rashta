@@ -6,6 +6,8 @@ import { createRng } from '../rng.ts';
 import { progress } from '../track/distance.ts';
 import { think } from '../ai/racer.ts';
 import { startAttack, stepCombat } from '../combat/combat.ts';
+import { arrestedBy, createPolice, stepPolice } from '../police/police.ts';
+import type { FailReason, PoliceData } from '../police/types.ts';
 import { WEAPON_KINDS } from '../combat/types.ts';
 import { MAIN_BRANCH } from '../types.ts';
 import type { CombatData, DroppedWeapon, WeaponKind } from '../combat/types.ts';
@@ -88,6 +90,9 @@ function makeEntry(
     },
     finishTick: null,
     place: 0,
+    out: false,
+    wasDown: false,
+    lastStamina: 100,
   };
 }
 
@@ -103,6 +108,7 @@ export function createRace(
   bikeFor: (profile: RacerProfile) => TunedBike,
   track: Track,
   combat: CombatData,
+  policeData: PoliceData,
   seed = 1,
 ): RaceState {
   const player = profiles.find((p) => p.id === playerId);
@@ -132,16 +138,28 @@ export function createRace(
     });
   }
 
+  // Police ride the slowest bike in the field: they catch you by not having
+  // to stop, not by being faster than you. The detail is sized from the
+  // route's own density, which is zero at tier 1 by design.
+  const patrolBike = entries[0]?.rider.bike;
+  if (!patrolBike) throw new Error('race has no riders to take a bike from');
+  const police = createPolice(track, patrolBike);
+
   const rng = createRng(seed);
   return {
     phase: 'countdown',
+    failReason: null,
     combat,
+    policeData,
+    police,
     entries,
     dropped,
     // Built once, not per tick: the AI needs to see every rider, and a
     // fourteen-element array rebuilt sixty times a second is the per-frame
     // allocation CLAUDE.md forbids.
-    riders: entries.map((e) => e.rider),
+    // Police are in the rider field so rivals, collisions and combat all see
+    // them, and never in `entries`, so they can never enter the standings.
+    riders: [...entries.map((e) => e.rider), ...police.map((u) => u.rider)],
     order: entries.map((_, i) => i),
     traffic: createTraffic(track, rng, MAX_FIELD_SPAN),
     rng,
@@ -151,10 +169,17 @@ export function createRace(
   };
 }
 
-/** True once every rider in the field has crossed the line. */
+/** True once every rider has either crossed the line or dropped out. */
 export function allHome(race: RaceState): boolean {
-  for (const entry of race.entries) if (entry.finishTick === null) return false;
+  for (const entry of race.entries) {
+    if (entry.finishTick === null && !entry.out) return false;
+  }
   return true;
+}
+
+/** Riders still on the road: not finished, not arrested, not wrecked. */
+function racing(entry: RaceEntry): boolean {
+  return entry.finishTick === null && !entry.out;
 }
 
 /** The entry the human is riding. Present in every race, exactly once. */
@@ -176,6 +201,7 @@ export function updateStandings(race: RaceState, track: Track): void {
     const ea = race.entries[a];
     const eb = race.entries[b];
     if (!ea || !eb) return 0;
+    if (ea.out !== eb.out) return ea.out ? 1 : -1;
     if (ea.finishTick !== null || eb.finishTick !== null) {
       if (ea.finishTick === null) return 1;
       if (eb.finishTick === null) return -1;
@@ -203,11 +229,23 @@ function paceFor(
   return 1 - tuning.rubberBanding * scaled;
 }
 
-/** The player has given up. The only way a race fails, until Phase 7. */
+/**
+ * Ends the *player's* race badly. Retiring, an arrest, or a wrecked bike.
+ *
+ * The other thirteen are still racing. Being arrested ends your night, not
+ * everybody's — the same way finishing ends your race and not the race. Before
+ * this, an arrest froze the whole field mid-corner. See devlog phase-08.
+ */
+export function fail(race: RaceState, reason: FailReason): void {
+  if (race.phase !== 'racing' && race.phase !== 'countdown') return;
+  race.phase = 'failed';
+  race.failReason = reason;
+  playerEntry(race).out = true;
+}
+
+/** The player has given up. */
 export function retire(race: RaceState): void {
-  if (race.phase === 'racing' || race.phase === 'countdown') {
-    race.phase = 'failed';
-  }
+  fail(race, 'retired');
 }
 
 function gatherInputs(
@@ -219,7 +257,7 @@ function gatherInputs(
   dt: number,
 ): void {
   for (const entry of race.entries) {
-    if (entry.finishTick !== null) continue;
+    if (!racing(entry)) continue;
     if (entry.isPlayer) {
       entry.input.throttle = playerInput.throttle;
       entry.input.brake = playerInput.brake;
@@ -243,6 +281,31 @@ function gatherInputs(
   }
 }
 
+/**
+ * Adds bike damage for anything that happened this tick.
+ *
+ * A crash is charged once, on the tick the rider goes down, not for every tick
+ * they are sliding — the same "on the edge, not while inside" shape as the
+ * hazard fix in Phase 5.
+ */
+function accrueDamage(race: RaceState, tuning: Tuning): void {
+  const rates = race.policeData.damage;
+  for (const entry of race.entries) {
+    if (!racing(entry)) continue;
+    const rider = entry.rider;
+    const down = rider.state !== 'riding';
+    if (down && !entry.wasDown) rider.damage += rates.perCrash;
+    entry.wasDown = down;
+
+    if (rider.stamina < entry.lastStamina - 0.001) {
+      rider.damage += rates.perHit;
+    }
+    entry.lastStamina = rider.stamina;
+    if (rider.damage > rates.wreckAt) rider.damage = rates.wreckAt;
+  }
+  void tuning;
+}
+
 function resolveFor(rider: Rider, race: RaceState, track: Track, t: Tuning) {
   if (rider.state !== 'riding') return;
   checkHazards(rider, track, t);
@@ -263,10 +326,9 @@ export function stepRace(
   tuning: Tuning,
   dt: number = FIXED_DT,
 ): void {
-  if (race.phase === 'failed') return;
-  // The player finishing ends the player's race, not the race. Positions four
-  // through fourteen are still being decided and the results screen wants
-  // them, so the field rides on until everybody is home.
+  // Neither finishing nor being arrested ends the race: positions four through
+  // fourteen are still being decided and the results screen wants them, so the
+  // field rides on until everybody is home or out.
   if (allHome(race)) return;
 
   race.tick += 1;
@@ -290,14 +352,12 @@ export function stepRace(
   // Everything moves, then everything collides. Resolving as we go would make
   // the outcome depend on the order the field happens to be stored in.
   for (const entry of race.entries) {
-    if (entry.finishTick === null) {
-      stepRider(entry.rider, entry.input, track, tuning, dt);
-    }
+    if (racing(entry)) stepRider(entry.rider, entry.input, track, tuning, dt);
   }
   let backS = Infinity;
   let leadS = -Infinity;
   for (const entry of race.entries) {
-    if (entry.finishTick !== null) continue;
+    if (!racing(entry)) continue;
     if (entry.rider.pos.s < backS) backS = entry.rider.pos.s;
     if (entry.rider.pos.s > leadS) leadS = entry.rider.pos.s;
   }
@@ -308,21 +368,43 @@ export function stepRace(
   // together — so no rider wins an exchange by being stored first.
   for (const entry of race.entries) {
     const wanted = entry.input.attack;
-    if (entry.finishTick === null && wanted != null) {
+    if (racing(entry) && wanted != null) {
       startAttack(entry.rider, wanted, race.combat);
     }
   }
   stepCombat(race.riders, race.dropped, track, race.combat, tuning, dt);
 
+  // Police decide after combat, so an officer reacts to the road as it is at
+  // the end of the tick rather than as it was at the start.
+  stepPolice(race.police, race.riders, track, race.policeData, race.combat, dt);
+  for (const unit of race.police) {
+    if (unit.active) stepRider(unit.rider, unit.input, track, tuning, dt);
+  }
+
   for (const entry of race.entries) {
-    if (entry.finishTick !== null) continue;
+    if (!racing(entry)) continue;
     resolveFor(entry.rider, race, track, tuning);
     if (progress(entry.rider.pos, track) >= track.totalLength) {
       entry.finishTick = race.tick;
     }
   }
 
+  accrueDamage(race, tuning);
   updateStandings(race, track);
+
+  // A bust ends the race, and it can only happen to the player: nobody is
+  // watching whether a rival got arrested.
+  if (
+    racing(player) &&
+    arrestedBy(player.rider, race.police, track, race.policeData)
+  ) {
+    fail(race, 'arrested');
+    return;
+  }
+  if (racing(player) && player.rider.damage >= race.policeData.damage.wreckAt) {
+    fail(race, 'wrecked');
+    return;
+  }
   if (player.finishTick !== null) race.phase = 'finished';
 }
 
@@ -334,6 +416,7 @@ export function stepRace(
  */
 export function copyRace(from: RaceState, to: RaceState): void {
   to.phase = from.phase;
+  to.failReason = from.failReason;
   to.tick = from.tick;
   to.clock = from.clock;
   to.countdown = from.countdown;
@@ -347,6 +430,9 @@ export function copyRace(from: RaceState, to: RaceState): void {
     copyRider(a.rider, b.rider);
     b.finishTick = a.finishTick;
     b.place = a.place;
+    b.out = a.out;
+    b.wasDown = a.wasDown;
+    b.lastStamina = a.lastStamina;
     b.input.throttle = a.input.throttle;
     b.input.brake = a.input.brake;
     b.input.lean = a.input.lean;
@@ -359,6 +445,25 @@ export function copyRace(from: RaceState, to: RaceState): void {
     b.brain.grudge = a.brain.grudge;
     b.brain.swingTimer = a.brain.swingTimer;
   }
+  for (let i = 0; i < from.police.length; i += 1) {
+    const a = from.police[i];
+    const b = to.police[i];
+    if (!a || !b) continue;
+    copyRider(a.rider, b.rider);
+    b.state = a.state;
+    b.target = a.target;
+    b.slowFor = a.slowFor;
+    b.ramTimer = a.ramTimer;
+    b.blocking = a.blocking;
+    b.noticeTimer = a.noticeTimer;
+    b.targetT = a.targetT;
+    b.active = a.active;
+    b.input.throttle = a.input.throttle;
+    b.input.brake = a.input.brake;
+    b.input.lean = a.input.lean;
+    b.input.attack = a.input.attack ?? null;
+  }
+
   copyTraffic(from.traffic, to.traffic);
   for (let i = 0; i < from.dropped.length; i += 1) {
     const a = from.dropped[i];

@@ -3,12 +3,14 @@ import { loadTrackLibrary } from '../../src/core/track/library.ts';
 import { loadBikes, loadTuning } from '../../src/core/sim/load.ts';
 import { loadRacers } from '../../src/core/ai/load.ts';
 import { loadCombat } from '../../src/core/combat/load.ts';
+import { loadPolice } from '../../src/core/police/load.ts';
 import { createRace } from '../../src/core/sim/race.ts';
 import type { TrackLibrary } from '../../src/core/track/library.ts';
 import type { Track } from '../../src/core/track/Track.ts';
 import type { RacerProfile } from '../../src/core/ai/types.ts';
 import type { RaceState, TunedBike, Tuning } from '../../src/core/sim/types.ts';
 import type { CombatData } from '../../src/core/combat/types.ts';
+import type { PoliceData } from '../../src/core/police/types.ts';
 
 /** The real game data, loaded once and shared by every race test. */
 
@@ -44,6 +46,11 @@ export const combat: CombatData = loadCombat(
   JSON.parse(readFileSync('src/data/combat.json', 'utf8')),
 );
 
+export const police: PoliceData = loadPolice(
+  'police.json',
+  JSON.parse(readFileSync('src/data/police.json', 'utf8')),
+);
+
 const byId = new Map(bikes.map((b) => [b.spec.id, b]));
 
 /** The bike a profile starts on. Throws rather than quietly substituting. */
@@ -69,5 +76,5 @@ export const ROUTE_IDS: string[] = [
 ].flatMap((route) => [1, 2, 3, 4, 5].map((tier) => `${route}-t${tier}`));
 
 export function raceOn(track: Track, seed = 1): RaceState {
-  return createRace(racers, 'player', bikeFor, track, combat, seed);
+  return createRace(racers, 'player', bikeFor, track, combat, police, seed);
 }

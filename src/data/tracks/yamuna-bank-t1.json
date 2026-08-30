@@ -3,6 +3,7 @@
   "name": "Yamuna Bank — Tier 1",
   "scenery": "yamuna",
   "trafficDensity": 9,
+  "policeDensity": 0,
   "segments": [
     {
       "length": 1100,

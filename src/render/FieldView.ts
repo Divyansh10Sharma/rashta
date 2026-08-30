@@ -4,6 +4,7 @@ import type { RiderView } from './Rider.ts';
 import type { Track } from '../core/track/Track.ts';
 import type { RaceEntry, Rider } from '../core/sim/types.ts';
 import type { CombatData } from '../core/combat/types.ts';
+import type { PoliceUnit } from '../core/police/types.ts';
 import { phaseOf } from '../core/combat/combat.ts';
 
 /**
@@ -47,6 +48,14 @@ export interface FieldView {
     track: Track,
     combat: CombatData,
   ) => void;
+  /** Draws the police detail, which is not part of the standings. */
+  updatePolice: (
+    previous: readonly PoliceUnit[],
+    current: readonly PoliceUnit[],
+    alpha: number,
+    track: Track,
+    combat: CombatData,
+  ) => void;
   dispose: () => void;
 }
 
@@ -59,7 +68,10 @@ const LIVERY = [
   0x8fbe2f, 0xd94f6a, 0x4f6fe0, 0xe09a2f, 0x7fd4a0, 0xc0c4cc,
 ];
 
-export function createField(riders: number): FieldView {
+/** Police livery: white, and unmistakably not one of the thirteen. */
+const POLICE_LIVERY = 0xe8ecf2;
+
+export function createField(riders: number, police = 0): FieldView {
   const group = new THREE.Group();
   const views: RiderView[] = [];
   for (let i = 0; i < riders; i += 1) {
@@ -68,6 +80,52 @@ export function createField(riders: number): FieldView {
     views.push(view);
     group.add(view.group);
   }
+
+  const patrol: RiderView[] = [];
+  for (let i = 0; i < police; i += 1) {
+    const view = createRiderView(POLICE_LIVERY);
+    view.group.visible = false;
+    patrol.push(view);
+    group.add(view.group);
+  }
+
+  const updatePolice = (
+    previous: readonly PoliceUnit[],
+    current: readonly PoliceUnit[],
+    alpha: number,
+    track: Track,
+    combat: CombatData,
+  ): void => {
+    for (let i = 0; i < patrol.length; i += 1) {
+      const view = patrol[i];
+      const now = current[i];
+      const before = previous[i];
+      if (!view) continue;
+      const drawable =
+        now?.active === true &&
+        before?.active === true &&
+        now.rider.pos.branchId === before.rider.pos.branchId;
+      if (!drawable) {
+        view.group.visible = false;
+        continue;
+      }
+      const a = before.rider;
+      const b = now.rider;
+      view.group.visible = true;
+      view.update(
+        track,
+        a.pos.s + (b.pos.s - a.pos.s) * alpha,
+        a.pos.t + (b.pos.t - a.pos.t) * alpha,
+        a.lean + (b.lean - a.lean) * alpha,
+        a.wheelAngle + (b.wheelAngle - a.wheelAngle) * alpha,
+        b.pos.branchId,
+      );
+      // A pursuing officer is lit whether or not they are mid-ram, so you can
+      // tell in the mirror that one of them has decided about you.
+      const chasing = now.state === 'pursuing' ? 0.5 : 0;
+      view.highlight(Math.max(chasing, glowFor(b, combat)), false);
+    }
+  };
 
   const update = (
     previous: readonly RaceEntry[],
@@ -113,8 +171,9 @@ export function createField(riders: number): FieldView {
     group,
     count: views.length,
     update,
+    updatePolice,
     dispose: () => {
-      for (const view of views) view.dispose();
+      for (const view of [...views, ...patrol]) view.dispose();
     },
   };
 }

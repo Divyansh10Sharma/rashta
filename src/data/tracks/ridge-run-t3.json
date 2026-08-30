@@ -3,6 +3,7 @@
   "name": "Ridge Run — Tier 3",
   "scenery": "ridge",
   "trafficDensity": 8.4,
+  "policeDensity": 0.112,
   "extends": "ridge-run-t2",
   "segments": [
     {

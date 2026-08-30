@@ -3,6 +3,7 @@
   "name": "Ring Road Straight",
   "scenery": "ringroad",
   "trafficDensity": 0,
+  "policeDensity": 0,
   "segments": [
     {
       "length": 2000,

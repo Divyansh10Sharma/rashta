@@ -135,18 +135,23 @@ describe('a full race costs no more than a lone rider did', () => {
     // sample, and a 60-tick sample is far likelier to land inside one
     // scheduling slice than a 600-tick one. Fourth timing test in this project
     // to need saying — see the Phase 4 and 5 devlogs for the other three.
-    const best = (run: () => void): number => {
+    // Both samples must take about the same wall time, or the comparison is
+    // rigged: a race tick is roughly fourteen times a lone tick, so sixty of
+    // each meant timing a 38 ms sample against a 3 ms one. The short sample
+    // finds a quiet slice on a busy machine and the long one cannot, which
+    // inflates the ratio for reasons that have nothing to do with the code.
+    const best = (ticks: number, run: () => void): number => {
       let lowest = Infinity;
       for (let attempt = 0; attempt < 30; attempt += 1) {
         const started = performance.now();
-        for (let i = 0; i < 60; i += 1) run();
-        lowest = Math.min(lowest, (performance.now() - started) / 60);
+        for (let i = 0; i < ticks; i += 1) run();
+        lowest = Math.min(lowest, (performance.now() - started) / ticks);
       }
       return lowest;
     };
 
-    const raceMs = best(() => stepRace(race, input, track, realTuning));
-    const loneMs = best(() => step(lone, input, track, realTuning));
+    const raceMs = best(60, () => stepRace(race, input, track, realTuning));
+    const loneMs = best(800, () => step(lone, input, track, realTuning));
     const ratio = raceMs / loneMs;
 
     // Fourteen riders, three and a half times the traffic, and combat, against

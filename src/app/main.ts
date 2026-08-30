@@ -3,11 +3,13 @@ import bikesJson from '../data/bikes.json';
 import tuningJson from '../data/tuning.json';
 import racersJson from '../data/racers.json';
 import combatJson from '../data/combat.json';
+import policeJson from '../data/police.json';
 import { loadTrackLibrary } from '../core/track/library.ts';
 
 import { loadBikes, loadTuning } from '../core/sim/load.ts';
 import { loadRacers, PLAYER_ID } from '../core/ai/load.ts';
 import { loadCombat } from '../core/combat/load.ts';
+import { loadPolice } from '../core/police/load.ts';
 import {
   copyRace,
   createRace,
@@ -58,6 +60,7 @@ function run(canvas: HTMLCanvasElement): void {
 
   const racers = loadRacers('racers.json', racersJson);
   const combat = loadCombat('combat.json', combatJson);
+  const police = loadPolice('police.json', policeJson);
   const byId = new Map(bikes.map((b) => [b.spec.id, b]));
   const bikeFor = (profile: { startingBike: string }) => {
     const found = byId.get(profile.startingBike);
@@ -70,8 +73,24 @@ function run(canvas: HTMLCanvasElement): void {
   // Seeded from the URL so a race can be handed to someone else exactly.
   const asked = Number(new URLSearchParams(location.search).get('seed') ?? 1);
   const seed = Number.isFinite(asked) ? asked : 1;
-  const current = createRace(racers, PLAYER_ID, bikeFor, track, combat, seed);
-  const previous = createRace(racers, PLAYER_ID, bikeFor, track, combat, seed);
+  const current = createRace(
+    racers,
+    PLAYER_ID,
+    bikeFor,
+    track,
+    combat,
+    police,
+    seed,
+  );
+  const previous = createRace(
+    racers,
+    PLAYER_ID,
+    bikeFor,
+    track,
+    combat,
+    police,
+    seed,
+  );
   const me = playerEntry(current);
   const bike = me.rider.bike;
 
@@ -83,6 +102,7 @@ function run(canvas: HTMLCanvasElement): void {
     track,
     current.traffic.length,
     current.entries.length - 1,
+    current.police.length,
   );
   stage.chase.reset(0);
 
@@ -130,6 +150,13 @@ function run(canvas: HTMLCanvasElement): void {
     // Rivals interpolate off the same pair of states, so the bike you are
     // about to be pushed into is where the simulation says it is.
     stage.field.update(previous.entries, current.entries, alpha, track, combat);
+    stage.field.updatePolice(
+      previous.police,
+      current.police,
+      alpha,
+      track,
+      combat,
+    );
 
     visibleChunks = stage.sync(
       s,

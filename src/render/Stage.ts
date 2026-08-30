@@ -54,6 +54,7 @@ export function createStage(
   track: Track,
   trafficPoolSize = 0,
   rivals = 0,
+  police = 0,
 ): Stage {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -92,7 +93,7 @@ export function createStage(
   const traffic = createTrafficView(track, trafficPoolSize);
   scene.add(traffic.group);
 
-  const field = createField(rivals);
+  const field = createField(rivals, police);
   scene.add(field.group);
 
   const rider = createRiderView();

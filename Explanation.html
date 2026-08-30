@@ -673,6 +673,13 @@
           <span class="stone-label">Phase</span>
         </span>
       </button>
+      <button class="stone" data-goto="phase-07" type="button">
+        <span class="stone-band" aria-hidden="true"></span>
+        <span class="stone-body">
+          <span class="stone-num">07</span>
+          <span class="stone-label">Phase</span>
+        </span>
+      </button>
       <button class="stone" data-goto="ninety-seconds" type="button">
         <span class="stone-band" aria-hidden="true"></span>
         <span class="stone-body">
@@ -698,6 +705,7 @@
         <a href="#phase-04">04 · Traffic and hazards</a>
         <a href="#phase-05">05 · Racers</a>
         <a href="#phase-06">06 · Combat</a>
+        <a href="#phase-07">07 · Police</a>
         <a href="#ninety-seconds">90 seconds</a>
       </nav>
 
@@ -4253,6 +4261,431 @@
           </section>
         </section>
 
+        <!-- ================= PHASE 07 ================= -->
+        <section class="page" id="phase-07" aria-labelledby="h-07" hidden>
+          <header class="page-head">
+            <p class="eyebrow">Phase 07</p>
+            <h2 id="h-07">Police</h2>
+            <p class="standfirst">
+              Officers who notice you speeding, chase, ram, and arrest you if
+              you go down next to them — plus what a bad night costs, and three
+              tests of mine that were wrong before any of the code was.
+            </p>
+          </header>
+
+          <section class="s-goal">
+            <p class="eyebrow">What we were trying to do</p>
+            <p>
+              Add the police. They ride the same roads as everyone else, they
+              take an interest when you are going noticeably fast, they chase
+              you, they shove you, and if you come off the bike near one of them
+              your night is over.
+            </p>
+            <p>
+              Getting caught has to cost money. So this phase also adds the
+              bill: a fine for being arrested, and repairs for the damage your
+              bike has picked up over the race. Damage accumulates from crashes
+              and from being hit, and at a hundred per cent the bike is written
+              off, which costs distinctly more than merely being badly damaged.
+            </p>
+            <p>
+              And there had to be a way out. If the police catch you eventually
+              no matter what you do, they are not an obstacle, they are a timer.
+            </p>
+            <p>
+              Two things this phase deliberately does not do: it computes what a
+              race cost but does not spend it, and there is no police at all in
+              the first tier of races. Both because the design says so — the
+              first tier is for learning to ride.
+            </p>
+          </section>
+
+          <section class="s-hard">
+            <p class="eyebrow">Why this was hard</p>
+            <p>
+              Honestly, it mostly wasn't, and the reason is worth more than a
+              manufactured difficulty would be. Every previous phase had built
+              something that this one could just use.
+            </p>
+            <p>
+              A police officer is the same rider structure as everybody else,
+              moved by the same physics, steered by producing the same little
+              packet of control inputs a computer rival produces. Ramming
+              someone is the kick that already existed for shoving riders
+              sideways — already written, already tested, and already visible on
+              screen because the previous phase made attackers light up while
+              they wind up. The whole police module is about two hundred lines
+              and none of it knows how a motorcycle moves.
+            </p>
+            <p>
+              The one genuinely fiddly part was escaping. "You can get away, and
+              it feels earned" is not something a test can check, so what had to
+              be built and checked was the mechanism underneath it — and the
+              first version of that mechanism let you escape for exactly one
+              frame.
+            </p>
+          </section>
+
+          <section class="s-deadends">
+            <p class="eyebrow">What we tried that didn't work</p>
+
+            <article class="deadend">
+              <h4>Three tests that were wrong before the code was</h4>
+              <p class="plain">
+                The first three failures in this phase were all mine. One test
+                stopped its loop the instant the race was not yet under way —
+                and every race begins with a three-second countdown, so it
+                stopped on the first step and reported that no officer had ever
+                noticed anybody. It had simulated nothing at all. Two more tried
+                to crash a rider by teleporting them off the edge of the road,
+                and a third forced an officer into pursuit without telling it
+                who it was pursuing.
+              </p>
+              <p class="why">
+                The teleport ones failed because the game pulls a rider back
+                onto the road before it ever checks whether they left it — code
+                that has been correct since the second phase. The pursuit one
+                failed because an officer whose target does not resolve gives up
+                on the next step, which is also correct. Two of the three were
+                the same mistake in different clothes: asserting against a
+                system I had not actually put into the state I believed it was
+                in. All three now set up the state honestly, and one of them
+                calls the crash function directly instead of trying to trick the
+                game into crashing.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>An escape that lasted one frame</h4>
+              <p class="plain">
+                The first version let an officer give up when you slowed down or
+                got far enough away — and then notice you again on the very next
+                step, because you were still going fast and still nearby. You
+                escaped, and were immediately re-arrested by the same policeman.
+              </p>
+              <p class="why">
+                Nothing stopped the state changing straight back. This is
+                structurally the same bug as the weapon steal in the previous
+                phase, where a knocked-loose weapon landed at the feet of the
+                rider who had just lost it and was picked straight back up. Both
+                are fixed the same way: a short period during which the thing
+                that just changed cannot change back. Officers now take just
+                under a second to notice anybody after being shaken off.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>Fifty-eight policemen on one road</h4>
+              <p class="plain">
+                The frame-budget test failed — the first time in this project a
+                performance test has caught something real rather than measuring
+                how busy the computer was. Police density is written as officers
+                per kilometre, and the hardest route turned out to be putting
+                fifty-eight of them on the road at once.
+              </p>
+              <p class="why">
+                I had chosen those numbers by analogy with the traffic density
+                without checking what they get multiplied by. Each tier extends
+                the previous one's road rather than replacing it, so a tier-five
+                route is nearly thirty kilometres long. Fifty-eight police is
+                not a performance problem that wants optimising, it is a design
+                problem wearing a performance problem's clothes — the field goes
+                from fourteen riders to seventy-two, and everything that
+                compares every rider with every other rider grows with the
+                square of that. Fixed by choosing the counts I actually wanted —
+                three at the second tier rising to fourteen at the fifth — and
+                working backwards to the density, instead of choosing a density
+                and finding out afterwards.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>A test suite that could no longer measure anything</h4>
+              <p class="plain">
+                With the police finished, four separate timing checks failed at
+                once — and every one of them passed when run on its own. Not
+                four bugs: the test suite had grown heavy enough that nothing
+                inside it could be timed.
+              </p>
+              <p class="why">
+                Two causes, both mine. The test runner starts one worker per
+                processor core less one, and most of this suite is whole races
+                simulated at sixty steps a second, so the machine was completely
+                saturated for the entire run with no quiet moment for any
+                measurement to land in. It now uses four workers on an
+                eight-core machine: half the machine sits idle, the suite takes
+                longer, and every measurement in it means something again. The
+                second cause is worse. The frame-budget check compares the cost
+                of a full race against the cost of a single rider — a ratio,
+                chosen in the previous phase precisely so a busy machine could
+                not distort it. But I measured sixty steps of each, and a race
+                step costs about fourteen times a lone one, so I was timing a
+                38-millisecond sample against a 3-millisecond one. The short
+                sample can find a quiet gap on a busy machine; the long one
+                cannot. The ratio was immune to the machine and not to the
+                sampling. Both samples now take about the same length of time.
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>Blocking that was nearly shipped as a no-op</h4>
+              <p class="plain">
+                The plan says police pursue, ram and block. I had built the
+                first two and listed the third as deferred — then looked again
+                and found an officer in front of you was already steering onto
+                your line, which looks like blocking. It wasn't: it was also at
+                full throttle, so it steered onto your line and then drove away.
+              </p>
+              <p class="why">
+                Blocking is being in front and <em>staying</em> there. An
+                officer within about twenty metres ahead now matches your speed
+                instead of its own maximum. Three lines of code, and the
+                difference between an obstruction and a motorcycle leaving. The
+                reason this is worth writing down is that "deferred" would have
+                been the comfortable answer and it would have meant "I did not
+                look closely at what I had already built".
+              </p>
+            </article>
+
+            <article class="deadend">
+              <h4>One way out is not a way out</h4>
+              <p class="plain">
+                Escaping only by outrunning them made pursuit a pure test of top
+                speed, which means the fastest bike is immune and everything
+                else is doomed. Escaping only by slowing down made it a test of
+                patience.
+              </p>
+              <p class="why">
+                There are now three exits, and the interesting one has a
+                condition: slowing down works, but only if you stay slow for
+                several seconds. A test specifically checks that lifting off for
+                one second does <em>not</em> work, because an escape you perform
+                by briefly blipping the throttle is not an escape. And the file
+                that describes police behaviour is rejected at load if it says
+                officers give up at a higher speed than they start chasing at —
+                such a file describes police who can never let go, and it should
+                not be possible to ship it by accident.
+              </p>
+            </article>
+          </section>
+
+          <section class="s-decision">
+            <p class="eyebrow">What we went with, and why</p>
+            <p>
+              Police are riders in the field but not entries in the race. They
+              go into the list of everyone on the road — so rivals see them,
+              collisions involve them, and you can punch one — and they never go
+              into the list of people who are racing, so they cannot appear in
+              the standings. That one split is the entire design.
+            </p>
+            <p>
+              A test asserts that the running order is exactly fourteen long on
+              a route that has police on it. Without it, the failure mode is a
+              player seeing a policeman in second place, which is the kind of
+              bug that is embarrassing precisely because it is so easy to
+              prevent.
+            </p>
+            <p class="tradeoff">
+              What this costs: police add riders to a list that is scanned
+              pair-by-pair, and pair-by-pair scanning grows with the square of
+              the number of things in it. Fourteen riders is 196 pairs; twenty
+              is 400. It is still small next to the traffic, but it is not free,
+              and the simulation was already using two-thirds of its time budget
+              before this phase started.
+            </p>
+            <p class="rejected">
+              We didn't build police as their own kind of entity with their own
+              movement code, which is what most games would do and which would
+              have been easier to write in the short term. It would have been a
+              second physics engine to keep in step with the first, and every
+              guarantee about how a motorcycle behaves would have needed proving
+              twice.
+            </p>
+          </section>
+
+          <section class="s-words">
+            <p class="eyebrow">Words to know</p>
+            <dl>
+              <dt>Acceptance criteria</dt>
+              <dd class="plain">
+                The list of things that must be true before a piece of work
+                counts as finished.
+              </dd>
+              <dd class="precise">
+                Pre-agreed, testable conditions written before implementation,
+                each demonstrated rather than assumed.
+              </dd>
+
+              <dt>Data-driven</dt>
+              <dd class="plain">
+                Behaviour written in a settings file rather than in the program.
+              </dd>
+              <dd class="precise">
+                Values loaded and validated at startup from JSON; here police
+                density per route, pursuit thresholds, fines and repair rates
+                all live in data, so tuning is an edit rather than a rebuild.
+              </dd>
+
+              <dt>Hysteresis</dt>
+              <dd class="plain">
+                Making something harder to undo than it was to do, so it does
+                not flicker.
+              </dd>
+              <dd class="precise">
+                Separate thresholds for entering and leaving a state — pursuit
+                starts above one speed and ends below a lower one, sustained —
+                plus a delay before re-entry, which is what stops an escape
+                lasting a single frame.
+              </dd>
+
+              <dt>Input frame</dt>
+              <dd class="plain">
+                A snapshot of what the controls were doing at one instant.
+              </dd>
+              <dd class="precise">
+                Throttle, brake, steering and attack, latched once per
+                simulation step; police produce one exactly as the player's
+                keyboard does.
+              </dd>
+
+              <dt>JSON</dt>
+              <dd class="plain">
+                A plain-text way of writing down structured data.
+              </dd>
+              <dd class="precise">
+                JavaScript Object Notation; every data file in this project is
+                one, and every one is validated on load rather than trusted.
+              </dd>
+
+              <dt>State machine</dt>
+              <dd class="plain">
+                A thing that is always in exactly one of a few named situations.
+              </dd>
+              <dd class="precise">
+                An officer is either patrolling or pursuing, with the conditions
+                for moving between them defined in one function.
+              </dd>
+
+              <dt>Tick</dt>
+              <dd class="plain">One step of the game's clock.</dd>
+              <dd class="precise">
+                A single fixed-duration simulation step; sixty per second,
+                regardless of frame rate.
+              </dd>
+
+              <dt>Track space</dt>
+              <dd class="plain">
+                Describing a position as "how far along the road, and how far
+                left or right".
+              </dd>
+              <dd class="precise">
+                The curvilinear coordinate system the simulation works in;
+                distances within it are measured along the curve, never by
+                subtracting coordinates — including the arrest radius.
+              </dd>
+
+              <dt>Wreck</dt>
+              <dd class="plain">
+                A bike damaged past the point of being worth fixing.
+              </dd>
+              <dd class="precise">
+                Damage reaching 100, which ends the race and adds a step to the
+                repair bill on top of the proportional cost.
+              </dd>
+            </dl>
+          </section>
+
+          <section class="s-code">
+            <p class="eyebrow">Show me in the code</p>
+            <p class="file-ref">
+              src/core/police/police.ts → <code>updatePursuit()</code>
+            </p>
+            <p>
+              Who, if anyone, this officer is chasing. Everything about whether
+              the police are an obstacle or a timer is in this function.
+            </p>
+            <pre><code>function updatePursuit(
+  unit: PoliceUnit,
+  riders: readonly Rider[],
+  track: Track,
+  data: PoliceData,
+  dt: number,
+): Rider | null {
+  const { pursuit } = data;
+
+  if (unit.state === 'pursuing') {
+    const quarry = riders[unit.target];
+    if (!quarry) {
+      unit.state = 'patrolling';
+      unit.target = -1;
+      return null;
+    }
+    if (quarry.speed &lt; pursuit.dropSpeed) unit.slowFor += dt;
+    else unit.slowFor = 0;
+
+    const lost =
+      unit.slowFor &gt;= pursuit.dropSeconds ||
+      gapTo(unit, quarry, track) &gt; pursuit.loseDistance;
+    if (lost) {
+      unit.state = 'patrolling';
+      unit.target = -1;
+      unit.slowFor = 0;
+      // A fresh reaction delay, so shaking one officer is worth something even
+      // if you speed up again immediately.
+      unit.noticeTimer = pursuit.reactionSeconds;
+      return null;
+    }
+    return quarry;
+  }</code></pre>
+            <ol class="annotations">
+              <li data-line="11">
+                The target is stored as a position in the list of riders rather
+                than as the rider itself. That is what lets the whole race state
+                be copied cheaply every step for the renderer to interpolate
+                between — but it also means an officer must cope with its target
+                no longer being there, which is the check on the next line.
+              </li>
+              <li data-line="18">
+                The counter goes up while you are slow and resets to zero the
+                moment you are not. This one line is why blipping the throttle
+                does not shake the police off: you have to actually stay slow.
+              </li>
+              <li data-line="21">
+                Two independent ways out — sustained slowness, or distance —
+                joined by "or". Either alone would make pursuit a test of one
+                single thing: outrunning them favours whoever bought the fastest
+                bike, and patience favours nobody.
+              </li>
+              <li data-line="29">
+                The line that stopped escaping from lasting one frame. Without
+                it the officer drops you and re-acquires you on the very next
+                step, because you are still nearby and still speeding. The same
+                fix, for the same reason, as the weapon that used to be picked
+                straight back up by the rider who dropped it.
+              </li>
+            </ol>
+          </section>
+
+          <section class="s-spoken">
+            <p class="eyebrow">Say it out loud</p>
+            <blockquote>
+              Police are just riders — same struct, same physics, same input
+              frame a rival produces — and a ram is the kick the combat system
+              already had, so the whole module is about two hundred lines and
+              none of it knows how a bike moves. They go in the list of people
+              on the road and never in the list of people racing, so you can
+              punch one but one can't finish third. The part that took thought
+              was escaping: my first version let an officer give up and then
+              re-acquire you on the next tick, which is structurally the same
+              bug as the weapon steal in the previous phase, and it wants the
+              same fix — a short window where the thing that just changed can't
+              change back. And three of the first failures were my tests rather
+              than the code, including one that broke out of its loop during the
+              countdown and had simulated nothing at all.
+            </blockquote>
+          </section>
+        </section>
+
         <!-- ================= 90 SECONDS ================= -->
         <section class="page" id="ninety-seconds" aria-labelledby="h-90" hidden>
           <header class="page-head">
@@ -4278,9 +4711,10 @@
               does not require two browsers to agree on them. So the game holds
               every position as a distance along the road, does its trigonometry
               once when a track loads, and reads tables thereafter. Five routes,
-              five tiers, city traffic, hazards, and fourteen riders who all go
-              through identical physics — including the fighting, which is one
-              more field on the same input frame that carries the throttle.
+              five tiers, city traffic, hazards, fourteen riders and the police,
+              all of them going through identical physics — the fighting and the
+              ramming are one more field on the same input frame that carries
+              the throttle.
             </p>
           </section>
 
@@ -4305,12 +4739,16 @@
     traffic     pooled vehicles; window spans the field
     collide     traffic · hazard · cliff → crash, remount
     race        countdown → racing → finished/failed
+                failReason: retired · arrested · wrecked
   ai/           <b>·done</b>
     racer       line · corner limit · following · grudges → InputFrame
   combat/       <b>·done</b>
     combat      windup/active/recovery · range by trackDistance
                 weapons circulate — carried + dropped is constant
-  economy/ reputation/                    <i>Phases 7–9</i>
+  police/       <b>·done</b>
+    police      patrol → pursue → ram · arrest by trackDistance
+    outcome     fine · repair · wreck → RaceOutcome
+  economy/ reputation/                    <i>Phases 8–9</i>
 
 <b>src/app/</b>       FixedStepDriver — the accumulator. Never sees a clock.
 <b>src/input/</b>     keyboard + gamepad, rebindable; resolve() is pure
@@ -4320,10 +4758,11 @@
   Scenery          pooled, instanced, LOD past 220 m
   TrafficView      instanced per kind; head/tail lamps separate
   HazardView       static — every matrix written once at build
-  FieldView        13 rivals, one livery each; lit while swinging
+  FieldView        13 rivals + police, lit while swinging or chasing
   ChaseCamera      FOV · drop · pull-back · lateral lag
 <b>src/ui/</b>        plain DOM. Speed · tacho · two stamina bars
-<b>src/data/</b>      25 tracks · 204 hazards · 14 racers · bikes · combat · tuning
+<b>src/data/</b>      25 tracks · 204 hazards · 14 racers · bikes · combat
+              police · tuning — all JSON, all validated on load
 
 <i>position</i> = (s, t, branchId)          <i>s along, t sideways</i>
 <i>world</i>    = sample(s).position + right × t     <i>render time only</i>
@@ -4334,13 +4773,14 @@
 <i>loop</i>     = 60 Hz sim · render interpolates by alpha
 
 <b>npm run check</b>  typecheck · lint · test+coverage · size
-              <i>427 tests · core 99.5% lines · 147 KB of 500</i>
+              <i>470 tests · core 99% lines · 150 KB of 500</i>
               <i>race tick 0.63 ms idle, 1 ms budget; asserted as a ratio</i></pre>
             <p class="cost">
               Built so far: the road, the bike, the loop, twenty-five routes,
               city traffic, hazards, crashes, thirteen rivals, a race that runs
-              start to finish, and a fight you can lose it in. Police, career
-              and reputation are Phases 7–9; the desktop build is Phase 10.
+              start to finish, a fight you can lose it in, and police who will
+              end your night. Career and reputation are Phases 8 and 9; the
+              desktop build is Phase 10.
             </p>
           </section>
 

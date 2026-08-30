@@ -3,6 +3,7 @@
   "name": "DND Flyway — Tier 2",
   "scenery": "flyway",
   "trafficDensity": 10.5,
+  "policeDensity": 0.145,
   "extends": "dnd-flyway-t1",
   "segments": [
     {

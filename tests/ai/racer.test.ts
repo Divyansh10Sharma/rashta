@@ -203,7 +203,11 @@ function ridden(trackId: string, seed: number): { place: number; at: number } {
   const mind = brain();
   const input: InputFrame = { throttle: 0, brake: 0, lean: 0 };
 
-  while (!allHome(race) && race.tick < 60 * 60 * 45) {
+  while (
+    !allHome(race) &&
+    race.phase !== 'failed' &&
+    race.tick < 60 * 60 * 45
+  ) {
     think(
       player.rider,
       ace,
@@ -242,7 +246,11 @@ describe('the player starts last, and top three is worth having', () => {
     // nothing. Holding the throttle down is the laziest possible input.
     const track = trackFor('ridge-run-t2');
     const race = raceOn(track, 21);
-    while (!allHome(race) && race.tick < 60 * 60 * 45) {
+    while (
+      !allHome(race) &&
+      race.phase !== 'failed' &&
+      race.tick < 60 * 60 * 45
+    ) {
       stepRace(race, FLAT_OUT, track, tuning);
     }
     expect(playerEntry(race).place).toBeGreaterThan(3);

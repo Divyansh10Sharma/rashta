@@ -3,6 +3,7 @@
   "name": "Ridge Run — Tier 1",
   "scenery": "ridge",
   "trafficDensity": 4,
+  "policeDensity": 0,
   "segments": [
     {
       "length": 620,

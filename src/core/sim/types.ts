@@ -5,6 +5,7 @@ import type {
   DroppedWeapon,
   WeaponKind,
 } from '../combat/types.ts';
+import type { FailReason, PoliceData, PoliceUnit } from '../police/types.ts';
 import type { TrackPos } from '../types.ts';
 import type { Rng } from '../rng.ts';
 
@@ -176,6 +177,13 @@ export interface Rider {
   attackElapsed: number;
   /** Seconds of lost lateral control left, from being hit. */
   staggerTimer: number;
+  /**
+   * Bike damage, 0-100, accumulated across a whole race.
+   *
+   * Deliberately not stamina: stamina is the rider, resets between races and
+   * recovers in seconds. Damage is the machine, and it is a bill.
+   */
+  damage: number;
   state: RiderState;
   /** Seconds left in `crashing` or `remounting`. */
   stateTimer: number;
@@ -204,11 +212,26 @@ export interface RaceEntry {
   finishTick: number | null;
   /** 1-based standing, refreshed every tick. */
   place: number;
+  /**
+   * True when this rider's race ended without finishing — arrested, wrecked,
+   * or retired. They stop being simulated; everybody else rides on.
+   */
+  out: boolean;
+  /** Whether this rider was down last tick, so a crash is charged once. */
+  wasDown: boolean;
+  /** Stamina last tick, so a hit can be charged as bike damage too. */
+  lastStamina: number;
 }
 
 /** A whole race. Supersedes WorldState once a race is running. */
 export interface RaceState {
   phase: RacePhase;
+  /** Why the race failed, or null. Only meaningful once `phase` is 'failed'. */
+  failReason: FailReason | null;
+  /** Police on the road. Never in `entries`: they are not racing. */
+  police: PoliceUnit[];
+  /** Police behaviour and what a bust costs. Immutable config. */
+  policeData: PoliceData;
   /** Attack and weapon data. Immutable config, carried so `stepRace` has it. */
   combat: CombatData;
   entries: RaceEntry[];

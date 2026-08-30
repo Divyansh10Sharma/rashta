@@ -26,6 +26,7 @@ export function trackOf(...segments: TrackSegment[]): Track {
     name: 'Synthetic',
     scenery: 'ringroad',
     trafficDensity: 0,
+    policeDensity: 0,
     segments,
     branches: [],
   });
@@ -38,6 +39,7 @@ export function validTrackJson(): Record<string, unknown> {
     name: 'Synthetic',
     scenery: 'ringroad',
     trafficDensity: 0,
+    policeDensity: 0,
     segments: [segment(), segment({ curvature: 0.004 })],
     branches: [],
   };

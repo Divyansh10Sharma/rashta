@@ -327,6 +327,7 @@ describe('the library rejects bad data, naming the file', () => {
     name: 'A',
     scenery: 'ringroad',
     trafficDensity: 0,
+    policeDensity: 0,
     segments: [
       {
         length: 100,
@@ -374,6 +375,12 @@ describe('the library rejects bad data, naming the file', () => {
     );
     expect(withFile({ ...good(), trafficDensity: 'lots' })).toThrow(
       /bad\.json: trafficDensity/,
+    );
+    expect(withFile({ ...good(), policeDensity: -1 })).toThrow(
+      /bad\.json: policeDensity/,
+    );
+    expect(withFile({ ...good(), policeDensity: 'some' })).toThrow(
+      /bad\.json: policeDensity/,
     );
   });
 
