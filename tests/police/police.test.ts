@@ -10,7 +10,8 @@ import {
   repairFor,
 } from '../../src/core/police/outcome.ts';
 import { stepRider } from '../../src/core/sim/step.ts';
-import { crash } from '../../src/core/sim/collide.ts';
+import { crash, stepCrash } from '../../src/core/sim/crash.ts';
+import { FIXED_DT } from '../../src/core/sim/step.ts';
 import { trackDistance } from '../../src/core/track/distance.ts';
 import { createRider } from '../../src/core/sim/world.ts';
 import { segment, trackOf } from '../helpers/tracks.ts';
@@ -210,6 +211,22 @@ describe('pursuit starts, and can be escaped', () => {
   });
 });
 
+/**
+ * Crashes a rider and runs the crash on until they are on the ground.
+ *
+ * Speed is zeroed first because these tests are about where an arrest can
+ * reach, and a rider who slides two hundred metres has moved the thing under
+ * test. An officer cannot arrest someone still tumbling, which is the whole
+ * reason `arrestedBy` names the stages it does.
+ */
+function putDown(rider: Rider): void {
+  rider.speed = 0;
+  crash(rider, 'traffic', tuning);
+  for (let i = 0; i < 600 && rider.state !== 'downed'; i += 1) {
+    stepCrash(rider, tuning, FIXED_DT);
+  }
+}
+
 describe('arrest', () => {
   it('busts a rider who goes down next to a pursuing officer', () => {
     const unit = officer(0);
@@ -219,7 +236,7 @@ describe('arrest', () => {
 
     rider.pos.s = unit.rider.pos.s + 4;
     expect(arrestedBy(rider, [unit], ROAD, policeData)).toBeNull();
-    crash(rider, 'traffic', tuning);
+    putDown(rider);
     expect(arrestedBy(rider, [unit], ROAD, policeData)).toBe(unit);
   });
 
@@ -228,14 +245,14 @@ describe('arrest', () => {
     const rider = runner(60, policeData.pursuit.triggerSpeed + 6);
     chase(unit, [rider], 2);
     rider.pos.s = unit.rider.pos.s + policeData.arrest.radius + 10;
-    crash(rider, 'traffic', tuning);
+    putDown(rider);
     expect(arrestedBy(rider, [unit], ROAD, policeData)).toBeNull();
   });
 
   it('does not bust a rider next to an officer who is not chasing them', () => {
     const unit = officer(0);
     const rider = runner(4, 5);
-    crash(rider, 'traffic', tuning);
+    putDown(rider);
     expect(unit.state).toBe('patrolling');
     expect(arrestedBy(rider, [unit], ROAD, policeData)).toBeNull();
   });
@@ -249,7 +266,7 @@ describe('arrest', () => {
     unit.rider.pos.t = -3.5;
 
     const rider = createRider(bike(), 300 + policeData.arrest.radius, -3.5);
-    crash(rider, 'traffic', tuning);
+    putDown(rider);
     const along = trackDistance(unit.rider.pos, rider.pos, bend);
     expect(along).toBeGreaterThan(policeData.arrest.radius);
     expect(arrestedBy(rider, [unit], bend, policeData)).toBeNull();

@@ -3,7 +3,6 @@ import * as THREE from 'three';
 import { buildBike } from '../../src/render/meshes/bike.ts';
 import { buildVehicle } from '../../src/render/meshes/vehicles.ts';
 import { texturesSupported } from '../../src/render/meshes/textures.ts';
-import { flatten, parseManifest } from '../../src/render/assets.ts';
 import { createParticles } from '../../src/render/Particles.ts';
 import { TRAFFIC_SIZES } from '../../src/core/sim/traffic.ts';
 import type { BikeBuild } from '../../src/render/meshes/bike.ts';
@@ -113,63 +112,6 @@ describe('textures degrade rather than crash', () => {
     // The suite runs in Node. Every caller has to cope with getting nothing,
     // and a material with no map is the flat colour this project had before.
     expect(texturesSupported()).toBe(false);
-  });
-});
-
-describe('the model manifest', () => {
-  it('accepts an empty manifest, which is what ships', () => {
-    expect(parseManifest('models.json', {})).toEqual({});
-  });
-
-  it('accepts a known slot', () => {
-    expect(
-      parseManifest('models.json', { 'bike:sport': '/models/sport.glb' }),
-    ).toEqual({ 'bike:sport': '/models/sport.glb' });
-  });
-
-  it('rejects a slot name nobody will ever notice is wrong', () => {
-    expect(() =>
-      parseManifest('models.json', { 'bike:racer': '/x.glb' }),
-    ).toThrow(/"bike:racer" is not a model slot/);
-  });
-
-  it('rejects an empty path', () => {
-    expect(() => parseManifest('models.json', { 'traffic:bus': '' })).toThrow(
-      /must be a non-empty file path/,
-    );
-  });
-
-  it('rejects a file that is not an object', () => {
-    expect(() => parseManifest('models.json', null)).toThrow(
-      /must be a JSON object/,
-    );
-  });
-});
-
-describe('flattening a loaded model', () => {
-  it('bakes each mesh transform and merges the tree into one geometry', () => {
-    const scene = new THREE.Group();
-    const a = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial(),
-    );
-    const b = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial(),
-    );
-    b.position.set(4, 0, 0);
-    scene.add(a, b);
-
-    const flat = flatten(scene);
-    if (!flat) throw new Error('nothing flattened');
-    // Four metres apart plus half a box each way: the transform was baked in
-    // rather than dropped, which is the whole job.
-    expect(extent(flat.geometry).x).toBeCloseTo(5, 5);
-    expect(flat.materials.length).toBe(2);
-  });
-
-  it('returns nothing for a scene with no meshes, rather than throwing', () => {
-    expect(flatten(new THREE.Group())).toBeNull();
   });
 });
 

@@ -24,6 +24,11 @@ export function createRider(bike: TunedBike, s = 0, t = 0): Rider {
     state: 'riding',
     stateTimer: 0,
     crashCause: null,
+    severity: null,
+    h: 0,
+    hVel: 0,
+    bikePos: { s, t, branchId: MAIN_BRANCH },
+    bikeSpeed: 0,
     slipTimer: 0,
     graceTimer: 0,
     bike,
@@ -69,6 +74,13 @@ export function copyRider(from: Rider, to: Rider): void {
   to.state = from.state;
   to.stateTimer = from.stateTimer;
   to.crashCause = from.crashCause;
+  to.severity = from.severity;
+  to.h = from.h;
+  to.hVel = from.hVel;
+  to.bikePos.s = from.bikePos.s;
+  to.bikePos.t = from.bikePos.t;
+  to.bikePos.branchId = from.bikePos.branchId;
+  to.bikeSpeed = from.bikeSpeed;
   to.slipTimer = from.slipTimer;
   to.graceTimer = from.graceTimer;
   // Shared by reference deliberately: immutable tuning data, not state.

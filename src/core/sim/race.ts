@@ -2,6 +2,7 @@ import { copyRider, copyTraffic, createRider } from './world.ts';
 import { FIXED_DT, stepRider } from './step.ts';
 import { createTraffic, stepTraffic } from './traffic.ts';
 import { checkHazards, checkOffRoad, checkTraffic } from './collide.ts';
+import { isDown } from './crash.ts';
 import { createRng } from '../rng.ts';
 import { progress } from '../track/distance.ts';
 import { think } from '../ai/racer.ts';
@@ -294,7 +295,10 @@ function accrueDamage(race: RaceState): void {
   for (const entry of race.entries) {
     if (!racing(entry)) continue;
     const rider = entry.rider;
-    const down = rider.state !== 'riding';
+    // The edge is entry into the crash sequence, not merely leaving `riding`.
+    // Under the nine-state machine a punch that staggers you leaves `riding`
+    // too, and a stagger is not a crash and must not be billed as one.
+    const down = isDown(rider);
     if (down && !entry.wasDown) rider.damage += rates.perCrash;
     entry.wasDown = down;
 
@@ -307,7 +311,7 @@ function accrueDamage(race: RaceState): void {
 }
 
 function resolveFor(rider: Rider, race: RaceState, track: Track, t: Tuning) {
-  if (rider.state !== 'riding') return;
+  if (isDown(rider)) return;
   checkHazards(rider, track, t);
   checkTraffic(rider, race.traffic, track, t);
   checkOffRoad(rider, track, t);

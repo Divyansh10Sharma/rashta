@@ -26,6 +26,7 @@ import { createFrame } from '../core/track/path.ts';
 import { createDevOverlay, StepTimer } from '../ui/DevOverlay.ts';
 import { FrameMeter } from '../ui/FrameMeter.ts';
 import { FixedStepDriver } from './FixedStepDriver.ts';
+import { isDown } from '../core/sim/crash.ts';
 
 /**
  * The game loop, exactly as ARCHITECTURE.md 2 describes it.
@@ -207,7 +208,7 @@ function run(canvas: HTMLCanvasElement): void {
     // throws sparks once, on the tick they go down — the same edge the damage
     // model uses, so one crash is one shower rather than one a frame.
     for (const entry of current.entries) {
-      const down = entry.rider.state !== 'riding';
+      const down = isDown(entry.rider);
       const wasDown = downLast.get(entry.profile.id) === true;
       if (down && !wasDown) {
         world.set(
@@ -222,7 +223,7 @@ function run(canvas: HTMLCanvasElement): void {
 
       // Dust off the shoulder: only the player, and only when actually out
       // near the edge, or every race is a sandstorm.
-      if (entry.isPlayer && entry.rider.state === 'riding') {
+      if (entry.isPlayer && !isDown(entry.rider)) {
         const edge = track.driveableHalfWidthAt(
           entry.rider.pos.s,
           entry.rider.pos.branchId,

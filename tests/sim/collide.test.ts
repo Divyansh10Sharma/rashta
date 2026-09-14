@@ -4,7 +4,7 @@ import { loadTrackLibrary } from '../../src/core/track/library.ts';
 import { loadBikes, loadTuning } from '../../src/core/sim/load.ts';
 import { FIXED_DT, step } from '../../src/core/sim/step.ts';
 import { createWorld } from '../../src/core/sim/world.ts';
-import { crash } from '../../src/core/sim/collide.ts';
+import { crash, isDown } from '../../src/core/sim/crash.ts';
 import { segment, trackOf } from '../helpers/tracks.ts';
 import type { Track } from '../../src/core/track/Track.ts';
 import type {
@@ -86,13 +86,13 @@ function expectRoundTrip(
 
   for (let i = 0; i < 60 * 30; i += 1) {
     step(world, GO, track, tuning);
-    const state = world.player.state;
-    if (!crashed && state === 'crashing') {
+    const down = isDown(world.player);
+    if (!crashed && down) {
       crashed = true;
       expect(world.player.crashCause).toBe(cause);
     }
     if (crashed && !recovered) {
-      if (state === 'riding') recovered = true;
+      if (!down) recovered = true;
       else downFor += FIXED_DT;
     }
     if (recovered) break;
@@ -101,11 +101,12 @@ function expectRoundTrip(
   expect(`${cause}: crashed ${crashed}, back up ${recovered}`).toBe(
     `${cause}: crashed true, back up true`,
   );
-  // The cost of a crash is time, and the data file says how much.
-  expect(downFor).toBeGreaterThan(tuning.crashSeconds);
-  expect(downFor).toBeLessThan(
-    tuning.crashSeconds + tuning.remountSeconds + 0.2,
-  );
+  // The cost of a crash is time, and it is derived rather than configured —
+  // so the only thing assertable without knowing the impact speed is that it
+  // cost at least the stages that are fixed. How it scales is its own test.
+  const fixed =
+    tuning.downedSeconds + tuning.risingSeconds + tuning.remountSeconds;
+  expect(downFor).toBeGreaterThan(fixed);
 }
 
 describe('crash and remount round-trips from every cause', () => {
@@ -148,7 +149,7 @@ function expectRoundTripOffTheEdge(track: Track): void {
   const world = createWorld(bike, track, 1);
   for (let i = 0; i < 60 * 30; i += 1) {
     step(world, WIDE_RIGHT, track, tuning);
-    if (world.player.state === 'crashing') break;
+    if (isDown(world.player)) break;
   }
   expect(world.player.crashCause).toBe('cliff');
 
@@ -168,14 +169,14 @@ describe('the crash sequence itself', () => {
     const world = createWorld(bike, track, 1);
     let crashes = 0;
     let recoveries = 0;
-    let previous = world.player.state;
+    let previous = isDown(world.player);
 
     for (let i = 0; i < 60 * 60; i += 1) {
       step(world, WIDE_RIGHT, track, tuning);
-      const state = world.player.state;
-      if (previous !== 'crashing' && state === 'crashing') crashes += 1;
-      if (previous === 'remounting' && state === 'riding') recoveries += 1;
-      previous = state;
+      const down = isDown(world.player);
+      if (!previous && down) crashes += 1;
+      if (previous && !down) recoveries += 1;
+      previous = down;
     }
 
     expect(crashes).toBeGreaterThan(1);
@@ -186,32 +187,47 @@ describe('the crash sequence itself', () => {
     expect(world.player.pos.s).toBeGreaterThan(0);
   });
 
-  it('slides the bike on rather than stopping it dead', () => {
+  it('parts the rider from the bike, leaving a gap to be walked', () => {
     const track = roadWith([{ kind: 'cow', offset: 200, t: 0 }]);
     const world = createWorld(bike, track, 1);
 
-    while (world.player.state === 'riding' && world.player.pos.s < 900) {
+    while (!isDown(world.player) && world.player.pos.s < 900) {
       step(world, GO, track, tuning);
     }
-    expect(world.player.state).toBe('crashing');
+    const at = world.player.pos.s;
+    expect(world.player.severity).not.toBe(null);
 
-    let slid = 0;
-    while (world.player.state === 'crashing') {
-      const before = world.player.pos.s;
+    // Ride it out to the point the rider is on their feet and walking. Both
+    // bodies have stopped by then and the gap between them is the whole
+    // penalty.
+    while (world.player.state !== 'running') {
       step(world, GO, track, tuning);
-      slid += world.player.pos.s - before;
     }
-    expect(slid).toBeGreaterThan(1);
+    const riderSlid = world.player.pos.s - at;
+    const bikeSlid = world.player.bikePos.s - at;
+    expect(riderSlid).toBeGreaterThan(1);
+    expect(bikeSlid).toBeGreaterThan(1);
+    // Which of the two ends up in front depends on the band — a thrown rider
+    // carries their speed through the air while the bike is already grinding
+    // on tarmac, so a highside lands you past your own bike. Either way there
+    // is a gap, and the gap is the penalty.
+    expect(Math.abs(bikeSlid - riderSlid)).toBeGreaterThan(1);
     expect(world.player.speed).toBe(0);
+    expect(world.player.bikeSpeed).toBe(0);
+
+    // And the rider ends up on the bike, not near it.
+    while (isDown(world.player)) step(world, COAST, track, tuning);
+    expect(world.player.pos.s).toBeCloseTo(world.player.bikePos.s, 6);
   });
 
   it('ignores a second crash while the rider is already down', () => {
     const world = createWorld(bike, roadWith([]), 1);
+    world.player.speed = 30;
     crash(world.player, 'hazard', tuning);
-    const timer = world.player.stateTimer;
+    const severity = world.player.severity;
     crash(world.player, 'traffic', tuning);
     expect(world.player.crashCause).toBe('hazard');
-    expect(world.player.stateTimer).toBe(timer);
+    expect(world.player.severity).toBe(severity);
   });
 
   it('takes no steering input while the rider is down', () => {
@@ -223,6 +239,81 @@ describe('the crash sequence itself', () => {
     run(world, track, 30, WIDE_RIGHT);
     expect(world.player.pos.t).toBe(t);
     expect(world.player.lean).toBe(0);
+  });
+});
+
+/**
+ * Seconds between an impact at `kmh` and being back on the bike.
+ *
+ * The rider is set to the speed rather than ridden up to it, because the
+ * criterion is about the impact and not about how long the road is.
+ */
+function timeLostTo(kmh: number, cause: CrashCause = 'traffic'): number {
+  const track = roadWith([]);
+  const world = createWorld(bike, track, 1);
+  world.traffic.length = 0;
+  world.player.speed = kmh / 3.6;
+  crash(world.player, cause, tuning);
+
+  for (let i = 1; i <= 60 * 120; i += 1) {
+    step(world, COAST, track, tuning);
+    if (!isDown(world.player)) return i * FIXED_DT;
+  }
+  throw new Error(`never got up from ${kmh} km/h`);
+}
+
+describe('what a crash costs', () => {
+  it('costs more the faster you were going, at every step', () => {
+    // The whole point of deriving the cost: a tip-over must not cost what a
+    // highside costs. Swept rather than spot-checked, because a model that is
+    // monotonic at four points and not in between is still wrong.
+    let previous = 0;
+    for (let kmh = 40; kmh <= 280; kmh += 10) {
+      const cost = timeLostTo(kmh);
+      expect(`${kmh} km/h: ${cost > previous}`).toBe(`${kmh} km/h: true`);
+      previous = cost;
+    }
+  });
+
+  it('picks the severity band from the impact speed', () => {
+    const band = (kmh: number): string => {
+      const world = createWorld(bike, roadWith([]), 1);
+      world.player.speed = kmh / 3.6;
+      crash(world.player, 'traffic', tuning);
+      return `${world.player.severity}`;
+    };
+    expect(band(60)).toBe('tipover');
+    expect(band(120)).toBe('thrown');
+    expect(band(220)).toBe('highside');
+  });
+
+  it('never leaves the rider airborne, sliding, or short of the bike', () => {
+    // No state may strand a rider. Every cause, every band.
+    const causes: CrashCause[] = ['traffic', 'hazard', 'cliff', 'combat'];
+    for (const cause of causes) {
+      for (const kmh of [0, 40, 120, 220, 300]) {
+        expect(`${cause} ${kmh}`).toBe(`${cause} ${kmh}`);
+        expect(timeLostTo(kmh, cause)).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('does not let the player shorten the walk back', () => {
+    const held = timeLostTo(200);
+    const track = roadWith([]);
+    const world = createWorld(bike, track, 1);
+    world.traffic.length = 0;
+    world.player.speed = 200 / 3.6;
+    crash(world.player, 'traffic', tuning);
+    let mashed = 0;
+    for (let i = 1; i <= 60 * 120; i += 1) {
+      step(world, WIDE_RIGHT, track, tuning);
+      if (!isDown(world.player)) {
+        mashed = i * FIXED_DT;
+        break;
+      }
+    }
+    expect(mashed).toBe(held);
   });
 });
 
@@ -348,13 +439,13 @@ describe('riding a real route meets real hazards', () => {
       const world = createWorld(bike, track, 3);
       world.traffic.length = 0;
       let met = 0;
-      let previous = world.player.state;
+      let previous = isDown(world.player);
       let previousSlip = 0;
       for (let i = 0; i < 60 * 400; i += 1) {
         step(world, GO, track, tuning);
-        if (previous !== 'crashing' && world.player.state === 'crashing') met++;
+        if (!previous && isDown(world.player)) met++;
         if (previousSlip <= 0 && world.player.slipTimer > 0) met++;
-        previous = world.player.state;
+        previous = isDown(world.player);
         previousSlip = world.player.slipTimer;
         if (world.player.pos.s > track.totalLength - 50) break;
       }

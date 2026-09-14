@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { allHome, playerEntry, stepRace } from '../../src/core/sim/race.ts';
 import { outcomeOf } from '../../src/core/police/outcome.ts';
-import { crash } from '../../src/core/sim/collide.ts';
+import { crash } from '../../src/core/sim/crash.ts';
 import {
   police as policeData,
   raceOn,

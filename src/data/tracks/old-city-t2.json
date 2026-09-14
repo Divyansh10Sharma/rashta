@@ -2,7 +2,7 @@
   "id": "old-city-t2",
   "name": "Old City — Tier 2",
   "scenery": "oldcity",
-  "trafficDensity": 21,
+  "trafficDensity": 12.6,
   "policeDensity": 0.088,
   "extends": "old-city-t1",
   "segments": [

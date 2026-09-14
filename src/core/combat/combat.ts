@@ -1,5 +1,5 @@
 import { trackDistance } from '../track/distance.ts';
-import { crash } from '../sim/collide.ts';
+import { crash, isDown } from '../sim/crash.ts';
 import type { Track } from '../track/Track.ts';
 import type { Rider, Tuning } from '../sim/types.ts';
 import type {
@@ -70,6 +70,7 @@ export function startAttack(
   rider.stamina -= spec.cost;
   rider.attack = kind;
   rider.attackElapsed = 0;
+  rider.state = 'attacking';
   return true;
 }
 
@@ -83,7 +84,7 @@ export function engagedWith(
   let best: Rider | null = null;
   let bestAt = data.engageRange;
   for (const other of field) {
-    if (other === rider || other.state === 'crashing') continue;
+    if (other === rider || isDown(other)) continue;
     if (other.pos.branchId !== rider.pos.branchId) continue;
     // Cheap rejection before the expensive curved measurement.
     if (Math.abs(other.pos.s - rider.pos.s) > bestAt) continue;
@@ -128,6 +129,7 @@ function land(
     spec.damage * (weapon === null ? 1 : data.weapons[weapon].damage);
   target.stamina -= damage;
   target.staggerTimer = Math.max(target.staggerTimer, spec.stagger);
+  if (!isDown(target)) target.state = 'staggered';
 
   // The shove is away from the attacker. Near the flyway's open edge this is
   // the whole danger, and it is why a kick exists.
@@ -154,6 +156,21 @@ function land(
   }
 }
 
+/**
+ * Re-derives an upright rider's state from the two flags that drive it.
+ *
+ * Doing it in one place at the end of the tick, rather than assigning `state`
+ * at each of the five points that can change a timer, is what keeps the order
+ * of those five points from mattering — a rider staggered mid-swing has both
+ * flags set, and stagger wins because that is what `canSteer` already says.
+ */
+function syncState(rider: Rider): void {
+  if (isDown(rider)) return;
+  if (rider.staggerTimer > 0) rider.state = 'staggered';
+  else if (rider.attack !== null) rider.state = 'attacking';
+  else rider.state = 'riding';
+}
+
 /** Picks up anything lying in the road that an unarmed rider rides over. */
 function collect(
   rider: Rider,
@@ -161,7 +178,7 @@ function collect(
   track: Track,
   data: CombatData,
 ): void {
-  if (rider.weapon !== null || rider.state !== 'riding') return;
+  if (rider.weapon !== null || isDown(rider)) return;
   for (const slot of dropped) {
     if (!slot.active || slot.settle > 0) continue;
     if (slot.branchId !== rider.pos.branchId) continue;
@@ -194,11 +211,11 @@ export function stepCombat(
 
   for (const rider of field) {
     if (rider.staggerTimer > 0) rider.staggerTimer -= dt;
-    if (rider.stamina < 100 && rider.state === 'riding') {
+    if (rider.stamina < 100 && !isDown(rider)) {
       rider.stamina = Math.min(100, rider.stamina + data.staminaRegen * dt);
     }
     // A rider knocked off mid-swing is not still swinging.
-    if (rider.attack !== null && rider.state !== 'riding') {
+    if (rider.attack !== null && isDown(rider)) {
       rider.attack = null;
       rider.attackElapsed = 0;
     }
@@ -217,7 +234,7 @@ export function stepCombat(
     if (opens) {
       const reach = reachOf(attacker, spec, data);
       for (const target of field) {
-        if (target === attacker || target.state !== 'riding') continue;
+        if (target === attacker || isDown(target)) continue;
         if (target.pos.branchId !== attacker.pos.branchId) continue;
         if (Math.abs(target.pos.s - attacker.pos.s) > reach) continue;
         if (trackDistance(attacker.pos, target.pos, track) > reach) continue;
@@ -231,5 +248,6 @@ export function stepCombat(
     }
   }
 
+  for (const rider of field) syncState(rider);
   for (const rider of field) collect(rider, dropped, track, data);
 }

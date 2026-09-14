@@ -9,9 +9,17 @@ import type { FailReason, PoliceData, PoliceUnit } from '../police/types.ts';
 import type { TrackPos } from '../types.ts';
 import type { Rng } from '../rng.ts';
 
-/** What a rider is doing. Only `riding` is reachable before Phase 4. */
+/** What a rider is doing. See ARCHITECTURE.md 3.1 for the crash half. */
 export type RiderState =
-  'riding' | 'attacking' | 'staggered' | 'crashing' | 'remounting';
+  | 'riding'
+  | 'attacking'
+  | 'staggered'
+  | 'airborne'
+  | 'sliding'
+  | 'downed'
+  | 'rising'
+  | 'running'
+  | 'remounting';
 
 /** A bike as it appears in `src/data/bikes.json`, after validation. */
 export interface Bike {
@@ -55,6 +63,9 @@ export interface TunedBike {
 /** What put a rider on the tarmac. Kept so a results screen can say why. */
 export type CrashCause = 'traffic' | 'hazard' | 'cliff' | 'combat';
 
+/** How bad it was. Selected by impact speed, thresholds in `tuning.json`. */
+export type CrashSeverity = 'tipover' | 'thrown' | 'highside';
+
 /** A kind of vehicle sharing the road. */
 export type TrafficKind = 'auto' | 'car' | 'bus' | 'truck';
 
@@ -95,9 +106,34 @@ export interface Tuning {
   trafficAccel: number;
   trafficLaneChangeSpeed: number;
 
-  crashSeconds: number;
+  /** m/s^2. Constant, and the only acceleration `h` ever sees. */
+  crashGravity: number;
+  /** m/s^2 of deceleration while the rider slides on the road. */
+  crashRiderFriction: number;
+  /** m/s^2 for the bike. Different from the rider's, so they part company. */
+  crashBikeFriction: number;
+  /** Fraction of impact speed the rider carries into the slide. */
+  crashRiderSpeedFactor: number;
+  /** Fraction of impact speed the bike carries. Higher — it keeps going. */
+  crashBikeSpeedFactor: number;
+  /** m/s at or above which a crash throws the rider rather than tipping them. */
+  crashThrownSpeed: number;
+  /** m/s at or above which it is a highside. */
+  crashHighsideSpeed: number;
+  /** Extra launch a highside gets over a merely thrown rider. */
+  crashHighsideLaunchScale: number;
+  /** Launch velocity as a fraction of impact speed, per cause. */
+  crashLaunchTraffic: number;
+  crashLaunchHazard: number;
+  crashLaunchCliff: number;
+  crashLaunchCombat: number;
+  /** The flat pause on the tarmac before the rider starts getting up. */
+  downedSeconds: number;
+  /** Getting to your feet. The character beat — keep it short. */
+  risingSeconds: number;
+  /** m/s the rider walks back to the bike at. No input changes this. */
+  runSpeed: number;
   remountSeconds: number;
-  crashDecel: number;
   /** Immunity after remounting, so a crash cannot repeat on the spot. */
   remountGraceSeconds: number;
   /** How far back toward the centreline a remount puts you. */
@@ -185,10 +221,30 @@ export interface Rider {
    */
   damage: number;
   state: RiderState;
-  /** Seconds left in `crashing` or `remounting`. */
+  /** Seconds left in whichever timed crash stage is running. */
   stateTimer: number;
   /** Why the rider is down, for the results screen. */
   crashCause: CrashCause | null;
+  /** How bad the crash was, or null when upright. */
+  severity: CrashSeverity | null;
+  /**
+   * Height above the road surface, along the track's up vector.
+   *
+   * Still track space — `(s, t, h)` — so rule 2 holds through a crash and
+   * nothing acquires a world position. Zero whenever the rider is on the road.
+   */
+  h: number;
+  /** Vertical velocity, integrated under constant gravity. */
+  hVel: number;
+  /**
+   * Where the machine is, once it is no longer under the rider.
+   *
+   * Tracked separately because the whole cost of a crash is the gap that opens
+   * between these two and has to be walked. Equal to `pos` while riding.
+   */
+  bikePos: TrackPos;
+  /** How fast the bike is sliding on its side. Zero while riding. */
+  bikeSpeed: number;
   /** Seconds of reduced grip left, from oil, sand or a pothole. */
   slipTimer: number;
   /** Seconds of immunity after remounting, so you cannot re-hit what got you. */

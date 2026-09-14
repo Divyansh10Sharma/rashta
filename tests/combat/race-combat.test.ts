@@ -5,6 +5,7 @@ import { combat, raceOn, trackFor, tuning } from '../helpers/race.ts';
 import type { RaceState } from '../../src/core/sim/types.ts';
 import type { InputFrame } from '../../src/core/sim/types.ts';
 import type { WeaponKind } from '../../src/core/combat/types.ts';
+import { isDown } from '../../src/core/sim/crash.ts';
 
 /**
  * Combat inside a real race.
@@ -130,7 +131,7 @@ describe('rivals fight each other without being told to', () => {
     for (let i = 0; i < 60 * 120; i += 1) {
       stepRace(race, FLAT_OUT, track, tuning);
       for (const entry of race.entries) {
-        if (entry.rider.state === 'riding') continue;
+        if (!isDown(entry.rider)) continue;
         expect(entry.rider.attack).toBeNull();
       }
     }

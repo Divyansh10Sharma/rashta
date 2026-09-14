@@ -2,7 +2,7 @@ import { trackDistance } from '../track/distance.ts';
 import { startAttack } from '../combat/combat.ts';
 import { createRider } from '../sim/world.ts';
 import type { Track } from '../track/Track.ts';
-import type { Rider, TunedBike } from '../sim/types.ts';
+import type { Rider, RiderState, TunedBike } from '../sim/types.ts';
 import type { CombatData } from '../combat/types.ts';
 import type { PoliceData, PoliceUnit } from './types.ts';
 
@@ -207,13 +207,22 @@ function clamp(value: number, low: number, high: number): number {
  * subtracting coordinates is wrong on a bend in both directions, and an arrest
  * radius is not exempt.
  */
+/** The crash stages during which an officer can actually reach you. */
+const ARRESTABLE: ReadonlySet<RiderState> = new Set<RiderState>([
+  'downed',
+  'rising',
+  'running',
+]);
+
 export function arrestedBy(
   rider: Rider,
   units: readonly PoliceUnit[],
   track: Track,
   data: PoliceData,
 ): PoliceUnit | null {
-  if (rider.state === 'riding') return null;
+  // On the ground, not in the air. An officer pulls up beside a rider who is
+  // down and getting up; one still mid-tumble has not stopped moving yet.
+  if (!ARRESTABLE.has(rider.state)) return null;
   for (const unit of units) {
     if (!unit.active || unit.state !== 'pursuing') continue;
     if (unit.rider.pos.branchId !== rider.pos.branchId) continue;

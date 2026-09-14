@@ -2,12 +2,8 @@ import { canSteer } from '../combat/combat.ts';
 import { MAIN_BRANCH } from '../types.ts';
 import type { Track } from '../track/Track.ts';
 import { curveAt } from './bike.ts';
-import {
-  checkHazards,
-  checkOffRoad,
-  checkTraffic,
-  stepCrash,
-} from './collide.ts';
+import { checkHazards, checkOffRoad, checkTraffic } from './collide.ts';
+import { isDown, stepCrash } from './crash.ts';
 import { stepTraffic } from './traffic.ts';
 import type { InputFrame, Rider, Tuning, WorldState } from './types.ts';
 
@@ -265,7 +261,9 @@ export function step(
   // Collisions resolve once, at the end, after everything has moved — so the
   // answer does not depend on the order things were stepped in.
   // ARCHITECTURE.md 4.
-  if (world.player.state === 'riding') {
+  // A rider mid-swing or staggered is still very much on the road and still
+  // hits things. Only a rider already down is exempt.
+  if (!isDown(world.player)) {
     checkHazards(world.player, track, tuning);
     checkTraffic(world.player, world.traffic, track, tuning);
     checkOffRoad(world.player, track, tuning);

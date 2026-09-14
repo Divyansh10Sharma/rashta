@@ -303,11 +303,43 @@ bundle budget, `src/core/` untouched (this is a render-layer phase and the
 simulation must not notice it happened), and no real manufacturer's marks on
 any mesh or texture.
 
-**Everything is generated in code.** No `.glb` files, no texture images, no
-asset loader. That constraint is what keeps the game loading in a second and
-working offline, and it is what the whole phase is designed around. If you
-reach a point where you genuinely believe the art pass cannot meet its goals
-inside it, stop and say so — do not quietly add a loader.
+**The road is geometry. Everything on it is a drawn sprite.** This replaces an earlier
+constraint that banned image files outright, and the reason it changed is
+worth keeping: a procedural canvas texture looks like a procedural canvas
+texture, and no amount of care in the generator fixes that. A photo-derived
+asphalt with a normal map is not a marginal improvement over 128px of seeded
+noise, it is a different game to look at.
+
+So the split is:
+
+- **Riders, bikes, traffic, police, hazards and roadside objects are
+  billboard sprites.** This is the technique the genre was built on, and the
+  reason a 1994 game looked better than untextured primitives do now: every
+  object is a drawn image from the one angle the chase camera sees, scaled by
+  distance, with a few frames swapped by state — lean, attack, crash, get-up.
+  Only right-facing frames are drawn; the renderer mirrors them for left.
+  Rivals share one neutral rider sheet, tinted per rider. Files live in
+  `public/sprites/`, named as `docs/ASSET_PROMPTS.md` lists, so they are
+  served rather than bundled. A missing file falls back to today's mesh.
+- **The road stays generated geometry,** because it has to follow the spline,
+  forks and all. Buildings stay generated too, dressed with facade sheets.
+- **No `.glb` files.** From the only angle this game shows, a sprite is
+  cheaper than a model and looks better. See `devlog/phase-08.md`.
+- **Textures and sprites are image files.** WebP, loaded async through
+  `THREE.TextureLoader`, precached by the service worker so offline still
+  works. Tiling surfaces, facade sheets, and particle sprites.
+- **Image budget: 1.5 MB total,** measured and enforced the same way the
+  bundle is. The 500 KB gzipped **JS** budget is unchanged and unaffected —
+  images are a separate line item and must not be bundled.
+- Downloaded CC0 PBR sets are preferred over generated images for anything
+  that has to tile, because they tile genuinely seamlessly and ship a normal
+  map. Generation is for what those libraries do not have, which is Delhi.
+  Prompts and sources: `docs/ASSET_PROMPTS.md`.
+
+The brand rule is unchanged and applies harder to images than to meshes:
+generators hallucinate pseudo-text and fake logos onto metal and walls. No
+wordmarks, no logos, no reproduced liveries — check every asset before it
+lands.
 
 **Build**
 - **Night lighting.** This is the primary deliverable of the phase, not an
@@ -324,15 +356,20 @@ inside it, stop and say so — do not quietly add a loader.
   footprints, lit windows on a seeded pattern, per-tag profiles for
   ringroad / oldcity / yamuna / ridge / flyway. Generated geometry, instanced.
   Delhi at night without a skyline is not Delhi.
-- Bikes rebuilt as real silhouettes: fairing, forks, spoked wheels, exhaust,
-  a rider who leans off rather than a box that tilts. Three visually distinct
-  classes matching the three bike classes.
-- Traffic rebuilt: an auto with its canopy and three wheels, a bus with window
-  bands and a roof rack, a truck with a cab and a bed. Silhouette first — you
-  should know what is in front of you from its outline alone.
-- Procedural textures generated at load: asphalt, lane markings, kerbs,
-  concrete, dust. Generated into canvases in code rather than shipped as image
-  files, so the bundle cost is the generator and not the pixels.
+- Riders as sprite sheets: centre, lean, hard lean, punch, kick, weapon
+  swing, tumble, slide, get-up, run, plus the bike down on its side. Frame
+  chosen from `state`, `lean` and `attack`; height offset from `h`.
+- Traffic as sprites, rear view, and front view for oncoming: car, auto,
+  bus, truck. Scaled by the sizes the simulation collides with, so what you
+  see is what you hit. Silhouette first — you should know what is in front of
+  you from its outline alone.
+- Surface textures as WebP image files: asphalt per district, kerbs, concrete
+  barrier, old-city wall, shop shutters. Albedo plus normal, with roughness
+  where it earns its place. Lane markings stay generated, because they have to
+  follow the spline rather than tile.
+- Facade sheets and particle sprites as WebP: lamp glow, headlight glare,
+  spark, smoke, dust. The lamp glow sprite is the highest-value asset in the
+  phase — it is what makes the night look like night.
 - Materials that read under sodium light: roughness and metalness per surface,
   emissive lamps and signage, wet-road variation on the Yamuna bank.
 - **Crash visuals**, against the state machine built in Phase 4: rider tumble
@@ -353,7 +390,10 @@ inside it, stop and say so — do not quietly add a loader.
   is the phase that closes it — an art pass that cannot hold frame rate is not
   an art pass, it is a regression.
 - The post-processing chain costs under 4 ms at 1080p under 4x throttling.
-- Bundle stays inside the 500 KB gzipped budget, with the number recorded.
+- JS bundle stays inside the 500 KB gzipped budget, with the number recorded.
+- Images stay inside the 1.5 MB budget, measured by the same script, with the
+  number recorded. Every image is WebP and every one is checked for
+  hallucinated text or logos before it lands.
 - `src/core/` has no new imports and the determinism replay test still passes
   unchanged — the simulation must not be able to tell this phase happened.
 - Every vehicle is identifiable by silhouette alone, in a screenshot with

@@ -15,6 +15,7 @@ import { bikes, combat, tuning } from '../helpers/race.ts';
 import type { Track } from '../../src/core/track/Track.ts';
 import type { Rider } from '../../src/core/sim/types.ts';
 import type { DroppedWeapon } from '../../src/core/combat/types.ts';
+import { isDown } from '../../src/core/sim/crash.ts';
 
 /**
  * Combat, headless.
@@ -229,7 +230,7 @@ describe('the three phases of an attack', () => {
   it('drops a swing when the rider is knocked off mid-attack', () => {
     const attacker = rider(300, 0);
     startAttack(attacker, 'backhand', combat);
-    attacker.state = 'crashing';
+    attacker.state = 'sliding';
     stepCombat([attacker], slots(0), STRAIGHT, combat, tuning, DT);
     expect(attacker.attack).toBeNull();
   });
@@ -281,7 +282,7 @@ describe('being hit', () => {
     swing([attacker, target], slots(0), STRAIGHT);
 
     expect(target.stamina).toBe(0);
-    expect(target.state).toBe('crashing');
+    expect(isDown(target)).toBe(true);
     expect(target.crashCause).toBe('combat');
   });
 
@@ -339,7 +340,7 @@ describe('weapons circulate and are never created', () => {
     swing([attacker, target], dropped, STRAIGHT);
 
     expect(target.weapon).toBeNull();
-    expect(target.state).toBe('crashing');
+    expect(isDown(target)).toBe(true);
     expect(dropped.filter((d) => d.active).map((d) => d.kind)).toContain('bat');
   });
 

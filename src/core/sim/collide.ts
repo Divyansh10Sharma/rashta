@@ -1,8 +1,9 @@
 import { trackDistance } from '../track/distance.ts';
+import { crash } from './crash.ts';
 import type { Track } from '../track/Track.ts';
 import type { HazardKind, SceneryTag } from '../types.ts';
 import { TRAFFIC_SIZES } from './traffic.ts';
-import type { CrashCause, Rider, TrafficVehicle, Tuning } from './types.ts';
+import type { Rider, TrafficVehicle, Tuning } from './types.ts';
 
 /**
  * What the rider hits, and what happens next.
@@ -45,60 +46,6 @@ const SLIP_HAZARDS: ReadonlySet<HazardKind> = new Set<HazardKind>([
 
 /** How close, in metres, the rider must be to a hazard to be affected by it. */
 const HAZARD_REACH = 1.6;
-
-/** Puts a rider into the crash sequence, if they are not already in one. */
-export function crash(rider: Rider, cause: CrashCause, tuning: Tuning): void {
-  if (rider.state === 'crashing' || rider.state === 'remounting') return;
-  // Just remounted: whatever put you down is still right there.
-  if (rider.graceTimer > 0) return;
-  rider.state = 'crashing';
-  rider.crashCause = cause;
-  rider.stateTimer = tuning.crashSeconds;
-  rider.lateral = 0;
-  rider.lean = 0;
-  // Whatever put you down ends the swing, whichever order things resolved in.
-  rider.attack = null;
-  rider.attackElapsed = 0;
-}
-
-/**
- * Advances a crash toward being back on the bike.
- *
- * The cost of a crash is time, not damage — the bike slides, the rider walks
- * back, and the race carries on without them for a fixed few seconds. Returns
- * true if the rider is still down and the rest of the tick should be skipped.
- */
-export function stepCrash(rider: Rider, tuning: Tuning, dt: number): boolean {
-  if (rider.state === 'crashing') {
-    // The bike slides on, shedding speed fast.
-    rider.speed = Math.max(0, rider.speed - tuning.crashDecel * dt);
-    rider.pos.s += rider.speed * dt;
-    rider.stateTimer -= dt;
-    if (rider.stateTimer <= 0) {
-      rider.state = 'remounting';
-      rider.stateTimer = tuning.remountSeconds;
-      rider.speed = 0;
-    }
-    return true;
-  }
-
-  if (rider.state === 'remounting') {
-    rider.stateTimer -= dt;
-    if (rider.stateTimer <= 0) {
-      rider.state = 'riding';
-      rider.crashCause = null;
-      rider.stateTimer = 0;
-      // You push the bike back onto the road before getting on it. Without
-      // this a rider who went off the edge remounts still against the edge and
-      // goes straight off again — an infinite crash, which is exactly what the
-      // rideability test caught.
-      rider.graceTimer = tuning.remountGraceSeconds;
-    }
-    return true;
-  }
-
-  return false;
-}
 
 /** Ends the ride if the rider has run out of road somewhere with no barrier. */
 export function checkOffRoad(rider: Rider, track: Track, tuning: Tuning): void {

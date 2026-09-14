@@ -87,3 +87,88 @@ not hold 60 fps under 4x CPU throttling, the art pass has failed regardless of
 how it looks.
 
 ## What happened
+
+### The GLTF loader was built, then removed
+
+`src/render/assets.ts` (a slot-keyed manifest type, `parseManifest`, a scene
+flattener that baked mesh transforms and merged the tree into one geometry,
+and an async `loadModels` that failed soft to the procedural mesh),
+`src/data/models.json`, and seven tests in `tests/render/meshes.test.ts` —
+five on the manifest parser, two on the flattener.
+
+**Why it went.** ROADMAP.md §Phase 8 says it in as many words: "Everything is
+generated in code. No `.glb` files, no texture images, no asset loader... do
+not quietly add a loader." I built one against that constraint on the strength
+of a later paragraph in my own notes above, which reversed a decision made
+earlier in the same session. The user caught it. The reversal was theirs and
+unintentional, but the loader is still the wrong side of it.
+
+**The deciding fact is that `models.json` was `{}`.** Nothing in `src/`
+imported `assets.ts` — the only importer was the test file. No mesh, no
+vehicle, no bootstrap path went through it. It is infrastructure for a
+decision that was never acted on, not work being thrown away. Bundle size
+did not move when it went (161.7 KB gzipped, 32.3% of budget), which is the
+same fact from the other end: tree-shaking had already dropped `GLTFLoader`
+because nothing reachable referenced it.
+
+**Recovering it.** `git show bb1bec3~1:src/render/assets.ts` and the same for
+`src/data/models.json`; the tests are the two `describe` blocks at
+`tests/render/meshes.test.ts:119-175` in that commit. It is 143 lines and it
+is additive — no existing module changes shape to take it back.
+
+**What would justify bringing it back.** One thing, concretely: *a real `.glb`
+that a person authored or licensed, in hand, that looks better than the
+procedural mesh for the same slot.* Not the intent to get one, not a slot
+reserved for one — the file. That is the evidence the loader was always
+waiting on, and until it exists the loader has nothing to load.
+
+Two things that would specifically **not** justify it, because they are the
+arguments that produced it the first time:
+
+- "Modelled assets have a higher fidelity ceiling." They do not, on their own.
+  The authoring does. This is already written up above and it was still the
+  reasoning that leaked back in.
+- "The loading path should be ready for when we have assets." Ready costs
+  bundle, tests, and a manifest to keep valid, and it expires: the loader that
+  is right for the assets we eventually get is the loader written after we
+  have them. Adding it then is a day's work and it is additive.
+
+If it comes back, it should come back with the roadmap paragraph edited in the
+same commit, so the constraint and the code agree.
+
+
+## Direction change: sprites, not meshes
+
+Phase 8 is still paused on Phase 4. This records a decision made while it
+waits, so the session that builds it works against it rather than
+rediscovering it.
+
+The user's point: the 1994 game looked beautiful and this one does not, and
+images beat built components. On textures I had already agreed. On vehicles I
+had said an image cannot work because a flat picture does not turn or lean —
+true of one image, and not what the genre did. Road racers of that era drew
+every object as a handful of frames from the chase camera's angle and scaled
+them by distance. That is the look, and it is less work than the procedural
+meshes, not more.
+
+It fits this codebase unusually well. A sprite-scaling renderer places
+everything by distance along the road and offset across it, which is exactly
+`(s, t)`. The simulation does not change at all — `src/core/` untouched is
+already a Phase 8 acceptance criterion.
+
+Plan for the building session:
+
+1. Load `public/sprites/**` with `THREE.TextureLoader`. A missing file falls
+   back to today's mesh, so art can land one file at a time.
+2. Riders, traffic, police, hazards and roadside objects become billboards
+   anchored bottom-centre, scaled by real width (`TRAFFIC_SIZES` for traffic),
+   mirrored for negative lean.
+3. Frame chosen from `state`, `lean`, `attack`; vertical offset from `h`.
+   Rivals tint one neutral sheet.
+4. Road and buildings stay generated geometry.
+
+File names and prompts: `docs/ASSET_PROMPTS.md`, sprite section.
+
+Still open from Phase 4: `racer.test.ts` "does not hand a top-three finish to
+a rider who only holds throttle" — see `phase-04.md`. Undecided, not
+forgotten.

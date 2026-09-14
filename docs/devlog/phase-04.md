@@ -314,3 +314,321 @@ the phase where the number stops being a formality.
 - Tier-5 races still run 6.4–11.6 minutes flat out. Raised in Phase 3 with
   numbers, unchanged here, and it starts to bite in Phase 5 where every route
   is simulated to completion.
+
+---
+
+# Phase 04, reopened
+
+Phase 8 was paused mid-flight. The crash specification in `ROADMAP.md`
+§Phase 4 and `ARCHITECTURE.md` §3.1 was rewritten after this phase closed, and
+Phase 4 no longer passes against it: the acceptance criteria now demand a
+derived crash cost, and what was built has a configured one. Phase 8's crash
+visuals animate whatever state machine exists, so building them on the old one
+means writing them twice. Same phase, reopened — hence the same file.
+
+What the rewrite changes, precisely. Decision 3 above says "a state machine
+with a **fixed** cost, not a physics event", and was right against the spec as
+it stood. The spec now says the opposite and says why: a constant
+`crashSeconds` makes a 90 km/h tip-over cost exactly what a 250 km/h highside
+costs, which turns the worst moment in the game into a pause. The cost has to
+fall out of the physics. Decision 3 is superseded, not wrong when taken.
+
+## Blast radius, surveyed before writing anything
+
+### What survives in `collide.ts`
+
+Everything that decides *whether* you crash. None of it knows what a crash
+costs, so none of it moves:
+
+- `checkTraffic`, `checkHazards`, `checkOffRoad` — all three call `crash()`
+  and are otherwise untouched.
+- `trackDistance` everywhere instead of an `(s, t)` box, and the comment
+  explaining why a rectangle in track space is a curved wedge in the world.
+- `FATAL_EDGE` as a scenery-tag set, and the note recording that deriving it
+  from `shoulder` was wrong. That is a corrected dead end and it stays visible.
+- `CRASHING_HAZARDS` / `SLIP_HAZARDS`, `HAZARD_REACH`, `RIDER_HALF_*`.
+- The swept-`lastS` hazard test — hazards hit once on the edge of being driven
+  over, not every tick while near. Phase 5 bug, still fixed.
+- The two behaviours the user has explicitly protected: the `graceTimer` guard
+  at the top of `crash()`, and the remount recentre in `step.ts:231-236`. Both
+  fixed real bugs, both are named as keepers in ROADMAP and ARCHITECTURE.
+
+`crash()` itself survives in shape — same signature, same early-outs, same
+attack cancellation — and changes only in what it sets up: a severity band and
+launch velocities instead of `stateTimer = tuning.crashSeconds`.
+
+### What gets replaced
+
+- **`stepCrash()`, entirely.** It is two states and a countdown. The spec
+  wants seven: `airborne → sliding → downed → rising → running → remounting`,
+  each with its own advance rule, plus `staggered`. The bike-slides-on branch
+  becomes the bike's own integration, not the rider's.
+- **`crashSeconds` as the cost.** Replaced by severity thresholds, friction
+  coefficients, gravity and a run speed. The key goes from `tuning.json`;
+  `crashDecel` survives in spirit as the bike's friction term.
+- **`RiderState`.** Currently five values of which only three are ever
+  assigned — nothing anywhere writes `'attacking'` or `'staggered'`; combat
+  uses `rider.attack !== null` and `staggerTimer` instead. The spec's nine
+  values make those two live, so the dead pair stops being dead.
+
+### New simulation fields, and who has to be told
+
+The rider gains `h` (height above the road along the track up vector — still
+track space, rule 2 holds) and its velocity; the bike gains its own
+`(s, t, branchId)` and speed, separate from the rider's. That is the contract
+Phase 8 animates against.
+
+Every one of these must be added to **`copyRider()` in `world.ts:54`**. The
+render loop interpolates between two states and a field missed there is a
+teleport, not a crash. `createRider()` at `world.ts:10` initialises them.
+
+### What reads rider state in a way this breaks
+
+Nothing reads `stateTimer` or `crashCause` for meaning outside the sim, which
+is the good news. What exists is a wide, shallow set of `state !== 'riding'`
+tests, and every one of them is asking "is this rider out of the fight right
+now?" — a question the nine-state machine answers differently.
+
+| Site | Reads | Breaks how |
+|---|---|---|
+| `step.ts:217` | `stepCrash` return | Rewritten with it. |
+| `step.ts:268` | `state === 'riding'` gates collision checks | Fine as written, but `airborne` needs to skip traffic and hazards while `sliding` may not. |
+| `race.ts:310` `resolveFor` | same gate, for all fourteen | Same, times fourteen. |
+| `race.ts:297` `accrueDamage` | `state !== 'riding'` as the crash edge | **Wrong under nine states.** Charges `perCrash` on the transition into any non-riding state, so `staggered` from a punch would bill a crash. Needs the edge to be entry into `airborne` specifically. |
+| `combat.ts:65,164,201,220` | `state !== 'riding'` to block attacking, weapon pickup, and being a target | Mostly right by accident. `staggered` becoming a real state means these start firing where they previously did not — the stagger lock currently lives in `canSteer`/`staggerTimer`, and the two must not both apply it. |
+| `combat.ts:86` | `state === 'crashing'` skips as a target | Names a state that will not exist. Must become "down in any crash state". |
+| `police.ts:216` `arrestedBy` | `state === 'riding'` → no arrest | **Semantics change.** You become arrestable the instant you are non-riding, which under the new machine includes mid-air. An officer should be arresting a rider who is `downed`/`rising`/`running`, not one still in the air. |
+| `ai/racer.ts:248` | `state !== 'riding'` → no swing | Correct as-is; a rider in any crash state should not swing. |
+| `main.ts:210` | `state !== 'riding'` as the spark edge | Same edge bug as `accrueDamage`: sparks on stagger. Phase 8 work, paused, and this is one reason it is paused. |
+| `FieldView.ts` | interpolates `pos.s/t`, `lean`, `wheelAngle` | Does not know about `h` or a separate bike. A crashed rider currently just slides along the road at `h = 0`. Not broken, but not the crash either — this is exactly the Phase 8 surface that would have been written twice. |
+| `Stage.ts:132`, `Rider.update` | `(track, s, t, lean, wheelAngle, branchId)` | Signature has no `h` and no second body. Phase 8 changes it; better it changes once. |
+
+### Tests that will need rewriting rather than fixing
+
+`tests/sim/collide.test.ts:162-228`, the four tests under "the crash sequence
+itself", assert against the fixed-cost model directly — `downFor` bounded by
+`crashSeconds + remountSeconds`, `stateTimer` unchanged by a second crash. The
+round-trip tests at :111-160 and the hazard tests at :229-299 should survive on
+their assertions, since they test that a crash happens and ends, not how long
+it takes. `tests/police/*` calls `crash()` directly four times and reads state
+straight after; those need the new post-crash state name.
+
+The new criterion — time lost scales monotonically with impact speed, printed
+at 80/140/200/260 km/h — has no test yet at all.
+
+
+## What happened, second time round
+
+### The shape it landed in
+
+`collide.ts` was 180 lines and adding a nine-state machine to it would have
+put it past 300, so the machine moved to its own file. `collide.ts` now
+decides *whether* you crash; `crash.ts` owns what happens next. That split was
+not planned, it fell out of the file-length rule, and it is better than what
+was there — the detection code and the recovery code share nothing but a
+function call.
+
+`stepCrash` is a switch over six states with one helper each. The bike slides
+in `slideBike`, called before the switch, because it keeps sliding through
+`downed` and `rising` whether or not the rider is doing anything.
+
+### The measured cost, which is the acceptance criterion
+
+Time from impact to riding again, on a straight ring-road segment, sport bike,
+no traffic:
+
+| Impact | Band | Crashed into traffic | Knocked off in a fight |
+|---|---|---|---|
+| 80 km/h | tip-over | 3.78 s | 3.78 s |
+| 140 km/h | thrown | 5.87 s | 4.78 s |
+| 200 km/h | highside | 10.25 s | 6.47 s |
+| 260 km/h | highside | 14.23 s | 8.02 s |
+
+The floor is deliberately set near the 3.5 s the old fixed cost charged, so a
+low-speed tip-over feels about as it always did and everything above it is new
+information. The first tuning I tried put the floor at 2.96 s and the top at
+18.4 s; both ends were wrong, and the second one is what the next section is
+about.
+
+Monotonic, and the sweep test checks every 10 km/h from 40 to 280 rather than
+these four points — a model that is monotonic at four samples and not between
+them is still wrong.
+
+The two columns are the same speeds and different causes, which is the part
+worth keeping: `crashLaunchCombat` is roughly half `crashLaunchTraffic`, so
+being kicked off throws you less far than riding into a bus does, and the walk
+back is correspondingly shorter. That fell out of the launch-per-cause rule
+rather than being tuned in.
+
+**14.2 s at 260 km/h is a long time** and I am flagging it rather than quietly
+choosing it. It is defensible — the spec says the crash is the punishment and
+the cost must be derived — but whether it is *fun* is a question that needs
+somebody to ride it, exactly as decision 3 above predicted would happen. The
+numbers to turn are `runSpeed` (5.5 m/s) and the two impact factors.
+
+### The surprise: a highside throws you past your own bike
+
+I wrote the test asserting the bike always ends up further down the road than
+the rider, and it failed: rider 97.6 m, bike 79.8 m.
+
+The reason is obvious in hindsight and I had not thought about it. A thrown
+rider is in the air, and nothing decelerates them there — meanwhile the bike
+has been grinding along tarmac since the tick of impact. So the launch that
+makes a highside spectacular is also what carries the rider *past* the machine
+they came off. About 10% of crashes on a real route end with the rider ahead
+of the bike, walking backwards to it.
+
+I kept the behaviour and fixed the assertion, because it is right: it makes
+the run to the bike literally a walk back, which is the image the whole stage
+is for. The test now asserts a gap exists rather than asserting its direction.
+
+### Making `attacking` and `staggered` real cost more than it looked
+
+Those two were in the `RiderState` union before this phase and nothing ever
+assigned them — combat carried the same truth in `rider.attack` and
+`rider.staggerTimer`. The spec wants nine live states, so they became real,
+and that turned every `state !== 'riding'` in the codebase into a question
+that needed re-asking one at a time.
+
+The thing that made it tractable was refusing to assign `state` at the five
+points that can change a timer. Instead `syncState` derives it once at the end
+of the combat tick from the two flags, with stagger beating attacking — which
+is what `canSteer` already said, so there is now one rule instead of two. Any
+ordering bug I would otherwise have written is unreachable.
+
+The call sites that were actually wrong, as opposed to merely renamed:
+
+- `accrueDamage` charged bike damage on the edge of leaving `riding`. Under
+  nine states a punch that staggers you leaves `riding` too, so every stagger
+  would have billed a full crash's worth of damage. Now keyed to `isDown`.
+- `arrestedBy` let an officer arrest anyone not riding, which now includes a
+  rider mid-air. Narrowed to `downed | rising | running` — the stages where
+  somebody is actually on the ground to be reached.
+- `engagedWith` and the attack-resolution loop both named `'crashing'`, a
+  state that no longer exists.
+
+### The one that could have stranded a rider
+
+`running` walks the rider toward the bike at `runSpeed`. If the bike were
+still sliding faster than that, the rider would never arrive — and "no state
+can strand a rider" is an acceptance criterion, not a nicety.
+
+By the numbers it cannot happen: the bike stops well inside the `downed` and
+`rising` pause at every speed the game can produce. But "by the numbers"
+depends on four tuning values staying in a relationship nobody wrote down, so
+entering `running` now stops the bike outright. It is a guarantee by
+construction rather than by arithmetic, and it costs nothing because in every
+reachable case the bike had already stopped.
+
+### old-city-t5 was already broken, and the crash rewrite is what showed it
+
+The rideability test failed on exactly one of twenty-five routes. The first
+guess — that crashes now cost more — was wrong, and measuring said so:
+
+|  | Crashes per rider | Down-time per crash | Race length |
+|---|---|---|---|
+| Before (bb1bec3) | ~195 | 3.54 s | 2407 s |
+| After | ~262 | 3.05 s | over the 2700 s limit |
+
+The new crash is **cheaper** per event. What moved was the *count*, up 34%,
+and 87% of all crashes were rider-into-traffic. So the crash was not the
+problem; it was the thing that pushed a route already at 89% of the test's
+budget over the line.
+
+What the route actually is:
+
+| Route | Density | Road width | Vehicles per metre of width |
+|---|---|---|---|
+| old-city-t5 | 50.4 | 7.4 m | **6.81** |
+| ring-road-t5 | 79.2 | 21.3 m | 3.71 |
+| yamuna-bank-t5 | 32.4 | 18.0 m | 1.80 |
+| dnd-flyway-t5 | 25.2 | 20.0 m | 1.26 |
+| ridge-run-t5 | 14.4 | 13.0 m | 1.11 |
+
+The Old City ladder was authored on the same absolute scale as the wide roads
+without anyone accounting for the fact that it is half as wide as anything
+else and a third the width of the Ring Road. A vehicle every twenty metres on
+a road two cars across is not dense traffic, it is a wall. A 25 km race took
+forty minutes and the riders spent 800 of those seconds on the tarmac.
+
+Every Old City tier is scaled by 0.6, which preserves the tier ladder exactly
+and lands the route at 4.08 vehicles per metre — just above the Ring Road,
+which is right for the tightest route in the game rather than double it.
+
+The whole 25-route suite went from 524 s to **148 s** afterwards, which is the
+same finding from the other end: most of that time was thirteen riders
+crashing into a traffic jam.
+
+I want to be honest about what this was. I did not find this by reading the
+data. I found it because a test I had made 12% slower failed, and the 12% was
+not the bug. The margin was hiding it, and had the crash rewrite been cheaper
+rather than dearer, it would still be hiding it.
+
+### Tests that were measuring the machine, for the third and fourth time
+
+`race.test.ts` timed out at 60 s inside `npm run check` and passes in 13.2 s
+run on its own. Same call as the three already recorded above: `check` runs
+every file in parallel under v8 coverage instrumentation, and these are
+simulation tests that ride real routes to the line. The ride is the criterion.
+
+
+### The thing I could not fix, and am not going to paper over
+
+`racer.test.ts > does not hand a top-three finish to a rider who only holds
+throttle` fails. It is the last failing test and it is a real one.
+
+On `ridge-run-t2`, a player who holds the throttle and never touches the bars
+finished **9th** before this phase and finishes **3rd** after it. That is a
+six-place swing and it is caused by the crash rewrite, not by anything else —
+I checked the Old City density change first, and this route is not Old City.
+
+The mechanism is not subtle once measured. In that race:
+
+- The player crashes **zero** times.
+- Every one of the thirteen rivals crashes one to three times, almost all of
+  them on hazards.
+
+So the player's finishing position is entirely a function of how much time the
+*rest of the field* loses. The old flat cost charged 3.5 s per crash. The
+derived cost charges 4–10 s at the speeds that route is ridden at, because
+that is precisely what the spec asked for. Making the punishment scale with
+impact speed necessarily punishes the riders who crash, and on this route the
+player is not one of them.
+
+I tried four things and none of them is the answer:
+
+| Attempt | Result |
+|---|---|
+| `downedSeconds` 0.7 → 1.4 (costlier crashes) | place **2** — worse |
+| impact factors 0.58/0.63 → 0.45/0.52 (cheaper, floor restored) | place 3 |
+| Three `ridge-run-t2` hazards moved onto the centreline | place 3 |
+| Original tuning | place 3 |
+
+The direction of the first row is the tell: making crashes *cheaper* does not
+walk it back toward 9th, and making them dearer makes it worse. Magnitude is
+not the lever. What changed structurally is that a crashed rider now resumes
+where the **bike** stopped rather than where their own slide ended, which is
+several metres further back per crash, and it compounds over thirteen riders.
+
+Two things I found while chasing it that are worth writing down whatever gets
+decided:
+
+1. **Every hazard on every `ridge-run` tier is authored off the centreline** —
+   `t` values of ±1.95 to ±3.45, never near zero. So the racing line crosses
+   hazards and the lazy straight-ahead line does not, which inverts the
+   difficulty gradient the test is asserting. I moved three of them onto the
+   line to see if it mattered, it did not, and I reverted it rather than leave
+   an unmotivated content change in the tree.
+2. **The AI does not avoid hazards.** It reads the road geometry ahead through
+   `aiLookahead` and steers a racing line; hazards are not part of that. That
+   is why the rivals eat them and the player does not. It was survivable when
+   a crash cost a flat 3.5 s and it is not now.
+
+I do not think either of those is mine to fix inside a reopened Phase 4 about
+the crash. Fixing (2) is a Phase 5 AI feature. Fixing (1) is a content pass
+over 25 routes. And tuning the crash physics until this one assertion flips
+would be fitting the model to the test, which is the thing this devlog exists
+to stop me doing.
+
+So: the crash is built, specified, measured and tested. The difficulty
+assertion that sits on top of it needs a decision that is not a tuning value.
