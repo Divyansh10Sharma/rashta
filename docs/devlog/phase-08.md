@@ -172,3 +172,25 @@ File names and prompts: `docs/ASSET_PROMPTS.md`, sprite section.
 Still open from Phase 4: `racer.test.ts` "does not hand a top-three finish to
 a rider who only holds throttle" — see `phase-04.md`. Undecided, not
 forgotten.
+
+### Built before the art arrived
+
+Two pieces of the sprite renderer that need no pictures:
+
+- `scripts/check-images.mjs`, run by `npm run size` and on its own as
+  `npm run images`. It enforces the 1.5 MB image budget and WebP-only, and
+  checks every file against the names in `docs/ASSET_PROMPTS.md`. That last
+  part is the one that matters day to day: a misspelt picture does not error,
+  it silently falls back to the old drawing and looks like a renderer bug. A
+  planted `Centre.webp` failed the check with exit 1, as it should — Windows
+  would have loaded it and a static host would not.
+- `src/render/sprites/frames.ts`, the pure choice of which rider picture to
+  draw from `state`, `lean`, `attack`, `weapon` and `hVel`, writing into a
+  caller-owned object so the frame loop allocates nothing. Six tests,
+  including one that fails if a frame name drifts out of the prompt file.
+  Airborne picks its two tumble frames by the sign of `hVel` rather than a
+  clock, so a replay draws the same tumble.
+
+The sim records no side for an attack, so the swing is drawn to whichever
+side the rider leans, and a backhand to the other. Good enough to see; worth
+revisiting if it reads wrong on screen.
