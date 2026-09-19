@@ -4,6 +4,7 @@ import tuningJson from '../data/tuning.json';
 import racersJson from '../data/racers.json';
 import combatJson from '../data/combat.json';
 import policeJson from '../data/police.json';
+import spritesJson from '../data/sprites.json';
 import { loadTrackLibrary } from '../core/track/library.ts';
 
 import { loadBikes, loadTuning } from '../core/sim/load.ts';
@@ -18,6 +19,7 @@ import {
 } from '../core/sim/race.ts';
 import { Input } from '../input/Input.ts';
 import { createStage } from '../render/Stage.ts';
+import { loadSpriteData } from '../render/sprites/data.ts';
 import { createHud } from '../ui/Hud.ts';
 import { createStaminaBars } from '../ui/StaminaBars.ts';
 import { engagedWith } from '../core/combat/combat.ts';
@@ -105,6 +107,10 @@ function run(canvas: HTMLCanvasElement): void {
     current.traffic.length,
     current.entries.length - 1,
     current.police.length,
+    {
+      sprites: loadSpriteData('sprites.json', spritesJson),
+      leanMax: tuning.leanMax,
+    },
   );
   stage.chase.reset(0);
 
@@ -158,9 +164,17 @@ function run(canvas: HTMLCanvasElement): void {
     const b = me.rider;
     const s = a.pos.s + (b.pos.s - a.pos.s) * alpha;
     const t = a.pos.t + (b.pos.t - a.pos.t) * alpha;
-    const lean = a.lean + (b.lean - a.lean) * alpha;
-    const wheel = a.wheelAngle + (b.wheelAngle - a.wheelAngle) * alpha;
     const speed = a.speed + (b.speed - a.speed) * alpha;
+
+    // The camera moves first: every picture below turns to face it.
+    visibleChunks = stage.sync(
+      s,
+      t,
+      speed / bike.topSpeedMs,
+      b.pos.branchId,
+      elapsedMs / 1000,
+    );
+    stage.rider.update(track, a, b, alpha);
 
     // Traffic is interpolated from the same pair of states the rider is, so a
     // bus and the bike it is about to hit move in the same time.
@@ -174,16 +188,6 @@ function run(canvas: HTMLCanvasElement): void {
       alpha,
       track,
       combat,
-    );
-
-    visibleChunks = stage.sync(
-      s,
-      t,
-      lean,
-      wheel,
-      speed / bike.topSpeedMs,
-      b.pos.branchId,
-      elapsedMs / 1000,
     );
 
     stage.renderer.render(stage.scene, stage.camera);

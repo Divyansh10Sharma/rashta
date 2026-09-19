@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import type { Track } from '../core/track/Track.ts';
 import { createFrame } from '../core/track/path.ts';
 import type { HazardKind } from '../core/types.ts';
+import type { SpriteKit } from './sprites/kit.ts';
+import { createHazardSprites } from './sprites/HazardSprites.ts';
 
 /**
  * What is sitting in the road.
@@ -22,6 +24,8 @@ export interface HazardField {
   group: THREE.Group;
   /** Total instances drawn, across every kind. */
   count: number;
+  /** Swaps in hazard pictures as they arrive. Once per frame; cheap. */
+  refresh: () => void;
   dispose: () => void;
 }
 
@@ -69,7 +73,10 @@ const LOOKS: Record<HazardKind, Look> = {
 };
 
 /** Builds every hazard on the route as one instanced mesh per kind. */
-export function createHazardField(track: Track): HazardField {
+export function createHazardField(
+  track: Track,
+  kit: SpriteKit | null = null,
+): HazardField {
   const group = new THREE.Group();
   const frame = createFrame();
   const matrix = new THREE.Matrix4();
@@ -83,7 +90,7 @@ export function createHazardField(track: Track): HazardField {
     byKind.set(hazard.kind, (byKind.get(hazard.kind) ?? 0) + 1);
   }
 
-  const meshes: THREE.InstancedMesh[] = [];
+  const meshes = new Map<HazardKind, THREE.InstancedMesh>();
   const materials: THREE.Material[] = [];
   let count = 0;
 
@@ -119,16 +126,21 @@ export function createHazardField(track: Track): HazardField {
       index += 1;
     }
     mesh.instanceMatrix.needsUpdate = true;
-    meshes.push(mesh);
+    meshes.set(kind, mesh);
     group.add(mesh);
     count += total;
   }
 
+  const sprites = kit ? createHazardSprites(track, kit, meshes) : null;
+  if (sprites) group.add(sprites.group);
+
   return {
     group,
     count,
+    refresh: () => sprites?.refresh(),
     dispose: () => {
-      for (const mesh of meshes) {
+      sprites?.dispose();
+      for (const mesh of meshes.values()) {
         mesh.geometry.dispose();
         mesh.dispose();
       }

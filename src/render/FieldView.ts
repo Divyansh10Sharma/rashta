@@ -1,6 +1,9 @@
 import * as THREE from 'three';
-import { createRiderView } from './Rider.ts';
-import type { RiderView } from './Rider.ts';
+import {
+  createRiderDrawing,
+  type RiderDrawing,
+} from './sprites/RiderSprite.ts';
+import type { SpriteKit } from './sprites/kit.ts';
 import type { Track } from '../core/track/Track.ts';
 import type { RaceEntry, Rider } from '../core/sim/types.ts';
 import type { CombatData } from '../core/combat/types.ts';
@@ -27,10 +30,10 @@ export function glowFor(rider: Rider, combat: CombatData): number {
 /**
  * The thirteen rivals, drawn.
  *
- * One `RiderView` each rather than an instanced mesh: a bike is a handful of
- * small parts that lean independently of the road, and thirteen of them is a
- * small enough number that the simpler thing is also the right thing. Traffic
- * is instanced because there are ten times as many of it.
+ * One drawing each rather than an instanced batch: each rider shows its own
+ * picture, tint and glow, and thirteen is a small enough number that the
+ * simpler thing is also the right thing. Traffic is batched because there are
+ * ten times as many of it.
  *
  * The player is not drawn here. `Stage` already owns that one, because the
  * camera is attached to it.
@@ -71,19 +74,23 @@ const LIVERY = [
 /** Police livery: white, and unmistakably not one of the thirteen. */
 const POLICE_LIVERY = 0xe8ecf2;
 
-export function createField(riders: number, police = 0): FieldView {
+export function createField(
+  riders: number,
+  police = 0,
+  kit: SpriteKit | null = null,
+): FieldView {
   const group = new THREE.Group();
-  const views: RiderView[] = [];
+  const views: RiderDrawing[] = [];
   for (let i = 0; i < riders; i += 1) {
-    const view = createRiderView(LIVERY[i % LIVERY.length] ?? 0xc4402c);
+    const view = createRiderDrawing(LIVERY[i % LIVERY.length] ?? 0xc4402c, kit);
     view.group.visible = false;
     views.push(view);
     group.add(view.group);
   }
 
-  const patrol: RiderView[] = [];
+  const patrol: RiderDrawing[] = [];
   for (let i = 0; i < police; i += 1) {
-    const view = createRiderView(POLICE_LIVERY);
+    const view = createRiderDrawing(POLICE_LIVERY, kit, 'police');
     view.group.visible = false;
     patrol.push(view);
     group.add(view.group);
@@ -109,21 +116,12 @@ export function createField(riders: number, police = 0): FieldView {
         view.group.visible = false;
         continue;
       }
-      const a = before.rider;
-      const b = now.rider;
       view.group.visible = true;
-      view.update(
-        track,
-        a.pos.s + (b.pos.s - a.pos.s) * alpha,
-        a.pos.t + (b.pos.t - a.pos.t) * alpha,
-        a.lean + (b.lean - a.lean) * alpha,
-        a.wheelAngle + (b.wheelAngle - a.wheelAngle) * alpha,
-        b.pos.branchId,
-      );
+      view.update(track, before.rider, now.rider, alpha);
       // A pursuing officer is lit whether or not they are mid-ram, so you can
       // tell in the mirror that one of them has decided about you.
       const chasing = now.state === 'pursuing' ? 0.5 : 0;
-      view.highlight(Math.max(chasing, glowFor(b, combat)), false);
+      view.highlight(Math.max(chasing, glowFor(now.rider, combat)), false);
     }
   };
 
@@ -154,16 +152,9 @@ export function createField(riders: number, police = 0): FieldView {
         continue;
       }
 
-      const a = before.rider;
-      const b = now.rider;
-      const s = a.pos.s + (b.pos.s - a.pos.s) * alpha;
-      const t = a.pos.t + (b.pos.t - a.pos.t) * alpha;
-      const lean = a.lean + (b.lean - a.lean) * alpha;
-      const wheel = a.wheelAngle + (b.wheelAngle - a.wheelAngle) * alpha;
-
       view.group.visible = true;
-      view.update(track, s, t, lean, wheel, b.pos.branchId);
-      view.highlight(glowFor(b, combat), b.staggerTimer > 0);
+      view.update(track, before.rider, now.rider, alpha);
+      view.highlight(glowFor(now.rider, combat), now.rider.staggerTimer > 0);
     }
   };
 

@@ -59,6 +59,41 @@ function attackFrame(rider: Rider, out: FrameChoice): FrameChoice {
 }
 
 /**
+ * What to draw when a frame's picture is missing or unusable.
+ *
+ * Crash frames fall back toward lying on the road and never toward a frame
+ * with a bike in it: the bike is drawn separately once it is down, and a
+ * rider picture with a bike under it would put two bikes on the road. A
+ * chain that runs out (null) means the sheet cannot draw this state at all,
+ * and the caller draws the old mesh instead.
+ */
+const FALLBACK: Record<RiderFrame, RiderFrame | null> = {
+  centre: null,
+  lean: 'centre',
+  hard: 'lean',
+  punch: 'centre',
+  kick: 'centre',
+  swing: 'centre',
+  'tumble-1': 'tumble-2',
+  'tumble-2': 'slide',
+  slide: null,
+  rise: 'slide',
+  run: 'rise',
+};
+
+/**
+ * The nearest drawable frame to `want`, or null if none in its chain is.
+ */
+export function resolveFrame(
+  want: RiderFrame,
+  drawable: (frame: RiderFrame) => boolean,
+): RiderFrame | null {
+  let frame: RiderFrame | null = want;
+  while (frame !== null && !drawable(frame)) frame = FALLBACK[frame];
+  return frame;
+}
+
+/**
  * Chooses the picture for a rider, writing into `out` so the per-frame loop
  * allocates nothing.
  */

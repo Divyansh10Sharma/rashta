@@ -1,0 +1,128 @@
+{
+  "sizes": {
+    "rider/centre": { "height": 1.55 },
+    "rider/lean": { "height": 1.45 },
+    "rider/hard": { "height": 1.3 },
+    "rider/punch": { "height": 1.55 },
+    "rider/kick": { "height": 1.5 },
+    "rider/swing": { "height": 1.55 },
+    "rider/tumble-1": { "width": 1.1 },
+    "rider/tumble-2": { "width": 1.7 },
+    "rider/slide": { "width": 1.9 },
+    "rider/rise": { "height": 1.25 },
+    "rider/run": { "height": 1.8 },
+    "police/centre": { "height": 1.6 },
+    "police/lean": { "height": 1.5 },
+    "bike/down": { "width": 2.1 },
+
+    "hazard/oil": { "width": 2.8, "lying": true },
+    "hazard/pothole": { "width": 1.2, "lying": true },
+    "hazard/roadworks": { "width": 2.2 },
+    "hazard/barricade": { "width": 2.4 },
+    "hazard/cow": { "width": 2.3 },
+    "hazard/dog": { "width": 0.95 },
+
+    "scenery/lamp": { "height": 8 },
+    "scenery/lamp-ornate": { "height": 4.6 },
+    "scenery/hydrant": { "height": 0.8 },
+    "scenery/palm": { "height": 9 },
+    "scenery/lifeguard": { "width": 3.6 },
+    "scenery/pine": { "height": 11 },
+    "scenery/rock": { "width": 2.8 }
+  },
+
+  "hazards": {
+    "oil": "hazard/oil",
+    "sand": null,
+    "pothole": "hazard/pothole",
+    "roadworks": "hazard/roadworks",
+    "barricade": "hazard/barricade",
+    "cow": "hazard/cow",
+    "dog": "hazard/dog"
+  },
+
+  "places": {
+    "ringroad": {
+      "light": "#fff0dc",
+      "lamp": "scenery/lamp",
+      "props": ["scenery/hydrant"],
+      "propSpacing": 46,
+      "traffic": {
+        "car": [
+          "traffic/taxi",
+          "traffic/sedan",
+          "traffic/taxi",
+          "traffic/suv",
+          "traffic/car",
+          "traffic/van",
+          "traffic/sports"
+        ],
+        "auto": ["traffic/compact"],
+        "bus": ["traffic/bus", "traffic/schoolbus"],
+        "truck": ["traffic/truck", "traffic/semi"]
+      }
+    },
+    "oldcity": {
+      "light": "#ffe2b8",
+      "lamp": "scenery/lamp-ornate",
+      "props": [],
+      "propSpacing": 0,
+      "traffic": {
+        "car": ["traffic/car", "traffic/sedan", "traffic/van", "traffic/car"],
+        "auto": ["traffic/compact"],
+        "bus": ["traffic/coach", "traffic/bus"],
+        "truck": ["traffic/truck"]
+      }
+    },
+    "yamuna": {
+      "light": "#ffdcef",
+      "lamp": "scenery/lamp",
+      "props": ["scenery/palm", "scenery/palm", "scenery/lifeguard"],
+      "propSpacing": 34,
+      "traffic": {
+        "car": [
+          "traffic/convertible",
+          "traffic/sports",
+          "traffic/suv",
+          "traffic/sedan",
+          "traffic/convertible",
+          "traffic/taxi"
+        ],
+        "auto": ["traffic/compact"],
+        "bus": ["traffic/bus", "traffic/coach", "traffic/schoolbus"],
+        "truck": ["traffic/truck", "traffic/semi"]
+      }
+    },
+    "flyway": {
+      "light": "#ecdcff",
+      "lamp": "scenery/lamp",
+      "props": [],
+      "propSpacing": 0,
+      "traffic": {
+        "car": [
+          "traffic/taxi-pink",
+          "traffic/sedan",
+          "traffic/taxi-pink",
+          "traffic/suv",
+          "traffic/van",
+          "traffic/car"
+        ],
+        "auto": ["traffic/compact"],
+        "bus": ["traffic/bus", "traffic/coach"],
+        "truck": ["traffic/truck", "traffic/semi"]
+      }
+    },
+    "ridge": {
+      "light": "#c8d6ff",
+      "lamp": "scenery/lamp",
+      "props": ["scenery/pine", "scenery/pine", "scenery/rock"],
+      "propSpacing": 22,
+      "traffic": {
+        "car": ["traffic/suv", "traffic/car", "traffic/sedan", "traffic/van"],
+        "auto": ["traffic/compact"],
+        "bus": ["traffic/coach"],
+        "truck": ["traffic/truck", "traffic/semi"]
+      }
+    }
+  }
+}

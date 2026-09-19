@@ -4,6 +4,8 @@ import { createFrame } from '../core/track/path.ts';
 import { TRAFFIC_SIZES } from '../core/sim/traffic.ts';
 import { buildVehicle } from './meshes/vehicles.ts';
 import type { TrafficKind, TrafficVehicle } from '../core/sim/types.ts';
+import type { SpriteKit } from './sprites/kit.ts';
+import { createTrafficSprites } from './sprites/TrafficSprites.ts';
 
 /**
  * City traffic, drawn.
@@ -55,8 +57,16 @@ const PALETTE: Record<TrafficKind, number[]> = {
 /** How far a lamp sits from the vehicle's centre, as a fraction of length. */
 const LAMP_ALONG = 0.46;
 
-export function createTrafficView(track: Track, poolSize: number): TrafficView {
+export function createTrafficView(
+  track: Track,
+  poolSize: number,
+  kit: SpriteKit | null = null,
+): TrafficView {
   const group = new THREE.Group();
+  // Pictures where they have loaded; the meshes below for every slot whose
+  // picture has not, so art can land one file at a time.
+  const sprites = kit ? createTrafficSprites(track, kit, poolSize) : null;
+  if (sprites) group.add(sprites.group);
   const frame = createFrame();
   const matrix = new THREE.Matrix4();
   const position = new THREE.Vector3();
@@ -135,6 +145,7 @@ export function createTrafficView(track: Track, poolSize: number): TrafficView {
     current: readonly TrafficVehicle[],
     alpha: number,
   ): void => {
+    sprites?.begin();
     for (let i = 0; i < poolSize; i += 1) {
       const now = current[i];
       const before = previous[i];
@@ -147,22 +158,30 @@ export function createTrafficView(track: Track, poolSize: number): TrafficView {
         before?.active === true &&
         now.pos.branchId === before.pos.branchId &&
         Math.abs(now.pos.s - before.pos.s) < 5;
+      const s = drawable
+        ? before.pos.s + (now.pos.s - before.pos.s) * alpha
+        : 0;
+      const t = drawable
+        ? before.pos.t + (now.pos.t - before.pos.t) * alpha
+        : 0;
+      // A picture has its lamps painted on, so a sprite slot draws no mesh
+      // and no lamp boxes either.
+      const pictured =
+        drawable && sprites !== null && sprites.draw(i, now, s, t);
 
       for (const kind of KINDS) {
-        const spare = !drawable || now.kind !== kind;
+        const spare = !drawable || pictured || now.kind !== kind;
         const mesh = bodies.get(kind);
         if (mesh && spare) hide(mesh, i);
         const dark = trims.get(kind);
         if (dark && spare) hide(dark, i);
       }
-      if (!drawable) {
+      if (!drawable || pictured) {
         hide(heads, i);
         hide(tails, i);
         continue;
       }
 
-      const s = before.pos.s + (now.pos.s - before.pos.s) * alpha;
-      const t = before.pos.t + (now.pos.t - before.pos.t) * alpha;
       track.sample(s, frame, now.pos.branchId);
 
       position.set(
@@ -201,6 +220,7 @@ export function createTrafficView(track: Track, poolSize: number): TrafficView {
     for (const mesh of trims.values()) mesh.instanceMatrix.needsUpdate = true;
     heads.instanceMatrix.needsUpdate = true;
     tails.instanceMatrix.needsUpdate = true;
+    sprites?.end();
   };
 
   return {
@@ -212,6 +232,7 @@ export function createTrafficView(track: Track, poolSize: number): TrafficView {
         mesh.geometry.dispose();
         mesh.dispose();
       }
+      sprites?.dispose();
       heads.dispose();
       tails.dispose();
       lampGeometry.dispose();

@@ -2,6 +2,13 @@ import * as THREE from 'three';
 import type { Track } from '../core/track/Track.ts';
 import { createFrame } from '../core/track/path.ts';
 import { ENVIRONMENTS } from './environments.ts';
+import { wrapSlot } from './pool.ts';
+import {
+  bollardGeometry,
+  kerbGeometry,
+  lampGeometry,
+  poleGeometry,
+} from './meshes/furniture.ts';
 
 /**
  * Roadside furniture: streetlights, poles, kerb stones.
@@ -80,34 +87,10 @@ export interface SceneryField {
   group: THREE.Group;
   /** Total instances across every pool. */
   count: number;
+  /** The mast and lamp-head meshes, so a streetlight picture can replace them. */
+  streetlights: THREE.Object3D[];
   update: (s: number) => void;
   dispose: () => void;
-}
-
-function poleGeometry(): THREE.BufferGeometry {
-  // A streetlight: a mast with a short arm. Merged into one geometry so the
-  // whole thing is a single instanced draw.
-  const mast = new THREE.CylinderGeometry(0.09, 0.13, 8, 6);
-  mast.translate(0, 4, 0);
-  return mast;
-}
-
-function lampGeometry(): THREE.BufferGeometry {
-  const lamp = new THREE.BoxGeometry(1.5, 0.22, 0.5);
-  lamp.translate(0.75, 7.9, 0);
-  return lamp;
-}
-
-function kerbGeometry(): THREE.BufferGeometry {
-  // Length matches `kerbSpacing`, so consecutive stones meet and read as one
-  // continuous kerb that still follows the bend.
-  return new THREE.BoxGeometry(0.32, 0.28, 4);
-}
-
-function bollardGeometry(): THREE.BufferGeometry {
-  const post = new THREE.CylinderGeometry(0.08, 0.1, 0.9, 6);
-  post.translate(0, 0.45, 0);
-  return post;
 }
 
 /**
@@ -189,6 +172,7 @@ export function createScenery(
 
   addPool(poleGeometry(), mastMaterial, config.lightSpacing, 1.6, true);
   addPool(lampGeometry(), lampMaterial, config.lightSpacing, 1.6, true);
+  const streetlights = pools.map((pool) => pool.mesh);
   addPool(kerbGeometry(), kerbMaterial, config.kerbSpacing, 0.4, true);
   addPool(
     bollardGeometry(),
@@ -241,14 +225,7 @@ export function createScenery(
     for (const pool of pools) {
       const window = pool.window;
       for (let i = 0; i < pool.slotS.length; i += 1) {
-        let slot = pool.slotS[i] ?? 0;
-        // Recycle by shifting whole windows into the half-open interval
-        // [lo, lo + window). Note the bound is the window, not `s + ahead`:
-        // a pool carries one spare position beyond the visible span, so
-        // testing against `ahead` leaves that slot with nowhere legal to sit
-        // and it oscillates back out of view every frame.
-        while (slot < lo) slot += window;
-        while (slot >= lo + window) slot -= window;
+        const slot = wrapSlot(pool.slotS[i] ?? 0, lo, window);
         pool.slotS[i] = slot;
         place(pool, i, slot, pool.small && slot - s > SMALL_OBJECT_LOD_METRES);
       }
@@ -261,6 +238,7 @@ export function createScenery(
   return {
     group,
     count,
+    streetlights,
     update,
     dispose: () => {
       for (const pool of pools) {

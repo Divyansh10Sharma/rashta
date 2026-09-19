@@ -36,6 +36,21 @@ const fronts = expected
   .map((path) => path.replace(/-rear\.webp$/, '-front.webp'));
 const found = ROOTS.flatMap(filesUnder);
 
+// Whether a WebP file carries an alpha channel, from its header alone: the
+// extended format has a flag for it, lossless has a bit, and plain lossy has
+// no alpha at all. Sprites are cut-outs and need one — without it the picture
+// draws as a rectangle, and the renderer falls back to the old drawing. Light
+// and effects (`fx/`) are drawn on black on purpose and are exempt.
+function hasAlpha(path) {
+  const head = readFileSync(path).subarray(0, 30);
+  const chunk = head.toString('ascii', 12, 16);
+  if (chunk === 'VP8X') return (head[20] & 0x10) !== 0;
+  if (chunk === 'VP8L') return ((head[24] >> 4) & 1) === 1;
+  return false;
+}
+const needsAlpha = (path) =>
+  path.startsWith('public/sprites/') && !path.startsWith('public/sprites/fx/');
+
 const problems = [];
 let total = 0;
 for (const path of found) {
@@ -45,6 +60,10 @@ for (const path of found) {
   } else if (!expected.includes(path) && !fronts.includes(path)) {
     problems.push(
       `${path} is not a name in ${PROMPTS} — check spelling and letter case`,
+    );
+  } else if (needsAlpha(path) && !hasAlpha(path)) {
+    problems.push(
+      `${path} has no transparent background — remove it again (step 2)`,
     );
   }
 }

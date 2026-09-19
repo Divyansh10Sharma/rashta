@@ -266,3 +266,104 @@ building fronts to 768 matched both lines and put skylines at 768 too. The
 breakdown caught it — a 768 px panorama is too thin to stretch across a
 screen — and they were redone from the originals, which is why every pass
 re-encodes from the backup rather than from the previous output.
+
+## Building the sprite renderer
+
+The four-point plan above, now that all the pictures exist.
+
+### Measured before designing anything
+
+Opaque bounds of every sprite, with PIL, before writing code:
+
+- **Padding is all over the place.** `taxi-rear` has 98 px of empty space
+  under the wheels out of 512; `semi-front` has 6. Anchoring to the image edge
+  would float some cars a metre off the road and sink others. So the renderer
+  measures each picture's opaque bounds when it loads, crops the texture to
+  them, and anchors to the bottom of the opaque part — the tyres.
+- **The contact point is not the middle of the bounds.** The hard-lean frame
+  hangs the rider off to the right, so the tyre sits well left of centre;
+  anchored at the centre, swapping `centre` → `hard` would jump the bike
+  sideways. The anchor is the mean x of the opaque pixels in the bottom rows,
+  which lands on the tyre for riders and between the wheels for cars.
+- **Three rider frames are not cut out.** `punch` and `run` are on solid black
+  and `rise` has a checkerboard *painted into the pixels*, the generator's
+  fake transparency. All three are RGB with no alpha channel, and so are
+  their originals in `art-source/originals/`, so this came in with the art
+  and is not a resize-pass bug. Drawn as-is they are opaque rectangles.
+  Renderer: a picture whose border is opaque is treated as missing and the
+  frame falls back within the sheet. Image check: names them.
+- Frames were generated one at a time, so they do not share a scale. Scaling
+  every rider frame by one width would shrink the lean frames and blow up the
+  tumble. Each picture gets its own real dimension in `src/data/sprites.json`,
+  either a width or a height, whichever is the meaningful one — a lamp post
+  has a height, a cow has a length.
+
+### What got built
+
+- `sprites/bounds.ts` — opaque bounds and ground anchor from an RGBA buffer;
+  refuses a picture whose border is opaque.
+- `sprites/library.ts` — `TextureLoader`, one pixel read at load, texture
+  cropped to the drawn part. Lazy: a race fetches only what its place names.
+  Missing or uncut → `missing` plus a console warning naming the file.
+- `src/data/sprites.json` + `sprites/data.ts` — real sizes per picture and,
+  per scenery tag, the light tint, the streetlight, the roadside props and the
+  traffic pictures per sim kind. Validated on load. Keys are still the old
+  tags (`ringroad` = New York, etc.) until the rename pass.
+- `sprites/Billboard.ts` — one card quad (origin bottom-centre), camera-facing
+  about the vertical only, anchored and mirrored.
+- `sprites/RiderSprite.ts` — the rider at `(s, t, h)`; once down, the bike is a
+  separate card at `bikePos`. Frame fallback within the sheet
+  (`resolveFrame` in frames.ts); the mesh only when the chain runs out.
+  Police use their two pictures upright and the rider sheet when down.
+- `sprites/TrafficSprites.ts`, `HazardSprites.ts`, `RoadsideSprites.ts` —
+  instanced batch per picture. Traffic picture fixed per pool slot. Hazards
+  written once when the picture lands; oil and potholes lie flat. Streetlight
+  pictures replace the generated masts when loaded.
+- `check-images.mjs` reads the WebP header for an alpha channel on everything
+  under `sprites/` except `fx/`.
+- `Scenery.ts` was already 282 lines; the furniture geometry went to
+  `meshes/furniture.ts` and the slot wrap to `pool.ts` (now 260).
+
+`main.ts` now syncs the camera *before* drawing riders and traffic, since
+every card faces the camera that `sync` sets.
+
+### What broke
+
+- **Every left-side streetlight was missing** in the first screenshot. Left
+  lamps are mirrored (the lamp arm points left in the art), mirroring is a
+  negative x scale, and three.js flips the face winding for an object's own
+  negative-determinant matrix but not per *instance*, so the mirrored
+  instances were back-face culled. Riders were fine because each is its own
+  mesh. Fix: sprite materials are `DoubleSide`.
+- A test meant to prove oil lies flat returned early and proved nothing:
+  `test-track` has no oil. Switched to the pothole, which it has.
+
+### Seen on screen
+
+Headless Chrome, driven over CDP (throttle held, screenshots), all five
+routes. Swiftshader, so **the fps in those shots is software GL and is not a
+measurement** — the 4x-throttle figure is still owed.
+
+- Riders, rivals (tinted), police, traffic, lamps, props all draw and stand on
+  the road. Kick frame mirrored correctly. Steering readout still "agree".
+- Crashed rivals on the flyway: bike cards lying apart from sliding riders.
+- Each place distinct from its furniture alone: ornate lamps (old town),
+  pines (Alps), palms (Miami), bare deck (Bangkok), hydrants (New York).
+- The player is small at speed (~25 px tall at 162 km/h in a 540 px frame).
+  That is ChaseCamera's pull-back and FOV gain, not the sprite. Worth a look
+  when tuning the camera.
+- The player vanished for a frame while overlapping a bus's footprint. The
+  vehicle card stands at the vehicle's near end, so a rider already inside
+  the vehicle is behind it. That is the moment of the collision, so it may be
+  fine; watch for it when passing close alongside a bus.
+
+### Deferred
+
+- Re-cut `rider/punch`, `rider/rise`, `rider/run` (step 2 of ASSET_PROMPTS).
+  Until then `npm run size` fails on them, by design.
+- Per-place skyline, facade and road textures (the other half of the 2.3 MB
+  per-race load), and `fx/` sprites into `Particles.ts`.
+- Sprite sizes in `sprites.json` are set from real-world figures, not tuned
+  on screen; the rider frames especially want an eye pass.
+- The 4x CPU throttle measurement, in real Chrome with a GPU.
+- `TrafficView.ts` is at 253 lines.

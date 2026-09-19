@@ -1,14 +1,29 @@
 import * as THREE from 'three';
 import type { Track } from '../core/track/Track.ts';
 import { ChaseCamera } from './ChaseCamera.ts';
-import { createRiderView, type RiderView } from './Rider.ts';
-import { createScenery, type SceneryField } from './Scenery.ts';
+import { createScenery, sceneryFor, type SceneryField } from './Scenery.ts';
 import { buildRoadMesh, cullChunks, type RoadMesh } from './RoadMeshBuilder.ts';
 import { createHazardField, type HazardField } from './HazardView.ts';
 import { createTrafficView, type TrafficView } from './TrafficView.ts';
 import { createField, type FieldView } from './FieldView.ts';
 import { createParticles, type ParticleField } from './Particles.ts';
 import { ENVIRONMENTS, applyEnvironment } from './environments.ts';
+import { createSpriteLibrary } from './sprites/library.ts';
+import { createSpriteKit } from './sprites/kit.ts';
+import type { SpriteData } from './sprites/data.ts';
+import { faceCamera } from './sprites/Billboard.ts';
+import {
+  createRiderDrawing,
+  type RiderDrawing,
+} from './sprites/RiderSprite.ts';
+import { createRoadsideSprites } from './sprites/RoadsideSprites.ts';
+
+/** What the stage needs to draw pictures. Without it, everything is meshes. */
+export interface StageArt {
+  sprites: SpriteData;
+  /** From tuning.json, for choosing lean frames. */
+  leanMax: number;
+}
 
 /** Everything Three.js, assembled. Reads core state and never writes to it. */
 export interface Stage {
@@ -16,7 +31,8 @@ export interface Stage {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   chase: ChaseCamera;
-  rider: RiderView;
+  /** The player. Updated by the caller, which owns the two race states. */
+  rider: RiderDrawing;
   road: RoadMesh;
   scenery: SceneryField;
   traffic: TrafficView;
@@ -30,12 +46,13 @@ export interface Stage {
    * cross products.
    */
   riderScreenX: () => number;
-  /** Repositions everything for the current interpolated state. */
+  /**
+   * Moves the camera and everything tied to it. Call before updating the
+   * riders and traffic, which face the camera this sets.
+   */
   sync: (
     s: number,
     t: number,
-    lean: number,
-    wheelAngle: number,
     speedFraction: number,
     branchId: number,
     dt: number,
@@ -57,6 +74,7 @@ export function createStage(
   trafficPoolSize = 0,
   rivals = 0,
   police = 0,
+  art: StageArt | null = null,
 ): Stage {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -82,26 +100,38 @@ export function createStage(
 
   const chunkAhead = ENVIRONMENTS[track.data.scenery].fogFar + 60;
 
+  // Pictures come from public/, served rather than bundled. Only what this
+  // route asks for is ever fetched.
+  const library = createSpriteLibrary(`${import.meta.env.BASE_URL}sprites/`);
+  const kit = art
+    ? createSpriteKit(library, art.sprites, track.data.scenery, art.leanMax)
+    : null;
+
   const road = buildRoadMesh(track);
   scene.add(road.group);
 
-  const scenery = createScenery(track);
+  const sceneryConfig = sceneryFor(track.data.scenery);
+  const scenery = createScenery(track, sceneryConfig);
   scene.add(scenery.group);
+  const roadside = kit
+    ? createRoadsideSprites(track, kit, sceneryConfig, scenery.streetlights)
+    : null;
+  if (roadside) scene.add(roadside.group);
 
   // Hazards never move, so they are built once and never touched again.
-  const hazards = createHazardField(track);
+  const hazards = createHazardField(track, kit);
   scene.add(hazards.group);
 
-  const traffic = createTrafficView(track, trafficPoolSize);
+  const traffic = createTrafficView(track, trafficPoolSize, kit);
   scene.add(traffic.group);
 
-  const field = createField(rivals, police);
+  const field = createField(rivals, police, kit);
   scene.add(field.group);
 
   const particles = createParticles();
   scene.add(particles.points);
 
-  const rider = createRiderView();
+  const rider = createRiderDrawing(0xc4402c, kit);
   scene.add(rider.group);
 
   const resize = (): void => {
@@ -116,22 +146,22 @@ export function createStage(
 
   const probe = new THREE.Vector3();
   const riderScreenX = (): number => {
-    probe.copy(rider.group.position).project(camera);
+    probe.copy(rider.position).project(camera);
     return probe.x;
   };
 
   const sync = (
     s: number,
     t: number,
-    lean: number,
-    wheelAngle: number,
     speedFraction: number,
     branchId: number,
     dt: number,
   ): number => {
-    rider.update(track, s, t, lean, wheelAngle, branchId);
     chase.update(track, s, t, speedFraction, branchId, dt);
+    if (kit) faceCamera(camera, kit.facing);
     scenery.update(s);
+    roadside?.update(s);
+    hazards.refresh();
     // Chunks stay resident as far as the district's fog lets you see, so a
     // narrow lane loads three chunks and the flyway loads a dozen.
     return cullChunks(road, s, chunkAhead, CHUNK_BEHIND);
@@ -155,6 +185,9 @@ export function createStage(
       window.removeEventListener('resize', resize);
       road.dispose();
       scenery.dispose();
+      roadside?.dispose();
+      kit?.card.dispose();
+      library.dispose();
       traffic.dispose();
       hazards.dispose();
       field.dispose();
