@@ -348,8 +348,10 @@ So the split is:
 - **Textures and sprites are image files.** WebP, loaded async through
   `THREE.TextureLoader`, precached by the service worker so offline still
   works. Tiling surfaces, facade sheets, and particle sprites.
-- **Image budget: 1.5 MB total,** measured and enforced the same way the
-  bundle is. The 500 KB gzipped **JS** budget is unchanged and unaffected —
+- **Image budget: 3.5 MB total,** measured and enforced the same way the
+  bundle is. Each race loads only the shared sprites plus its own place's
+  skyline, building front and road texture — about 2.3 MB — so the total
+  can grow with places without every race paying for all of them. The 500 KB gzipped **JS** budget is unchanged and unaffected —
   images are a separate line item and must not be bundled.
 - Downloaded CC0 PBR sets are preferred over generated images for anything
   that has to tile, because they tile genuinely seamlessly and ship a normal
@@ -411,7 +413,7 @@ lands.
   an art pass, it is a regression.
 - The post-processing chain costs under 4 ms at 1080p under 4x throttling.
 - JS bundle stays inside the 500 KB gzipped budget, with the number recorded.
-- Images stay inside the 1.5 MB budget, measured by the same script, with the
+- Images stay inside the 3.5 MB budget, measured by the same script, with the
   number recorded. Every image is WebP and every one is checked for
   hallucinated text or logos before it lands.
 - `src/core/` has no new imports and the determinism replay test still passes

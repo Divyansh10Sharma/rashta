@@ -1,12 +1,12 @@
 // Standing acceptance criterion, docs/ROADMAP.md Phase 8: game pictures are
-// WebP and stay under 1.5 MB in total. It also checks every file against the
+// WebP and stay under 3.5 MB in total. It also checks every file against the
 // names in docs/ASSET_PROMPTS.md, because a misspelt picture does not error —
 // it silently falls back to the old drawing and looks like a renderer bug.
 // Windows ignores letter case in file names; a static host does not.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
-const BUDGET_BYTES = 1.5 * 1024 * 1024;
+const BUDGET_BYTES = 3.5 * 1024 * 1024;
 const ROOTS = ['public/sprites', 'public/textures'];
 const PROMPTS = 'docs/ASSET_PROMPTS.md';
 const LIST = process.argv.includes('--list');

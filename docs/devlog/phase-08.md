@@ -244,3 +244,25 @@ Deferred, for one rename pass in a fresh session:
   > Real place names are geography and are fine; real brands are not. This
   > is the visual identity — every route should be recognisable as its place
   > from a single screenshot.
+
+## The image budget moved from 1.5 MB to 3.5 MB
+
+All 77 pictures are in. As generated they came to 29.5 MB — 1000–2000 px and
+250–900 KB each. Resized to game size (sprites 512 px, skylines 1024, building
+fronts 768, road textures 512 except asphalt at 1024) and re-encoded at WebP
+quality 72, they total **3.36 MB**: sprites 1.96, road textures 0.48,
+skylines 0.47, building fronts 0.45. Originals are kept in
+`art-source/originals/` (git-ignored) and in git history at 7209d04.
+
+1.5 MB was a number I set when the plan was about 40 pictures in one city.
+There are now 77 across five places, and reaching 1.5 MB would take sprites at
+around 256 px under heavy compression — a visible loss on the things the
+player looks at most. The user agreed to 3.5 MB, on the condition that the
+renderer loads per place: shared sprites plus one place's skyline, building
+front and road texture, about 2.3 MB per race.
+
+One mistake on the way: a chained `sed` meant to set skylines to 1024 and
+building fronts to 768 matched both lines and put skylines at 768 too. The
+breakdown caught it — a 768 px panorama is too thin to stretch across a
+screen — and they were redone from the originals, which is why every pass
+re-encodes from the backup rather than from the previous output.
