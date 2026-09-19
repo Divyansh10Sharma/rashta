@@ -1,5 +1,25 @@
 # Roadmap
 
+> **Setting change, 2026-09-18.** The game is no longer set in Delhi. It is
+> five night rides in five places, each mapped onto the existing route whose
+> road already fits it, so road width, traffic density and edge rules —
+> everything the simulation and its tests depend on — stay exactly as they
+> are:
+>
+> | Route (id unchanged for now) | Becomes | Why that route |
+> |---|---|---|
+> | `ring-road` | New York — avenues and expressway | widest road, heaviest traffic |
+> | `old-city` | European old town — cobblestone lanes | narrowest, walls close on both sides |
+> | `yamuna-bank` | Miami — ocean drive and causeway | wide, flat, beside the water |
+> | `dnd-flyway` | Bangkok — elevated expressway | raised, nothing beside it: the one fatal edge |
+> | `ridge-run` | Swiss Alps — mountain pass | dark, lightest traffic |
+>
+> This supersedes every Delhi reference in this file and in `GAME_DESIGN.md`.
+> Those texts, the scenery tag names, route ids, racer names and `CLAUDE.md`'s
+> Setting section still say Delhi and are renamed in one pass — see
+> `devlog/phase-08.md`. Real place names are geography and fine; real vehicle
+> brands are not, as before.
+
 Twelve phases. Each one ends with a working, runnable thing and a new page in
 `Explanation.html`. Do not start a phase until the previous phase's acceptance
 criteria all demonstrably pass.

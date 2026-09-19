@@ -29,6 +29,11 @@ const expected = [
     ),
   ),
 ];
+// Oncoming traffic: any listed `-rear` picture may have a `-front` twin,
+// so the prompt file need not list every front view.
+const fronts = expected
+  .filter((path) => path.endsWith('-rear.webp'))
+  .map((path) => path.replace(/-rear\.webp$/, '-front.webp'));
 const found = ROOTS.flatMap(filesUnder);
 
 const problems = [];
@@ -37,7 +42,7 @@ for (const path of found) {
   total += statSync(path).size;
   if (extname(path) !== '.webp') {
     problems.push(`${path} is not a .webp file`);
-  } else if (!expected.includes(path)) {
+  } else if (!expected.includes(path) && !fronts.includes(path)) {
     problems.push(
       `${path} is not a name in ${PROMPTS} — check spelling and letter case`,
     );

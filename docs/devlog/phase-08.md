@@ -194,3 +194,53 @@ Two pieces of the sprite renderer that need no pictures:
 The sim records no side for an attack, so the swing is drawn to whichever
 side the rider leans, and a backhand to the other. Good enough to see; worth
 revisiting if it reads wrong on screen.
+
+## Setting change: out of Delhi
+
+The user asked for the game to leave India — New York, Switzerland,
+Thailand, Europe, Miami — and for more variety in the cars. Their pictures
+1–4 (three rider frames and a hatchback) are setting-neutral and keep their
+names.
+
+Each place is mapped onto an existing route by its road, not its name (table
+at the top of ROADMAP): the Old City's narrow walled lanes become a European
+old town, the flyway's raised deck with nothing beside it becomes Bangkok's
+elevated expressway, and so on. Nothing in the simulation changes — no widths,
+densities, hazards or tests move. That is the reason to map rather than invent
+five new tracks.
+
+Traffic variety is render-only. The simulation keeps four traffic kinds,
+because four is what it collides with; each kind now has several pictures and
+the renderer picks one per pool slot. `car` → hatchback, sedan, taxi, sports,
+SUV, convertible, pink taxi, van; `auto` (the small one) → tiny city car; `bus`
+→ city bus, school bus, coach; `truck` → box truck, semi. Which appear where —
+yellow cabs in New York, convertibles in Miami — is a per-scenery list for the
+building session, and belongs in a data file, not in code.
+
+Shared sprites keep the one lighting style pictures 1–4 were made in, so every
+vehicle can drive every route. The place comes from skylines, building fronts
+and props, each prompted in its own light, and from tinting sprites toward the
+route's light at draw time.
+
+`check-images.mjs` now accepts `<name>-front.webp` for any listed
+`<name>-rear.webp`, so oncoming traffic can be added without listing every
+front view in the prompt file.
+
+Deferred, for one rename pass in a fresh session:
+
+- scenery tags `ringroad / oldcity / yamuna / flyway / ridge` →
+  `newyork / oldtown / miami / bangkok / alps`, plus route ids and names,
+  across data, code and tests;
+- `GAME_DESIGN.md` setting and district text, and the racer names in
+  `racers.json`, which are all Indian;
+- `Explanation.html`;
+- `CLAUDE.md`'s Setting section — not edited here, because a mid-session edit
+  to it does not apply until restart. Proposed text:
+
+  > ## Setting
+  >
+  > Five night rides in five places: New York, a European old town, Miami,
+  > Bangkok and the Swiss Alps. Neon, streetlight, wet asphalt, skylines.
+  > Real place names are geography and are fine; real brands are not. This
+  > is the visual identity — every route should be recognisable as its place
+  > from a single screenshot.
